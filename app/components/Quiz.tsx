@@ -1,8 +1,8 @@
 'use client'
 
 import { ArrowLeft, ArrowRight, CancelOutlined, Check, Clear, DoneOutline, Quiz, Visibility, VisibilityOff } from "@mui/icons-material";
-import { Box, Button, Card, CardContent, Chip, CircularProgress, Collapse, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import { Box, Button, Card, CardContent, Chip, CircularProgress, Collapse, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Link, Paper, Stack, tabClasses, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, ToggleButton, ToggleButtonGroup, Typography, useForkRef } from "@mui/material";
+import React, { use, useActionState, useEffect, useState } from "react";
 
 type Props = {
     fileCount: object
@@ -22,6 +22,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
     }
 
     const [tAlignment, setTalignment] = useState('All')
+
     const handleTChange = (
         event: React.MouseEvent<HTMLElement>,
         newTAlignment: string
@@ -35,6 +36,118 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
     const [quizData, setQuizData] = useState<any[]>([])
 
     const [cardLoading, setCardLoading] = useState(false)
+
+    const [cardNumber, setCardNumber] = useState<number>(0)
+    const [slugCount, setSlugCount] = useState<number>(0)
+
+    const prevCard = (cardNumber: number) => {
+        if (cardNumber > 0) (
+            setCardNumber(prev => prev - 1)
+        )
+        showCardDetails(false)
+    }
+
+    const nextCard = (cardNumber: number) => {
+        if (cardNumber < slugCount) (
+            setCardNumber(prev => prev + 1)
+        )
+        showCardDetails(false)
+    }
+
+    const [skeleton, updateSkeleton] = useState<Record<number, string>>({})
+
+    const [correctCount, updateCorrectCount] = useState<number>(0)
+    const [incorrectCount, updateIncorrectCount] = useState<number>(0)
+    const [incompleteCount, updateIncompleteCount] = useState<number>(0)
+
+    const [cardDetails, showCardDetails] = useState(false)
+
+    const [quizStopDialogue, setQuizStopDialogue] = useState(false)
+
+    const handleQuizEnd = () => {
+        setQuizOn(false)
+        setQuizStopDialogue(false)
+    }
+
+    const [quizResultDialog, setQuizResultDialog] = useState(false)
+
+    const saveQuizResult = () => {
+        setQuizResultDialog(false)
+    }
+
+    const doNotSaveQuizResult = () => {
+        setQuizResultDialog(false)
+    }
+
+    const [quizProgress, showQuizProgress] = useState(false)
+
+    const [progAlignment, setProgAlignment] = useState('Correct')
+
+    const handleProgAlignment = (e, newProgAlignment) => {
+        setProgAlignment(newProgAlignment)
+    }
+
+    const [correctCards, updateCorrectCards] = useState<number[]>([])
+    const [incorrectCards, updateIncorrectCards] = useState<number[]>([])
+    const [incompleteCards, updateIncompleteCards] = useState<number[]>([])
+
+    const [progTablePage, setProgTablePage] = useState(0)
+    const handleProgTablePageChange = (e, newProgPage) => {
+        setProgTablePage(newProgPage)
+    }
+
+    const handleProgButtonClick = (cardNum: number) => {
+        showQuizProgress(false)
+        setCardNumber(cardNum)
+    }
+
+    const progressTable = (progAlignment) => {
+        return (
+            <Box>
+                <TableContainer sx={{display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column'}}>
+                    <Table>
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Card Number</TableCell>
+                                <TableCell>Word</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {
+                                progAlignment === 'Correct' ? (
+                                    correctCards.map(x => 
+                                        <TableRow key={x}>
+                                            <TableCell><Button onClick={() => handleProgButtonClick(x)}>{x + 1}</Button></TableCell>
+                                            <TableCell>{quizData[x].slug}</TableCell>
+                                        </TableRow>
+                                    )) :
+                                progAlignment === 'Incorrect' ? (
+                                    incorrectCards.slice(progTablePage * 10, progTablePage * 5 + 10).map(x => 
+                                        <TableRow key={x}>
+                                            <TableCell><Button onClick={() => handleProgButtonClick(x)}>{x + 1}</Button></TableCell>
+                                            <TableCell>{quizData[x].slug}</TableCell>
+                                        </TableRow>
+                                    )) :
+                                progAlignment === 'Unmarked' ? (
+                                    incompleteCards.slice(progTablePage * 10, progTablePage * 10 + 10).map(x => 
+                                        <TableRow key={x}>
+                                            <TableCell><Button onClick={() => handleProgButtonClick(x)}>{x + 1}</Button></TableCell>
+                                            <TableCell>{quizData[x].slug}</TableCell>
+                                        </TableRow>
+                                    )) : null}
+                        </TableBody>
+                    </Table>
+                    <TablePagination
+                        count={progAlignment === 'Correct' ? correctCards.length : progAlignment === 'Incorrect' ? incorrectCards.length : progAlignment === 'Unmarked' ? incompleteCards.length : null}
+                        page={progTablePage}
+                        onPageChange={handleProgTablePageChange}
+                        rowsPerPageOptions={[]}
+                        rowsPerPage={10}
+                    />
+                </TableContainer>
+            </Box>
+        )
+    }
 
     async function startQuiz(nAlignment: string, tAlignment: string) {
         setQuizOn(false)
@@ -57,35 +170,13 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
         }
     }
 
-    const [cardNumber, setCardNumber] = useState<number>(0)
-    const [slugCount, setSlugCount] = useState<number>(0)
-
-    const prevCard = (cardNumber: number) => {
-        if (cardNumber > 0) (
-            setCardNumber(prev => prev - 1)
-        )
-        showCardDetails(false)
-    }
-
-    const nextCard = (cardNumber: number) => {
-        if (cardNumber < slugCount) (
-            setCardNumber(prev => prev + 1)
-        )
-        showCardDetails(false)
-    }
-
-    const [skeleton, updateSkeleton] = useState<Record<number, string>>({})
-
     function createSkeleton(n: number) {
         const body = {}
         for (let index = 0; index < n; index++) {
-            body[index] = ''
+            body[index] = 'incomplete'
         }
         updateSkeleton(body)
     }
-
-    const [correctCount, updateCorrectCount] = useState<number>(0)
-    const [incorrectCount, updateIncorrectCount] = useState<number>(0)
 
     function updateOutcome(cardNumber: number, outcome: string) {
 
@@ -106,12 +197,41 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
         }
     }
 
+    function getKeysFromValues(object, value) {
+        const keysArray = []
+        for (let prop in object) {
+            if (object.hasOwnProperty(prop)) {
+                if (object[prop] === value) {
+                    keysArray.push(Number(prop))
+                }
+            }
+        }
+        return keysArray
+    }
+
     useEffect(() => {
+
         const outcomes = Object.values(skeleton)
-        const newCorrect = outcomes.filter(x => x === 'correct').length
-        const newIncorrect = outcomes.filter(x => x === 'incorrect').length
-        updateCorrectCount(newCorrect)
-        updateIncorrectCount(newIncorrect)
+        const newCorrect = getKeysFromValues(skeleton, 'correct')
+        const newIncorrect = getKeysFromValues(skeleton, 'incorrect')
+        const newIncomplete = getKeysFromValues(skeleton, 'incomplete')
+
+        const newCorrectCount = outcomes.filter(x => x === 'correct').length
+        const newIncorrectCount = outcomes.filter(x => x === 'incorrect').length
+        const newIncompleteCount = outcomes.filter(x => x === 'incomplete').length
+
+        updateCorrectCards(newCorrect)
+        updateIncorrectCards(newIncorrect)
+        updateIncompleteCards(newIncomplete)
+
+        updateCorrectCount(newCorrectCount)
+        updateIncorrectCount(newIncorrectCount)
+        updateIncompleteCount(newIncompleteCount)
+
+        if (quizOn && newIncompleteCount === 0) {
+            setQuizResultDialog(true)
+        }
+
     }, [skeleton])
 
     useEffect(() => {
@@ -122,10 +242,11 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
             console.log('card num', cardNumber)
             console.log('num of slugs', slugCount)
             console.log(skeleton)
+            console.log('correct cards', correctCards)
+            console.log('incorrect cards', incorrectCards)
+            console.log('incomplete cards', incompleteCards)
         }
     }, [quizData, skeleton])
-
-    const [cardDetails, showCardDetails] = useState(false)
 
     return (
         <>
@@ -140,15 +261,41 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                         <Collapse in={quizOn}>
 
                             <Box>
-                                <Button startIcon={<Quiz />} disableRipple disableFocusRipple variant="outlined" color="info">
+                                <Button startIcon={<Quiz />} onClick={() => showQuizProgress(true)} variant="outlined" color="info">
                                     <Typography variant="body1"> カード {cardNumber + 1} / {slugCount + 1} </Typography>
                                 </Button>
+                                <Dialog
+                                    open={quizProgress}
+                                    onClose={() => showQuizProgress(false)}
+                                >
+                                    <DialogTitle>
+                                        Quiz Progress
+                                    </DialogTitle>
+                                    <DialogContent>
+                                        <Box>
+                                            <Box>
+                                                <ToggleButtonGroup
+                                                    color="primary"
+                                                    value={progAlignment}
+                                                    exclusive
+                                                    onChange={handleProgAlignment}>
+                                                    <ToggleButton value='Correct'>Correct</ToggleButton>
+                                                    <ToggleButton value='Incorrect'>Incorrect</ToggleButton>
+                                                    <ToggleButton value='Unmarked'>Unmarked</ToggleButton>
+                                                </ToggleButtonGroup>
+                                            </Box>
+                                            {progressTable(progAlignment)}
+                                        </Box>
+                                    </DialogContent>
+                                </Dialog>
+
                             </Box>
 
                         </Collapse>
 
                         <Box>
                             <ToggleButtonGroup
+                                disabled={quizOn}
                                 color="primary"
                                 value={nAlignment}
                                 exclusive
@@ -162,6 +309,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                         </Box>
                         <Box>
                             <ToggleButtonGroup
+                                disabled={quizOn}
                                 color="secondary"
                                 value={tAlignment}
                                 exclusive
@@ -172,18 +320,42 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                             </ToggleButtonGroup>
                         </Box>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Button onClick={() => startQuiz(nAlignment, tAlignment)} variant="contained">スタート</Button>
+                            {quizOn ?
+                                <Button onClick={() => setQuizStopDialogue(true)} color="secondary" variant="contained">中止</Button>
+                                :
+                                <Button onClick={() => startQuiz(nAlignment, tAlignment)} color="primary" variant="contained">スタート</Button>
+                            }
+                            <Dialog
+                                open={quizStopDialogue}
+                                onClose={() => setQuizStopDialogue(false)}>
+                                <DialogTitle>
+                                    Are you sure you want to end this quiz session?
+                                </DialogTitle>
+                                <DialogContent>
+                                    <DialogContentText>
+                                        Your progress will not be saved if you choose to proceed.
+                                    </DialogContentText>
+                                </DialogContent>
+                                <DialogActions>
+                                    <Button onClick={() => setQuizStopDialogue(false)}>
+                                        Go Back
+                                    </Button>
+                                    <Button onClick={handleQuizEnd}>
+                                        End Quiz
+                                    </Button>
+                                </DialogActions>
+                            </Dialog>
                         </Box>
 
                         <Collapse in={quizOn}>
                             <Box sx={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
                                 <Box>
-                                    <Button startIcon={<DoneOutline />} disableRipple disableFocusRipple variant="outlined" color="success">
+                                    <Button startIcon={<DoneOutline />} disableRipple disableFocusRipple variant={skeleton[cardNumber] === 'correct' ? 'contained' : 'outlined'} color="success">
                                         <Typography variant="body1"> {correctCount} </Typography>
                                     </Button>
                                 </Box>
                                 <Box>
-                                    <Button startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant="outlined" color="error">
+                                    <Button startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant={skeleton[cardNumber] === 'incorrect' ? 'contained' : 'outlined'} color="error">
                                         <Typography variant="body1"> {incorrectCount} </Typography>
                                     </Button>
                                 </Box>
@@ -241,7 +413,13 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                                                 <Typography><Visibility /> 表示</Typography>
                                             </Button>
 
-                                            <Button disabled={!cardDetails} variant="contained" color="success" startIcon={<Check />} onClick={() => updateOutcome(cardNumber, 'correct')}>
+                                            <Button
+                                                disabled={!cardDetails}
+                                                variant="contained"
+                                                color="success"
+                                                startIcon={<Check />}
+                                                onClick={() => updateOutcome(cardNumber, 'correct')}
+                                            >
                                                 正解
                                             </Button>
                                             <Button disabled={!cardDetails} variant="contained" color="error" startIcon={<Clear />} onClick={() => updateOutcome(cardNumber, 'incorrect')}>
@@ -249,6 +427,45 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                                             </Button>
                                         </Box>
                                     </CardContent>
+                                    <Dialog
+                                        open={quizResultDialog}
+                                        onClose={() => setQuizResultDialog(false)}
+                                    >
+                                        <DialogTitle>
+                                            Quiz Complete!
+                                        </DialogTitle>
+                                        <DialogContent>
+                                            <DialogContentText>
+                                                <Box>
+                                                    <Typography sx={{ fontWeight: 'bold' }}>Quiz Type: {tAlignment}</Typography>
+                                                    <Typography sx={{ fontWeight: 'bold' }}> JLPT Level: {nAlignment.toUpperCase()}</Typography>
+                                                    <Typography sx={{ fontWeight: 'bold' }}>Score: {Math.round((correctCount / slugCount) * 100)}%</Typography>
+                                                </Box>
+                                                <Box sx={{ marginTop: '15px' }}>
+                                                    <Typography>
+                                                        Would you like to save this quiz result?
+                                                    </Typography>
+                                                    <Typography>
+                                                        Upon save, a breakdown will be made available on your review page.
+                                                    </Typography>
+                                                    <Typography>
+                                                        Only the last quiz you've completed will be available for review.
+                                                    </Typography>
+                                                    <Typography>
+                                                        Users that have logged in can save their quiz result statistics.
+                                                    </Typography>
+                                                </Box>
+                                            </DialogContentText>
+                                        </DialogContent>
+                                        <DialogActions>
+                                            <Button onClick={() => doNotSaveQuizResult()}>
+                                                Go Back
+                                            </Button>
+                                            <Button onClick={() => saveQuizResult()}>
+                                                Save Result
+                                            </Button>
+                                        </DialogActions>
+                                    </Dialog>
                                 </Card>
                                 :
                                 <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -264,7 +481,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                     </Box>
                 </Box>
                 <Box sx={{ display: 'flex', width: '20%', height: '100%' }}></Box>
-            </Box>
+            </Box >
         </>
     )
 }
