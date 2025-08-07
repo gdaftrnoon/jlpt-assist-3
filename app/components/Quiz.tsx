@@ -2,7 +2,7 @@
 
 import { ArrowLeft, ArrowRight, CancelOutlined, Check, Clear, DoneOutline, Quiz, Visibility, VisibilityOff } from "@mui/icons-material";
 import { Box, Button, Card, CardContent, Chip, CircularProgress, Collapse, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Link, Paper, Stack, tabClasses, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, ToggleButton, ToggleButtonGroup, Typography, useForkRef } from "@mui/material";
-import React, { use, useActionState, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 type Props = {
     fileCount: object
@@ -33,6 +33,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
     }
 
     const [quizOn, setQuizOn] = useState(false)
+
     const [quizData, setQuizData] = useState<any[]>([])
 
     const [cardLoading, setCardLoading] = useState(false)
@@ -65,6 +66,11 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
     const [quizStopDialogue, setQuizStopDialogue] = useState(false)
 
     const handleQuizEnd = () => {
+        localStorage.clear()
+        setPrevN('')
+        setPrevT('')
+        setPrevCN(0)
+        setPrevSkeleton({})
         setQuizOn(false)
         setQuizStopDialogue(false)
     }
@@ -104,7 +110,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
     const progressTable = (progAlignment) => {
         return (
             <Box>
-                <TableContainer sx={{display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column'}}>
+                <TableContainer sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
                     <Table>
                         <TableHead>
                             <TableRow>
@@ -115,26 +121,26 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                         <TableBody>
                             {
                                 progAlignment === 'Correct' ? (
-                                    correctCards.map(x => 
+                                    correctCards.slice(progTablePage * 5, progTablePage * 5 + 5).map(x =>
                                         <TableRow key={x}>
                                             <TableCell><Button onClick={() => handleProgButtonClick(x)}>{x + 1}</Button></TableCell>
                                             <TableCell>{quizData[x].slug}</TableCell>
                                         </TableRow>
                                     )) :
-                                progAlignment === 'Incorrect' ? (
-                                    incorrectCards.slice(progTablePage * 10, progTablePage * 5 + 10).map(x => 
-                                        <TableRow key={x}>
-                                            <TableCell><Button onClick={() => handleProgButtonClick(x)}>{x + 1}</Button></TableCell>
-                                            <TableCell>{quizData[x].slug}</TableCell>
-                                        </TableRow>
-                                    )) :
-                                progAlignment === 'Unmarked' ? (
-                                    incompleteCards.slice(progTablePage * 10, progTablePage * 10 + 10).map(x => 
-                                        <TableRow key={x}>
-                                            <TableCell><Button onClick={() => handleProgButtonClick(x)}>{x + 1}</Button></TableCell>
-                                            <TableCell>{quizData[x].slug}</TableCell>
-                                        </TableRow>
-                                    )) : null}
+                                    progAlignment === 'Incorrect' ? (
+                                        incorrectCards.slice(progTablePage * 5, progTablePage * 5 + 5).map(x =>
+                                            <TableRow key={x}>
+                                                <TableCell><Button onClick={() => handleProgButtonClick(x)}>{x + 1}</Button></TableCell>
+                                                <TableCell>{quizData[x].slug}</TableCell>
+                                            </TableRow>
+                                        )) :
+                                        progAlignment === 'Unmarked' ? (
+                                            incompleteCards.slice(progTablePage * 5, progTablePage * 5 + 5).map(x =>
+                                                <TableRow key={x}>
+                                                    <TableCell><Button onClick={() => handleProgButtonClick(x)}>{x + 1}</Button></TableCell>
+                                                    <TableCell>{quizData[x].slug}</TableCell>
+                                                </TableRow>
+                                            )) : null}
                         </TableBody>
                     </Table>
                     <TablePagination
@@ -142,7 +148,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                         page={progTablePage}
                         onPageChange={handleProgTablePageChange}
                         rowsPerPageOptions={[]}
-                        rowsPerPage={10}
+                        rowsPerPage={5}
                     />
                 </TableContainer>
             </Box>
@@ -150,6 +156,8 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
     }
 
     async function startQuiz(nAlignment: string, tAlignment: string) {
+        localStorage.clear()
+        showCardDetails(false)
         setQuizOn(false)
         setCardLoading(true)
         if (tAlignment === 'All') {
@@ -164,9 +172,9 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
             setSlugCount(allPages.length)
             setQuizData(flatPages)
             setCardLoading(false)
-            setQuizOn(true)
-            createSkeleton(allPages.length)
+            createSkeleton(flatPages.length)
             setCardNumber(0)
+            setQuizOn(true)
         }
     }
 
@@ -209,6 +217,11 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
         return keysArray
     }
 
+    function objectToArray(object) {
+        const newArray = Object.keys(object).map((key) => [Number(key), object[key]])
+        return newArray
+    }
+
     useEffect(() => {
 
         const outcomes = Object.values(skeleton)
@@ -234,6 +247,18 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
 
     }, [skeleton])
 
+
+    useEffect(() => {
+
+        if (quizOn) {
+            const localSkeleton = objectToArray(skeleton)
+            localStorage.setItem('localSkeleton', JSON.stringify(localSkeleton))
+            const quizState = [nAlignment, tAlignment, cardNumber]
+            localStorage.setItem('quizState', JSON.stringify(quizState))
+        }
+
+    }, [skeleton, cardNumber])
+
     useEffect(() => {
         if (quizOn) {
             console.log('quiz data', quizData)
@@ -247,6 +272,47 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
             console.log('incomplete cards', incompleteCards)
         }
     }, [quizData, skeleton])
+
+    const [prevSkeleton, setPrevSkeleton] = useState({})
+    const [prevN, setPrevN] = useState('')
+    const [prevT, setPrevT] = useState('')
+    const [prevCN, setPrevCN] = useState(0)
+
+    async function startContinuedQuiz(nAlignment: string, tAlignment: string) {
+        setQuizOn(false)
+        setCardLoading(true)
+        if (tAlignment === 'All') {
+            const allPages = []
+            for (let index = 1; index < fileCount[nAlignment]; index++) {
+                const response = await fetch(`vocab/${nAlignment}/${nAlignment}_page${index}.json`)
+                const responseJson = await response.json()
+                const vocabData = responseJson.data
+                allPages.push(vocabData)
+            }
+            const flatPages = allPages.flatMap(x => x)
+            setSlugCount(allPages.length)
+            setQuizData(flatPages)
+            setCardLoading(false)
+            setQuizOn(true)
+        }
+    }
+
+    async function continueQuiz() {
+        setNAlignment(prevN)
+        setTalignment(prevT)
+        await startQuiz(String(prevN), String(prevT))
+        setCardNumber(Number(prevCN))
+        updateSkeleton(prevSkeleton)
+    }
+
+    useEffect(() => {
+        if (localStorage.getItem('localSkeleton')) {
+            setPrevSkeleton(Object.fromEntries(JSON.parse(localStorage.getItem('localSkeleton'))))
+            setPrevN(JSON.parse(localStorage.getItem('quizState'))[0])
+            setPrevT(JSON.parse(localStorage.getItem('quizState'))[1])
+            setPrevCN(JSON.parse(localStorage.getItem('quizState'))[2])
+        }
+    }, [])
 
     return (
         <>
@@ -473,7 +539,10 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                                         {
                                             cardLoading ?
                                                 <CircularProgress /> :
-                                                <Typography>Press Start!</Typography>
+                                                prevN !== '' ?
+                                                    <Button onClick={() => continueQuiz()}>continue!</Button>
+                                                    :
+                                                    <Typography>Press Start!</Typography>
                                         }
                                     </CardContent>
                                 </Card>

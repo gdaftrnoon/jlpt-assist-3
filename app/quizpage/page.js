@@ -3,6 +3,7 @@ import Navbar from "../components/Navbar";
 import Quiz from "../components/Quiz";
 import fs from 'fs'
 import path from 'path'
+import { SessionProvider } from "next-auth/react";
 
 
 export default function QuizMaster() {
@@ -17,8 +18,10 @@ export default function QuizMaster() {
 
     return (
         <>
-            <Navbar />
-            <Quiz fileCount={nFileCounts} />
+            <SessionProvider>
+                <Navbar />
+                <Quiz fileCount={nFileCounts} />
+            </SessionProvider>
         </>
     )
 }

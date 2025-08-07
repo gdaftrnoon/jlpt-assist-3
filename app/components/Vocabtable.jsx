@@ -8,7 +8,7 @@ import Checkbox from '@mui/material/Checkbox';
 import Zoom from '@mui/material/Zoom';
 import { CheckBoxOutlineBlank, DeleteForever, DoneAll, Expand, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Stairs, UnfoldLess } from '@mui/icons-material';
 
-const Vocabtable = () => {
+const Vocabtable = ( {fileCount} ) => {
 
     const [vocabularyData, setVocabularyData] = useState([])
     const [open, setOpen] = useState([])
@@ -55,6 +55,7 @@ const Vocabtable = () => {
             const vocabulary = await response.json()
             setVocabularyData(vocabulary.data)
             console.log(vocabulary.data)
+            console.log()
         }
 
         fetchData()
@@ -223,7 +224,7 @@ const Vocabtable = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', width: '34%' }}>
                     <Box sx={{ paddingTop: '30px', paddingBottom: '33px' }}>
                         <Stack spacing={2}>
-                            <Pagination page={page} onChange={handleChange} count={91} showFirstButton showLastButton></Pagination>
+                            <Pagination siblingCount={2} page={page} onChange={handleChange} count={fileCount[nLevel]} showFirstButton showLastButton></Pagination>
                         </Stack>
                     </Box>
 
