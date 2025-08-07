@@ -37,10 +37,10 @@ const Navbar = () => {
 
     return (
         <Box>
-            <AppBar position='sticky' sx={{ height: '60px', backgroundColor: 'black', overflow: 'hidden', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <Toolbar sx={{ display: 'flex', flexDirection:'row' ,justifyContent: 'space-between', width:'55%' }}>
+            <AppBar position='sticky' sx={{ height: '60px', backgroundColor: 'black', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Toolbar sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', width: '55%' }}>
 
-                    <Box sx={{display:'flex', flexDirection:'row', alignItems:'center', justifyContent:'center', width:'33%'}}>
+                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '33%' }}>
                         <IconButton size='large' color='inherit'>
                             <DarkModeIcon />
                         </IconButton>
@@ -49,16 +49,22 @@ const Navbar = () => {
                         </Typography>
                     </Box>
 
-                    <Box sx={{display:'flex', flexDirection:'row', alignItems:'center', justifyContent:'center', width:'34%'}}>
+                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '34%' }}>
                         <Stack direction='row' spacing={2}>
                             <Link href='/'><Button sx={{ "&:hover": { backgroundColor: '#333' } }} color='inherit' >ホーム</Button></Link>
                             <Link href='/vocabtable'><Button sx={{ "&:hover": { backgroundColor: '#333' } }} color='inherit'>語彙</Button></Link>
-                            <Link href='/quizpage'><Button sx={{ "&:hover": { backgroundColor: '#333' } }} color='inherit'>クイズ</Button></Link>
+                            <Link href='/quizpage'>
+                                <Button
+                                    sx={{ "&:hover": { backgroundColor: '#333' } }}
+                                    color='inherit'>
+                                    クイズ
+                                </Button>
+                            </Link>
                             <Link href='/'><Button sx={{ "&:hover": { backgroundColor: '#333' } }} color='inherit'>連絡先</Button></Link>
                         </Stack>
                     </Box>
 
-                    <Box sx={{display:'flex', width:'33%', justifyContent:'center'}}>
+                    <Box sx={{ display: 'flex', width: '33%', justifyContent: 'center' }}>
                         {status === 'loading' ? (
                             <Skeleton
                                 variant="rounded"

@@ -1,5 +1,5 @@
 'use client'
-import { Box, Button, Card, ClickAwayListener, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, Fade, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
+import { Alert, Box, Button, Card, ClickAwayListener, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, Fade, IconButton, Stack, Table, TableBody, TableCell, TableHead, TableRow, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -7,8 +7,23 @@ import Pagination from '@mui/material/Pagination';
 import Checkbox from '@mui/material/Checkbox';
 import Zoom from '@mui/material/Zoom';
 import { CheckBoxOutlineBlank, DeleteForever, DoneAll, Expand, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Stairs, UnfoldLess } from '@mui/icons-material';
+import { setMaxListeners } from 'events';
 
-const Vocabtable = ( {fileCount} ) => {
+const Vocabtable = ({ fileCount }) => {
+
+    const [quizStateType, setQuizStateType] = useState(
+        (localStorage.getItem('quizState')) ?
+            JSON.parse(localStorage.getItem('quizState'))[1] :
+            ''
+    )
+
+    const [quizStateN, setQuizStateN] = useState(
+        (localStorage.getItem('quizState')) ?
+            JSON.parse(localStorage.getItem('quizState'))[0] :
+            ''
+    )
+
+    const [lockTable, setLockTable] = useState(false)
 
     const [vocabularyData, setVocabularyData] = useState([])
     const [open, setOpen] = useState([])
@@ -30,6 +45,15 @@ const Vocabtable = ( {fileCount} ) => {
         n4: [],
         n5: []
     })
+
+    useEffect(() => {
+        if (quizStateType === 'AllUnknown' && quizStateN === nLevel) {
+            setLockTable(true)
+        }
+        else {
+            setLockTable(false)
+        }
+    }, [page, nLevel])
 
     useEffect(() => {
         const levels = ['n1', 'n2', 'n3', 'n4', 'n5']
@@ -55,7 +79,6 @@ const Vocabtable = ( {fileCount} ) => {
             const vocabulary = await response.json()
             setVocabularyData(vocabulary.data)
             console.log(vocabulary.data)
-            console.log()
         }
 
         fetchData()
@@ -228,6 +251,13 @@ const Vocabtable = ( {fileCount} ) => {
                         </Stack>
                     </Box>
 
+                    {nLevel === quizStateN && quizStateType == 'AllUnknown'?
+                        <Box>
+                            <Alert severity='info'>{quizStateN.toUpperCase()}の知らない全てクイズ中だから語彙テーブルを変更できません</Alert>
+                        </Box>
+                        : null
+                    }
+
                     <Box sx={{ width: '100%' }}>
                         <Table>
                             <TableHead>
@@ -255,7 +285,9 @@ const Vocabtable = ( {fileCount} ) => {
                                             <TableCell>
                                                 <Checkbox
                                                     checked={knownWords[nLevel].includes(x.slug)}
-                                                    onChange={() => handleKnownUpdate(x.slug, nLevel)}>
+                                                    onChange={() => handleKnownUpdate(x.slug, nLevel)}
+                                                    disabled={lockTable}
+                                                >
                                                 </Checkbox>
                                             </TableCell>
                                             <TableCell sx={{ textAlign: 'center' }}>

@@ -42,16 +42,16 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
     const [slugCount, setSlugCount] = useState<number>(0)
 
     const prevCard = (cardNumber: number) => {
-        if (cardNumber > 0) (
+        if (cardNumber > 0) {
             setCardNumber(prev => prev - 1)
-        )
+        }
         showCardDetails(false)
     }
 
     const nextCard = (cardNumber: number) => {
-        if (cardNumber < slugCount) (
+        if (cardNumber < slugCount - 1) {
             setCardNumber(prev => prev + 1)
-        )
+        }
         showCardDetails(false)
     }
 
@@ -66,7 +66,8 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
     const [quizStopDialogue, setQuizStopDialogue] = useState(false)
 
     const handleQuizEnd = () => {
-        localStorage.clear()
+        localStorage.removeItem('localSkeleton')
+        localStorage.removeItem('quizState')
         setPrevN('')
         setPrevT('')
         setPrevCN(0)
@@ -143,38 +144,72 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                                             )) : null}
                         </TableBody>
                     </Table>
-                    <TablePagination
-                        count={progAlignment === 'Correct' ? correctCards.length : progAlignment === 'Incorrect' ? incorrectCards.length : progAlignment === 'Unmarked' ? incompleteCards.length : null}
-                        page={progTablePage}
-                        onPageChange={handleProgTablePageChange}
-                        rowsPerPageOptions={[]}
-                        rowsPerPage={5}
-                    />
                 </TableContainer>
+                <TablePagination
+                    count={progAlignment === 'Correct' ? correctCards.length : progAlignment === 'Incorrect' ? incorrectCards.length : progAlignment === 'Unmarked' ? incompleteCards.length : null}
+                    page={progTablePage}
+                    onPageChange={handleProgTablePageChange}
+                    rowsPerPageOptions={[]}
+                    rowsPerPage={5}
+                />
             </Box>
         )
     }
 
     async function startQuiz(nAlignment: string, tAlignment: string) {
-        localStorage.clear()
-        showCardDetails(false)
-        setQuizOn(false)
-        setCardLoading(true)
         if (tAlignment === 'All') {
+            localStorage.removeItem('localSkeleton')
+            localStorage.removeItem('quizState')
+            showCardDetails(false)
+            setQuizOn(false)
+            setCardLoading(true)
             const allPages = []
-            for (let index = 1; index < fileCount[nAlignment]; index++) {
+            for (let index = 1; index <= fileCount[nAlignment]; index++) {
                 const response = await fetch(`vocab/${nAlignment}/${nAlignment}_page${index}.json`)
                 const responseJson = await response.json()
                 const vocabData = responseJson.data
                 allPages.push(vocabData)
             }
             const flatPages = allPages.flatMap(x => x)
-            setSlugCount(allPages.length)
+            setSlugCount(flatPages.length)
             setQuizData(flatPages)
             setCardLoading(false)
             createSkeleton(flatPages.length)
             setCardNumber(0)
             setQuizOn(true)
+        }
+
+        if (tAlignment === 'AllUnknown') {
+            localStorage.removeItem('localSkeleton')
+            localStorage.removeItem('quizState')
+            showCardDetails(false)
+            setQuizOn(false)
+            setCardLoading(true)
+            const allPages = []
+            for (let index = 1; index <= fileCount[nAlignment]; index++) {
+                const response = await fetch(`vocab/${nAlignment}/${nAlignment}_page${index}.json`)
+                const responseJson = await response.json()
+                const vocabData = responseJson.data
+                allPages.push(vocabData)
+            }
+
+            const flatPages = allPages.flatMap(x => x)
+            if (localStorage.getItem(`knownWords${nAlignment}`)) {
+                const lsKnownWords = JSON.parse(localStorage.getItem(`knownWords${nAlignment}`))
+                console.log(lsKnownWords)
+                const allUnknownQuizData = []
+                flatPages.forEach((entry) => {
+                    if (!lsKnownWords.includes(entry.slug)) {
+                        allUnknownQuizData.push(entry)
+                    }
+                })
+                setSlugCount(allUnknownQuizData.length)
+                setQuizData(allUnknownQuizData)
+                setCardLoading(false)
+                createSkeleton(allUnknownQuizData.length)
+                setCardNumber(0)
+                setQuizOn(true)
+            }
         }
     }
 
@@ -328,7 +363,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
 
                             <Box>
                                 <Button startIcon={<Quiz />} onClick={() => showQuizProgress(true)} variant="outlined" color="info">
-                                    <Typography variant="body1"> カード {cardNumber + 1} / {slugCount + 1} </Typography>
+                                    <Typography variant="body1"> カード {cardNumber + 1} / {slugCount} </Typography>
                                 </Button>
                                 <Dialog
                                     open={quizProgress}
@@ -451,7 +486,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                                                 <Typography sx={{ color: 'text.secondary', mb: 1.5 }}>Meaning</Typography>
                                                 {quizData[cardNumber].senses.map((y, index) => (
                                                     (y.parts_of_speech != 'Place' && y.parts_of_speech != 'Wikipedia definition') && (
-                                                        <>
+                                                        <React.Fragment key={`sense-${index}`}>
                                                             {y.parts_of_speech.map((part, index) => (
                                                                 <Typography key={`part-${index}`}>{part}</Typography>
                                                             ))}
@@ -459,7 +494,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                                                             <Typography key={`engdef-${index}`}>
                                                                 {y.english_definitions.join(", ")}
                                                             </Typography>
-                                                        </>
+                                                        </React.Fragment>
                                                     )))}
                                             </Collapse>
                                         </Box>
@@ -501,7 +536,6 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                                             Quiz Complete!
                                         </DialogTitle>
                                         <DialogContent>
-                                            <DialogContentText>
                                                 <Box>
                                                     <Typography sx={{ fontWeight: 'bold' }}>Quiz Type: {tAlignment}</Typography>
                                                     <Typography sx={{ fontWeight: 'bold' }}> JLPT Level: {nAlignment.toUpperCase()}</Typography>
@@ -521,7 +555,6 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                                                         Users that have logged in can save their quiz result statistics.
                                                     </Typography>
                                                 </Box>
-                                            </DialogContentText>
                                         </DialogContent>
                                         <DialogActions>
                                             <Button onClick={() => doNotSaveQuizResult()}>
@@ -540,7 +573,12 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                                             cardLoading ?
                                                 <CircularProgress /> :
                                                 prevN !== '' ?
-                                                    <Button onClick={() => continueQuiz()}>continue!</Button>
+                                                    <Box>
+                                                        <Stack spacing={2} direction='row'>
+                                                            <Button sx={{fontWeight: 'bold'}} variant="contained" onClick={() => continueQuiz()}>クイズ続く</Button>
+                                                            <Button sx={{fontWeight: 'bold'}}  variant="contained" color="secondary" onClick={() => setQuizStopDialogue(true)}>クイズ停止する</Button>
+                                                        </Stack>
+                                                    </Box>
                                                     :
                                                     <Typography>Press Start!</Typography>
                                         }
