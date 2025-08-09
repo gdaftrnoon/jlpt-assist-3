@@ -11,11 +11,14 @@ import { setMaxListeners } from 'events';
 
 const Vocabtable = ({ fileCount }) => {
 
-    const [quizStateType, setQuizStateType] = useState(
-        (localStorage.getItem('quizState')) ?
-            JSON.parse(localStorage.getItem('quizState'))[1] :
-            ''
-    )
+    const [quizStateType, setQuizStateType] = useState('')
+
+    useEffect(() => {
+        const lsStorageQS = localStorage.getItem('quizState')
+        if (lsStorageQS) {
+            setQuizStateType(JSON.parse(lsStorageQS)[1])
+        } 
+    }, [])
 
     const [quizStateN, setQuizStateN] = useState(
         (localStorage.getItem('quizState')) ?

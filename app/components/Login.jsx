@@ -62,13 +62,14 @@ const LoginLogout = () => {
             width: '100%',
           }}
         >
-          <TextField placeholder="Enter username" required fullWidth autoFocus />
-          <TextField placeholder="Enter password" type="password" required fullWidth />
+          <TextField disabled placeholder="Enter username" required fullWidth autoFocus />
+          <TextField disabled placeholder="Enter password" type="password" required fullWidth />
           <FormControlLabel
+            disabled
             control={<Checkbox value="remember" color="primary" />}
             label="Remember me"
           />
-          <Button type="submit" variant="contained" fullWidth>
+          <Button disabled type="submit" variant="contained" fullWidth>
             Login
           </Button>
           <Box
@@ -84,7 +85,7 @@ const LoginLogout = () => {
             <Typography>|</Typography>
             <Typography>Forgot password?</Typography>
           </Box>
-          <Button variant="outlined" fullWidth sx={{ mt: 2 }}>
+          <Button disabled variant="outlined" fullWidth sx={{ mt: 2 }}>
             Sign Up
           </Button>
         </Box>

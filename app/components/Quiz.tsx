@@ -1,16 +1,30 @@
 'use client'
 
-import { ArrowLeft, ArrowRight, CancelOutlined, Check, Clear, DoneOutline, Quiz, Visibility, VisibilityOff } from "@mui/icons-material";
-import { Box, Button, Card, CardContent, Chip, CircularProgress, Collapse, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Link, Paper, Stack, tabClasses, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, ToggleButton, ToggleButtonGroup, Typography, useForkRef } from "@mui/material";
+import { Add, ArrowLeft, ArrowRight, CancelOutlined, Check, Clear, DoneOutline, Quiz, Remove, Visibility, VisibilityOff } from "@mui/icons-material";
+import { Alert, Box, Button, Card, CardContent, Chip, CircularProgress, Collapse, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControl, FormControlLabel, FormGroup, IconButton, InputLabel, Link, Paper, Stack, Switch, tabClasses, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography, useForkRef } from "@mui/material";
 import React, { useEffect, useState } from "react";
+import { SessionProvider, useSession } from "next-auth/react";
 
 type Props = {
-    fileCount: object
+    fileCount: object,
 }
 
-const MyComponent: React.FC<Props> = ({ fileCount }) => {
+const MyComponent: React.FC<Props> = ({ fileCount}) => {
+
+    const { data: session, status } = useSession()
+    const userId = session?.user?.id
+
+    const [randomQuiz, SetRandomQuiz] = useState(false)
+
+    const [customCardCount, setCustomCardCount] = useState('')
+
+    const [settingsCollapse, setSettingsCollapse] = useState(false)
 
     const [nAlignment, setNAlignment] = useState('n1')
+
+    const [customAlert, toggleCustomAlert] = useState(false)
+
+    const [customAlertMsg, setCustomAlertMsg] = useState('')
 
     const handleNChange = (
         event: React.MouseEvent<HTMLElement>,
@@ -78,7 +92,9 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
 
     const [quizResultDialog, setQuizResultDialog] = useState(false)
 
-    const saveQuizResult = () => {
+
+    // send post request to SendResults with skeleton as the body
+    async function endOfQuiz() {
         setQuizResultDialog(false)
     }
 
@@ -156,7 +172,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
         )
     }
 
-    async function startQuiz(nAlignment: string, tAlignment: string) {
+    async function startQuiz(nAlignment: string, tAlignment: string, customCardCount: string, randomQuiz: boolean) {
         if (tAlignment === 'All') {
             localStorage.removeItem('localSkeleton')
             localStorage.removeItem('quizState')
@@ -211,6 +227,60 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                 setQuizOn(true)
             }
         }
+
+        if (tAlignment === 'Custom') {
+
+            showCardDetails(false)
+            setQuizOn(false)
+
+            if (isNaN(Number(customCardCount))) {
+                setCustomAlertMsg(`有効な数字を入力してください`)
+                toggleCustomAlert(true)
+                return
+            }
+
+            setCardLoading(true)
+            const allPages = []
+            for (let index = 1; index <= fileCount[nAlignment]; index++) {
+                const response = await fetch(`vocab/${nAlignment}/${nAlignment}_page${index}.json`)
+                const responseJson = await response.json()
+                const vocabData = responseJson.data
+                allPages.push(vocabData)
+            }
+            const flatPages = allPages.flatMap(x => x)
+
+            if (Number(customCardCount) < 10 || Number(customCardCount) > flatPages.length) {
+                setCardLoading(false)
+                setCustomAlertMsg(`カードの数は10から${flatPages.length}までの有効な数字を入力してください`)
+                toggleCustomAlert(true)
+                return
+            }
+
+            if (randomQuiz) {
+                randomiseArray(flatPages)
+            }
+
+            const slicedFlatPages = flatPages.slice(0, Number(customCardCount))
+
+            toggleCustomAlert(false)
+            localStorage.removeItem('localSkeleton')
+            localStorage.removeItem('quizState')
+            setSlugCount(slicedFlatPages.length)
+            setQuizData(slicedFlatPages)
+            setCardLoading(false)
+            createSkeleton(slicedFlatPages.length)
+            setCardNumber(0)
+            setQuizOn(true)
+        }
+    }
+
+    function randomiseArray(someArray) {
+        let currentIndex = someArray.length
+        while (currentIndex != 0) {
+            const newIndex = Math.floor(currentIndex * Math.random())
+            currentIndex--
+            [someArray[currentIndex], someArray[newIndex]] = [someArray[newIndex], someArray[currentIndex]]
+        }
     }
 
     function createSkeleton(n: number) {
@@ -257,6 +327,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
         return newArray
     }
 
+
     useEffect(() => {
 
         const outcomes = Object.values(skeleton)
@@ -277,6 +348,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
         updateIncompleteCount(newIncompleteCount)
 
         if (quizOn && newIncompleteCount === 0) {
+
             setQuizResultDialog(true)
         }
 
@@ -288,7 +360,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
         if (quizOn) {
             const localSkeleton = objectToArray(skeleton)
             localStorage.setItem('localSkeleton', JSON.stringify(localSkeleton))
-            const quizState = [nAlignment, tAlignment, cardNumber]
+            const quizState = [nAlignment, tAlignment, cardNumber, customCardCount, randomQuiz]
             localStorage.setItem('quizState', JSON.stringify(quizState))
         }
 
@@ -296,7 +368,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
 
     useEffect(() => {
         if (quizOn) {
-            console.log('quiz data', quizData)
+            console.log('flatpages', quizData)
             console.log('card1', quizData[cardNumber])
             console.log('quiz data slug', quizData[cardNumber].japanese.map(x => x.reading))
             console.log('card num', cardNumber)
@@ -305,49 +377,45 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
             console.log('correct cards', correctCards)
             console.log('incorrect cards', incorrectCards)
             console.log('incomplete cards', incompleteCards)
-        }
-    }, [quizData, skeleton])
 
+        }
+    }, [quizData, skeleton, randomQuiz])
+
+    // creating states to hold local storage values
     const [prevSkeleton, setPrevSkeleton] = useState({})
     const [prevN, setPrevN] = useState('')
     const [prevT, setPrevT] = useState('')
     const [prevCN, setPrevCN] = useState(0)
+    const [prevCCC, setPrevCCC] = useState(0)
+    const [prevRand, setPrevRand] = useState(false)
 
-    async function startContinuedQuiz(nAlignment: string, tAlignment: string) {
-        setQuizOn(false)
-        setCardLoading(true)
-        if (tAlignment === 'All') {
-            const allPages = []
-            for (let index = 1; index < fileCount[nAlignment]; index++) {
-                const response = await fetch(`vocab/${nAlignment}/${nAlignment}_page${index}.json`)
-                const responseJson = await response.json()
-                const vocabData = responseJson.data
-                allPages.push(vocabData)
-            }
-            const flatPages = allPages.flatMap(x => x)
-            setSlugCount(allPages.length)
-            setQuizData(flatPages)
-            setCardLoading(false)
-            setQuizOn(true)
-        }
-    }
-
-    async function continueQuiz() {
-        setNAlignment(prevN)
-        setTalignment(prevT)
-        await startQuiz(String(prevN), String(prevT))
-        setCardNumber(Number(prevCN))
-        updateSkeleton(prevSkeleton)
-    }
-
+    // writing local storage items into states
     useEffect(() => {
         if (localStorage.getItem('localSkeleton')) {
             setPrevSkeleton(Object.fromEntries(JSON.parse(localStorage.getItem('localSkeleton'))))
             setPrevN(JSON.parse(localStorage.getItem('quizState'))[0])
             setPrevT(JSON.parse(localStorage.getItem('quizState'))[1])
             setPrevCN(JSON.parse(localStorage.getItem('quizState'))[2])
+            setPrevCCC(Number(JSON.parse(localStorage.getItem('quizState'))[3]))
+            setPrevRand(JSON.parse(localStorage.getItem('quizState'))[4])
         }
     }, [])
+
+    // restarting quiz using prev states
+    async function continueQuiz() {
+        setNAlignment(prevN)
+        setTalignment(prevT)
+        setCustomCardCount(String(prevCCC))
+        SetRandomQuiz(prevRand)
+        await startQuiz(String(prevN), String(prevT), String(prevCCC), prevRand)
+        setCardNumber(Number(prevCN))
+        updateSkeleton(prevSkeleton)
+        {
+            (prevT === 'Custom') ?
+                setSettingsCollapse(true) :
+                setSettingsCollapse(false)
+        }
+    }
 
     return (
         <>
@@ -357,7 +425,7 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
 
                 <Box sx={{ display: 'flex', width: '60%', height: '100%', flexDirection: 'column' }}>
 
-                    <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: '20px', width: '100%', justifyContent: 'center', gap: '30px', alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: '20px', width: '100%', justifyContent: 'center', gap: '30px', alignItems: 'center', height: '60px' }}>
 
                         <Collapse in={quizOn}>
 
@@ -408,23 +476,72 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                                 <ToggleButton value='n5'>N5</ToggleButton>
                             </ToggleButtonGroup>
                         </Box>
+
                         <Box>
                             <ToggleButtonGroup
                                 disabled={quizOn}
                                 color="secondary"
                                 value={tAlignment}
                                 exclusive
-                                onChange={handleTChange}>
-                                <ToggleButton value='All'>全て</ToggleButton>
-                                <ToggleButton value='AllUnknown'>知らない全て</ToggleButton>
-                                <ToggleButton value='Custom'>カスタム</ToggleButton>
+                                onChange={handleTChange}
+                                sx={{ alignItems: 'center', display: 'flex' }}
+                            >
+                                <ToggleButton onClick={() => {
+                                    setCustomCardCount('')
+                                    setSettingsCollapse(false)
+                                    toggleCustomAlert(false)
+                                }} value='All'>
+                                    全て
+                                </ToggleButton>
+
+                                <ToggleButton onClick={() => {
+                                    setCustomCardCount('')
+                                    setSettingsCollapse(false)
+                                    toggleCustomAlert(false)
+                                }} value='AllUnknown'>
+                                    知らない全て
+                                </ToggleButton>
+
+                                <ToggleButton onClick={() => setSettingsCollapse(true)} value='Custom'>カスタム</ToggleButton>
                             </ToggleButtonGroup>
                         </Box>
+
+                        {/* custom card fields */}
+                        <Box>
+                            <Collapse orientation="horizontal" in={settingsCollapse}>
+                                <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'left',
+                                        gap: '20px',
+                                        width: '305px',
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >
+                                    <TextField
+                                        disabled={quizOn}
+                                        error={customAlert}
+                                        label="カードの数"
+                                        size="small"
+                                        sx={{ width: '50%' }}
+                                        value={customCardCount}
+                                        onChange={(e) => setCustomCardCount(e.target.value)} />
+                                    <FormGroup>
+                                        <FormControlLabel disabled={quizOn} checked={randomQuiz} onChange={() => SetRandomQuiz((prev) => !prev)} control={<Switch />} label="ランダムにする" />
+                                    </FormGroup>
+                                </Box>
+                            </Collapse>
+                        </Box>
+
+
+
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             {quizOn ?
                                 <Button onClick={() => setQuizStopDialogue(true)} color="secondary" variant="contained">中止</Button>
                                 :
-                                <Button onClick={() => startQuiz(nAlignment, tAlignment)} color="primary" variant="contained">スタート</Button>
+                                <Button onClick={() => startQuiz(nAlignment, tAlignment, customCardCount, randomQuiz)} color="primary" variant="contained">スタート</Button>
                             }
                             <Dialog
                                 open={quizStopDialogue}
@@ -464,6 +581,10 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                         </Collapse>
 
                     </Box>
+
+                    <Collapse in={customAlert}>
+                        <Alert severity="error" sx={{ fontWeight: 'bold', justifyContent: 'center', marginTop: '20px', marginBottom: '10px' }}>{customAlertMsg}</Alert>
+                    </Collapse>
 
                     <Box sx={{ marginTop: '20px' }}>
                         {
@@ -536,33 +657,36 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                                             Quiz Complete!
                                         </DialogTitle>
                                         <DialogContent>
-                                                <Box>
-                                                    <Typography sx={{ fontWeight: 'bold' }}>Quiz Type: {tAlignment}</Typography>
-                                                    <Typography sx={{ fontWeight: 'bold' }}> JLPT Level: {nAlignment.toUpperCase()}</Typography>
-                                                    <Typography sx={{ fontWeight: 'bold' }}>Score: {Math.round((correctCount / slugCount) * 100)}%</Typography>
-                                                </Box>
-                                                <Box sx={{ marginTop: '15px' }}>
-                                                    <Typography>
-                                                        Would you like to save this quiz result?
-                                                    </Typography>
-                                                    <Typography>
-                                                        Upon save, a breakdown will be made available on your review page.
-                                                    </Typography>
-                                                    <Typography>
-                                                        Only the last quiz you've completed will be available for review.
-                                                    </Typography>
-                                                    <Typography>
-                                                        Users that have logged in can save their quiz result statistics.
-                                                    </Typography>
-                                                </Box>
+                                            <Box>
+                                                <Typography sx={{ fontWeight: 'bold' }}>Quiz Type: {tAlignment}</Typography>
+                                                <Typography sx={{ fontWeight: 'bold' }}> JLPT Level: {nAlignment.toUpperCase()}</Typography>
+                                                <Typography sx={{ fontWeight: 'bold' }}>Score: {Math.round((correctCount / slugCount) * 100)}%</Typography>
+                                            </Box>
+                                            <Box sx={{ marginTop: '15px' }}>
+                                                <Typography>
+                                                    Would you like to save this quiz result?
+                                                </Typography>
+                                                <Typography>
+                                                    Upon save, a breakdown will be made available on your review page.
+                                                </Typography>
+                                                <Typography>
+                                                    Only the last quiz you've completed will be available for review.
+                                                </Typography>
+                                                <Typography>
+                                                    Users that have logged in can save their quiz result statistics.
+                                                </Typography>
+                                            </Box>
                                         </DialogContent>
                                         <DialogActions>
                                             <Button onClick={() => doNotSaveQuizResult()}>
                                                 Go Back
                                             </Button>
-                                            <Button onClick={() => saveQuizResult()}>
-                                                Save Result
-                                            </Button>
+                                            {
+                                                (userId) ?
+                                                    <Button>Save Result</Button>
+                                                    :
+                                                    <Button>Sign Up/Login</Button>
+                                            }
                                         </DialogActions>
                                     </Dialog>
                                 </Card>
@@ -575,8 +699,8 @@ const MyComponent: React.FC<Props> = ({ fileCount }) => {
                                                 prevN !== '' ?
                                                     <Box>
                                                         <Stack spacing={2} direction='row'>
-                                                            <Button sx={{fontWeight: 'bold'}} variant="contained" onClick={() => continueQuiz()}>クイズ続く</Button>
-                                                            <Button sx={{fontWeight: 'bold'}}  variant="contained" color="secondary" onClick={() => setQuizStopDialogue(true)}>クイズ停止する</Button>
+                                                            <Button sx={{ fontWeight: 'bold' }} variant="contained" onClick={() => continueQuiz()}>クイズ続く</Button>
+                                                            <Button sx={{ fontWeight: 'bold' }} variant="contained" color="secondary" onClick={() => setQuizStopDialogue(true)}>クイズ停止する</Button>
                                                         </Stack>
                                                     </Box>
                                                     :
