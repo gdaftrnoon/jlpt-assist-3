@@ -15,12 +15,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             if (email) {
                 const { data } = await supabaseServerside
                     .from('users')
-                    .select('username')
+                    .select('username, user_id')
                     .eq('email', email)
                     .maybeSingle()
 
                 if (data) {
                     session.user.username = data.username;
+                    session.user.userId = data.user_id
                 }
             }
             return session

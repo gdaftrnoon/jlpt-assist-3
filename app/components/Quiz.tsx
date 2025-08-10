@@ -6,13 +6,19 @@ import React, { useEffect, useState } from "react";
 import { SessionProvider, useSession } from "next-auth/react";
 
 type Props = {
-    fileCount: object,
 }
 
-const MyComponent: React.FC<Props> = ({ fileCount}) => {
+const MyComponent: React.FC<Props> = () => {
 
-    const { data: session, status } = useSession()
-    const userId = session?.user?.id
+    const fileCount = {
+        'n1': 172,
+        'n2': 91,
+        'n3': 89,
+        'n4': 29,
+        'n5': 3,
+    }
+
+    const { data: session } = useSession()
 
     const [randomQuiz, SetRandomQuiz] = useState(false)
 
@@ -94,8 +100,22 @@ const MyComponent: React.FC<Props> = ({ fileCount}) => {
 
 
     // send post request to SendResults with skeleton as the body
-    async function endOfQuiz() {
-        setQuizResultDialog(false)
+    async function sendQuizResults() {
+        const payload = {
+            'nLevel': nAlignment,
+            'quizType': tAlignment,
+            'correctCount': correctCount,
+            'incorrectCount': incorrectCount,
+            'random':randomQuiz
+        }
+        const response = await fetch('/api/SendResults', {
+            method:'POST',
+            body: JSON.stringify(payload)
+        })
+
+        const responseBody = await response.json()
+        alert(JSON.stringify(responseBody.message))
+
     }
 
     const doNotSaveQuizResult = () => {
@@ -377,6 +397,7 @@ const MyComponent: React.FC<Props> = ({ fileCount}) => {
             console.log('correct cards', correctCards)
             console.log('incorrect cards', incorrectCards)
             console.log('incomplete cards', incompleteCards)
+            console.log(session)
 
         }
     }, [quizData, skeleton, randomQuiz])
@@ -425,7 +446,7 @@ const MyComponent: React.FC<Props> = ({ fileCount}) => {
 
                 <Box sx={{ display: 'flex', width: '60%', height: '100%', flexDirection: 'column' }}>
 
-                    <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: '20px', width: '100%', justifyContent: 'center', gap: '30px', alignItems: 'center', height: '60px' }}>
+                    <Box sx={{ display: 'flex', flexDirection: 'row', marginTop: '20px', width: '100%', justifyContent: 'center', gap: '15px', alignItems: 'center', height: '60px' }}>
 
                         <Collapse in={quizOn}>
 
@@ -516,7 +537,7 @@ const MyComponent: React.FC<Props> = ({ fileCount}) => {
                                         alignItems: 'center',
                                         justifyContent: 'left',
                                         gap: '20px',
-                                        width: '305px',
+                                        width: '112px',
                                         whiteSpace: 'nowrap'
                                     }}
                                 >
@@ -525,17 +546,18 @@ const MyComponent: React.FC<Props> = ({ fileCount}) => {
                                         error={customAlert}
                                         label="カードの数"
                                         size="small"
-                                        sx={{ width: '50%' }}
+                                        sx={{ width: '100%' }}
                                         value={customCardCount}
                                         onChange={(e) => setCustomCardCount(e.target.value)} />
-                                    <FormGroup>
-                                        <FormControlLabel disabled={quizOn} checked={randomQuiz} onChange={() => SetRandomQuiz((prev) => !prev)} control={<Switch />} label="ランダムにする" />
-                                    </FormGroup>
                                 </Box>
                             </Collapse>
                         </Box>
 
-
+                        <Box>
+                            <FormGroup>
+                                <FormControlLabel disabled={quizOn} checked={randomQuiz} onChange={() => SetRandomQuiz((prev) => !prev)} control={<Switch sx={{margin:0}}/>} label="ランダムにする" />
+                            </FormGroup>
+                        </Box>
 
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             {quizOn ?
@@ -682,8 +704,8 @@ const MyComponent: React.FC<Props> = ({ fileCount}) => {
                                                 Go Back
                                             </Button>
                                             {
-                                                (userId) ?
-                                                    <Button>Save Result</Button>
+                                                (session) ?
+                                                    <Button onClick={() => sendQuizResults()}>Save Result</Button>
                                                     :
                                                     <Button>Sign Up/Login</Button>
                                             }
