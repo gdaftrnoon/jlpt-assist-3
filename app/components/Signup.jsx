@@ -24,7 +24,7 @@ const SignUp = () => {
 
   const [username, setUsername] = useState('')
 
-  const [alertMsgBody, setAlertMsgBody] = useState('Username is required and must be 3-20 characters long.')
+  const [alertMsgBody, setAlertMsgBody] = useState('Username is required and must be 3-15 characters long.')
   const [alertMsgVisible, setAlertMsgVisible] = useState(true)
   const [alertSeverity, setAlertSeverity] = useState('info')
 
@@ -35,11 +35,11 @@ const SignUp = () => {
     e.preventDefault()
     setLoading(true)
 
-    if (username.length < 3 || username.length > 20) {
+    if (username.length < 3 || username.length > 15) {
       setLoading(false)
       setAlertMsgVisible(true)
       setAlertSeverity('warning')
-      setAlertMsgBody(`Username must be 3-20 characters long.`)
+      setAlertMsgBody(`Username must be 3-15 characters long.`)
       return
     }
 

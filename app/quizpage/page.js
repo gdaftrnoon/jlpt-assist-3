@@ -1,17 +1,20 @@
-    'use client'
-    import React from "react"
-    import Navbar from "../components/Navbar";
-    import Quiz from "../components/Quiz";
-    import { SessionProvider } from "next-auth/react";
+'use client'
+import React from "react"
+import Navbar from "../components/Navbar";
+import Quiz from "../components/Quiz";
+import { SessionProvider } from "next-auth/react";
+import UserProvider from "../context/UserSession";
 
-    export default function QuizMaster() {
+export default function QuizMaster() {
 
-        return (
-            <>
-                <SessionProvider>
+    return (
+        <>
+            <SessionProvider>
+                <UserProvider>
                     <Navbar />
-                    <Quiz/>
-                </SessionProvider>
-            </>
-        )
-    }
+                    <Quiz />
+                </UserProvider>
+            </SessionProvider>
+        </>
+    )
+}
