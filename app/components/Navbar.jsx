@@ -36,18 +36,18 @@ const Navbar = () => {
     }
 
     return (
-        <AppBar position='sticky' sx={{ backgroundColor: 'white', color: 'black', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', height:'60px', minwidth:'100vw' }}>
+        <AppBar position='sticky' sx={{ backgroundColor: 'white', color: 'black', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60px', minwidth: '100vw' }}>
             <Toolbar sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', minWidth: '40%' }}>
 
 
-                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'left', minWidth: '380px' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'left', minWidth: 500 }}>
                     <IconButton disableRipple component={Link} href='/' size='large' color='inherit'>
                         <SunnySnowingIcon />
                     </IconButton>
                     <Typography component={Link} href='/' variant='h6'>
                         日本語能力試験アシスト
                     </Typography>
-                    <Button ref={studyButtonAnchorRef} onClick={() => setPagePopper(prev => !prev)} sx={{ marginLeft: '25px', fontSize: '14px', minwidth:'100%' }} color='error' endIcon={<SchoolIcon />} variant='outlined'>勉強</Button>
+                    <Button ref={studyButtonAnchorRef} onClick={() => setPagePopper(prev => !prev)} sx={{ marginLeft: '25px', fontSize: '14px', minwidth: '100%' }} color='error' endIcon={<SchoolIcon />} variant='outlined'>勉強</Button>
                     <Popper
                         anchorEl={studyButtonAnchorRef.current}
                         open={pagePopper}
@@ -67,7 +67,7 @@ const Navbar = () => {
                                     <ClickAwayListener onClickAway={() => setPagePopper(false)}>
                                         <MenuList sx={{ backgroundColor: '#ef5350', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                             <MenuItem component={Link} href='vocabtable' sx={{ transition: 'color 0.3s ease, background-color 0.3s ease', "&:hover": { color: 'black', backgroundColor: '#ef5350' } }}>文字語彙</MenuItem>
-                                            <MenuItem component={Link} href='quizpage'  sx={{ transition: 'color 0.3s ease, background-color 0.3s ease', "&:hover": { color: 'black', backgroundColor: '#ef5350' } }}>クイズ</MenuItem>
+                                            <MenuItem component={Link} href='quizpage' sx={{ transition: 'color 0.3s ease, background-color 0.3s ease', "&:hover": { color: 'black', backgroundColor: '#ef5350' } }}>クイズ</MenuItem>
                                             <MenuItem component={Link} href='/' sx={{ transition: 'color 0.3s ease, background-color 0.3s ease', "&:hover": { color: 'black', backgroundColor: '#ef5350' } }}>クイズ履歴</MenuItem>
                                         </MenuList>
                                     </ClickAwayListener>
@@ -76,49 +76,48 @@ const Navbar = () => {
                         )}
                     </Popper>
                 </Box>
-
-                <Box sx={{ display: 'flex', width: '33%', justifyContent: 'right', gap: '20px', backgroundColor: '' }}>
-                    {status === 'loading' ? (
-                        <Box sx={{backgroundColor:'white', color:'white'}}>.</Box>
-                    ) : user ? (
-                        <>
-                            <Slide in={true}>
-                                <Button color='error' variant='contained' ref={anchorRef} endIcon={<ArrowDropDownIcon />} onClick={() => setPopperStatus(prev => !prev)}>{username}</Button>
-                            </Slide>
-                            <Popper
-                                anchorEl={anchorRef.current}
-                                open={popperStatus}
-                                placement='bottom'
-                                transition
-                                sx={{ paddingTop: '14px' }}
-                            >
-                                {({ TransitionProps, placement }) => (
-                                    <Slide
-                                        {...TransitionProps}
-                                        style={{
-                                            transformOrigin:
-                                                placement === 'bottom',
-                                        }}
-                                    >
-                                        <Paper>
-                                            <ClickAwayListener onClickAway={() => setPopperStatus(false)}>
-                                                <MenuList sx={{ backgroundColor: '#ef5350', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-                                                    <MenuItem sx={{ transition: 'color 0.3s ease, background-color 0.3s ease', "&:hover": { color: 'black', backgroundColor: '#ef5350' } }}>設定</MenuItem>
-                                                    <MenuItem onClick={() => signOutHelper()} sx={{ transition: 'color 0.3s ease, background-color 0.3s ease', "&:hover": { color: 'black', backgroundColor: '#ef5350' } }}>ログアウト</MenuItem>
-                                                </MenuList>
-                                            </ClickAwayListener>
-                                        </Paper>
-                                    </Slide>
-                                )}
-                            </Popper>
-                        </>
-                    )
-                        : (
-                            <Zoom in={true}>
+                {status === 'loading' ? (
+                    <Box sx={{ backgroundColor: 'white', color: 'white' }}>.</Box>
+                ) : user ? (
+                    <>
+                        <Slide in={true}>
+                            <Button color='error' variant='contained' ref={anchorRef} endIcon={<ArrowDropDownIcon />} onClick={() => setPopperStatus(prev => !prev)}>{username}</Button>
+                        </Slide>
+                        <Popper
+                            anchorEl={anchorRef.current}
+                            open={popperStatus}
+                            placement='bottom'
+                            transition
+                            sx={{ paddingTop: '14px' }}
+                        >
+                            {({ TransitionProps, placement }) => (
+                                <Slide
+                                    {...TransitionProps}
+                                    style={{
+                                        transformOrigin:
+                                            placement === 'bottom',
+                                    }}
+                                >
+                                    <Paper>
+                                        <ClickAwayListener onClickAway={() => setPopperStatus(false)}>
+                                            <MenuList sx={{ backgroundColor: '#ef5350', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+                                                <MenuItem sx={{ transition: 'color 0.3s ease, background-color 0.3s ease', "&:hover": { color: 'black', backgroundColor: '#ef5350' } }}>設定</MenuItem>
+                                                <MenuItem onClick={() => signOutHelper()} sx={{ transition: 'color 0.3s ease, background-color 0.3s ease', "&:hover": { color: 'black', backgroundColor: '#ef5350' } }}>ログアウト</MenuItem>
+                                            </MenuList>
+                                        </ClickAwayListener>
+                                    </Paper>
+                                </Slide>
+                            )}
+                        </Popper>
+                    </>
+                )
+                    : (
+                        <Zoom in={true}>
+                            <Box sx={{minWidth:90, minHeight:36}}>
                                 <Link href='/login'><Button variant='contained' color='error' sx={{ fontSize: '14px' }} >ログイン</Button></Link>
-                            </Zoom>
-                        )}
-                </Box>
+                            </Box>
+                        </Zoom>
+                    )}
             </Toolbar>
         </AppBar>
     )

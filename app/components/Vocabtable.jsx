@@ -93,7 +93,7 @@ const Vocabtable = () => {
         for (let index = 1; index <= fileCount[nLevel]; index++) {
             const response = await fetch(`vocab/${nLevel}/${nLevel}_page${index}.json`)
             const responseJson = await response.json()
-            allPages.push(responseJson.data)
+            allPages.push(responseJson)
         }
         const flatPages = allPages.flatMap(x => x)
         setTableData(flatPages)

@@ -46,12 +46,12 @@ const LoginLogout = () => {
           variant="contained"
           startIcon={<Google />}
           fullWidth
-          sx={{ mb: 2 }}
+          sx={{ mb: 2, backgroundColor:'#d32f2f' }}
         >
           Sign In with Google
         </Button>
 
-        <Divider sx={{ width: '100%', mb: 2 }}>Or</Divider>
+        {/* <Divider sx={{ width: '100%', mb: 2 }}>Or</Divider>
 
         <Box
           component="form"
@@ -88,7 +88,7 @@ const LoginLogout = () => {
           <Button disabled variant="outlined" fullWidth sx={{ mt: 2 }}>
             Sign Up
           </Button>
-        </Box>
+        </Box> */}
       </Paper>
     </Box>
   );

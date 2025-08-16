@@ -106,10 +106,10 @@ const MyComponent: React.FC<Props> = () => {
             'quizType': tAlignment,
             'correctCount': correctCount,
             'incorrectCount': incorrectCount,
-            'random':randomQuiz
+            'random': randomQuiz
         }
         const response = await fetch('/api/SendResults', {
-            method:'POST',
+            method: 'POST',
             body: JSON.stringify(payload)
         })
 
@@ -146,7 +146,7 @@ const MyComponent: React.FC<Props> = () => {
 
     const progressTable = (progAlignment) => {
         return (
-            <Box>
+            <Paper>
                 <TableContainer sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
                     <Table>
                         <TableHead>
@@ -188,7 +188,7 @@ const MyComponent: React.FC<Props> = () => {
                     rowsPerPageOptions={[]}
                     rowsPerPage={5}
                 />
-            </Box>
+            </Paper>
         )
     }
 
@@ -203,7 +203,7 @@ const MyComponent: React.FC<Props> = () => {
             for (let index = 1; index <= fileCount[nAlignment]; index++) {
                 const response = await fetch(`vocab/${nAlignment}/${nAlignment}_page${index}.json`)
                 const responseJson = await response.json()
-                const vocabData = responseJson.data
+                const vocabData = responseJson
                 allPages.push(vocabData)
             }
             const flatPages = allPages.flatMap(x => x)
@@ -225,7 +225,7 @@ const MyComponent: React.FC<Props> = () => {
             for (let index = 1; index <= fileCount[nAlignment]; index++) {
                 const response = await fetch(`vocab/${nAlignment}/${nAlignment}_page${index}.json`)
                 const responseJson = await response.json()
-                const vocabData = responseJson.data
+                const vocabData = responseJson
                 allPages.push(vocabData)
             }
 
@@ -264,7 +264,7 @@ const MyComponent: React.FC<Props> = () => {
             for (let index = 1; index <= fileCount[nAlignment]; index++) {
                 const response = await fetch(`vocab/${nAlignment}/${nAlignment}_page${index}.json`)
                 const responseJson = await response.json()
-                const vocabData = responseJson.data
+                const vocabData = responseJson
                 allPages.push(vocabData)
             }
             const flatPages = allPages.flatMap(x => x)
@@ -555,7 +555,7 @@ const MyComponent: React.FC<Props> = () => {
 
                         <Box>
                             <FormGroup>
-                                <FormControlLabel disabled={quizOn} checked={randomQuiz} onChange={() => SetRandomQuiz((prev) => !prev)} control={<Switch sx={{margin:0}}/>} label="ランダムにする" />
+                                <FormControlLabel disabled={quizOn} checked={randomQuiz} onChange={() => SetRandomQuiz((prev) => !prev)} control={<Switch sx={{ margin: 0 }} />} label="ランダムにする" />
                             </FormGroup>
                         </Box>
 
@@ -707,7 +707,9 @@ const MyComponent: React.FC<Props> = () => {
                                                 (session) ?
                                                     <Button onClick={() => sendQuizResults()}>Save Result</Button>
                                                     :
-                                                    <Button>Sign Up/Login</Button>
+                                                    <Link href='/login'>
+                                                        <Button>Sign Up/Login</Button>
+                                                    </Link>
                                             }
                                         </DialogActions>
                                     </Dialog>
