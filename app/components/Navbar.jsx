@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useContext } from 'react'
-import { AppBar, IconButton, Stack, Toolbar, Typography, Button, Box, Dialog, DialogTitle, DialogContent, DialogContentText, Popper, Paper, MenuList, MenuItem, ClickAwayListener, Grow, ButtonGroup, CircularProgress, Zoom } from '@mui/material'
+import { AppBar, IconButton, Stack, Toolbar, Typography, Button, Box, Dialog, DialogTitle, DialogContent, DialogContentText, Popper, Paper, MenuList, MenuItem, ClickAwayListener, Grow, ButtonGroup, CircularProgress, Zoom, Container } from '@mui/material'
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import Link from 'next/link'
 import { Google } from '@mui/icons-material';
@@ -14,6 +14,9 @@ import { UserContext } from '../context/UserSession';
 import Slide from '@mui/material/Slide';
 import SchoolIcon from '@mui/icons-material/School';
 import Fade from '@mui/material/Fade';
+import AdbIcon from '@mui/icons-material/Adb';
+import MenuIcon from '@mui/icons-material/Menu';
+import Menu from '@mui/material/Menu';
 
 const Navbar = () => {
 
@@ -35,12 +38,14 @@ const Navbar = () => {
         await signOut({ redirectTo: '/' })
     }
 
-    return (
-        <AppBar position='sticky' sx={{ backgroundColor: 'white', color: 'black', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60px', minwidth: '100vw' }}>
-            <Toolbar sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', minWidth: '40%' }}>
+    /* --- Desktop Navbar (>= md) ---------------------------------- */
+    const Desktopnav = () => (
 
+        <AppBar position='sticky' sx={{ backgroundColor: 'white', color: 'black' }}>
 
-                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'left', minWidth: 500 }}>
+            <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', minHeight: 64 }}>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                     <IconButton disableRipple component={Link} href='/' size='large' color='inherit'>
                         <SunnySnowingIcon />
                     </IconButton>
@@ -113,13 +118,68 @@ const Navbar = () => {
                 )
                     : (
                         <Zoom in={true}>
-                            <Box sx={{minWidth:90, minHeight:36}}>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 2
+                                }}
+                            >
                                 <Link href='/login'><Button variant='contained' color='error' sx={{ fontSize: '14px' }} >ログイン</Button></Link>
                             </Box>
                         </Zoom>
                     )}
             </Toolbar>
         </AppBar>
+
+    )
+
+    const [mobileAnchorEl, setMobileAnchorEl] = React.useState(null);
+
+    const MobileNavbar = () => (
+        <AppBar color='error' position="sticky">
+            <Container maxWidth='xl'>
+                <Toolbar>
+                    <Box sx={{display:'flex', flexDirection:'row', justifyContent:'space-between', alignItems:'center', width:'100%'}}>
+                        <Box>
+                            <IconButton onClick={(event) => setMobileAnchorEl(event.currentTarget)}>
+                                <MenuIcon sx={{color:'white'}} />
+                            </IconButton>
+                        </Box>
+                        <Box component={Link} href='/' sx={{display:'flex', flexDirection:'row', gap:1}}>
+                            <SunnySnowingIcon/>
+                            <Typography>
+                                JLPT ASSIST
+                            </Typography>
+                        </Box>
+                        <Box>
+                            <Button
+                            component={Link}
+                            sx={{color:'white'}}
+                            href='/login'
+                            >
+                                Login
+                            </Button>
+                            <Menu
+                            sx={{marginTop:4}}
+                            color='black'
+                            anchorEl={mobileAnchorEl}
+                            open={Boolean(mobileAnchorEl)}
+                            onClose={() => setMobileAnchorEl(null)}
+                            >
+                                <MenuItem component={Link} href='/vocab' sx={{display:'flex', justifyContent:'center', alignItems:'center'}}>文字語彙</MenuItem>
+                                <MenuItem component={Link} href='/quiz' sx={{display:'flex', justifyContent:'center', alignItems:'center'}}>クイズ</MenuItem>
+                                <MenuItem component={Link} href='/' sx={{display:'flex', justifyContent:'center', alignItems:'center'}}>成績</MenuItem>
+                            </Menu>
+                        </Box>
+                    </Box>
+                </Toolbar>
+            </Container>
+        </AppBar>
+    )
+
+    return (
+        <MobileNavbar />
     )
 }
 

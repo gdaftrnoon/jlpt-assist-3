@@ -1,5 +1,5 @@
 'use client'
-import { SvgIcon, Alert, Box, Button, Card, ClickAwayListener, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, Fade, FormControl, IconButton, InputLabel, MenuItem, Select, Stack, Table, TableBody, TableCell, TableHead, TableRow, ToggleButton, ToggleButtonGroup, Tooltip, Typography, Skeleton, LinearProgress } from '@mui/material'
+import { SvgIcon, Alert, Box, Button, Card, ClickAwayListener, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, Fade, FormControl, IconButton, InputLabel, MenuItem, Select, Stack, Table, TableBody, TableCell, TableHead, TableRow, ToggleButton, ToggleButtonGroup, Tooltip, Typography, Skeleton, LinearProgress, CardContent, CircularProgress, TextField, Container, List, ListItemButton, ListItemText, ListItem } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -9,6 +9,12 @@ import Zoom from '@mui/material/Zoom';
 import { CheckBoxOutlineBlank, DeleteForever, DoneAll, Expand, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Stairs, UnfoldLess } from '@mui/icons-material';
 import ArticleIcon from '@mui/icons-material/Article';
 import { useSession } from 'next-auth/react';
+import ManageSearchIcon from '@mui/icons-material/ManageSearch';
+import CheckIcon from '@mui/icons-material/Check';
+import ClearIcon from '@mui/icons-material/Clear';
+import { convertToObject } from 'typescript';
+import { checkboxClasses } from "@mui/material/Checkbox";
+
 
 const NewVocabTable = () => {
 
@@ -43,7 +49,40 @@ const NewVocabTable = () => {
     const [isExpanded, setExpanded] = useState(false)
 
     // state to determine whether the "untick all boxes" warning is shown
-    const [openWarning, setOpenWarning] = useState(false) // For when the user clicks on untick all boxes
+    const [openWarning, setOpenWarning] = useState(false)
+
+    // const to hold all slugs, could be useful
+    const [allSlugs, setAllSlugs] = useState([])
+
+    // state to hold user's known word ids
+    const [userKnownWordIds, setUserKnownWordIds] = useState([])
+
+    // state to hold user's known slugs
+    const [knownSlugs, setKnownSlugs] = useState([])
+
+    // state to manage whether side n buttons are shown
+    const [nButtons, showNbuttons] = useState(false)
+
+    // state to manage whether side pagination buttons are shown
+    const [tableConfig, showTableConfig] = useState(false)
+
+    // state to manage how pages are sliced
+    const [itemsPerPage, setItemsPerPage] = useState(10)
+
+    // state to manage max pages, initialised with max pages for n1
+    const [maxPages, setMaxPages] = useState(172)
+
+    // state to manage table loading ui display
+    const [tableLoading, setTableLoading] = useState(true)
+
+    // state to manage whether the vocab search tool is shown
+    const [showSearch, toggleShowSearch] = useState(false)
+
+    // state to hold search field text/number
+    const [searchQuery, setSearchQuery] = useState('')
+
+    // state to keep track of checkbox changes for submission to db
+    const [slugChanges, setSlugChanges] = useState({})
 
     // function handling n level change
     const nHandler = (level) => {
@@ -74,10 +113,28 @@ const NewVocabTable = () => {
         setExpanded(false)
     }
 
-    // only to run on page load and changing of n levels
-    async function fetchAllData(nLevel, page, itemsPerPage) {
+    // function for word/page number search
 
-        setTableLoading(true)
+    const tableQuery = (searchQuery) => {
+        if (
+            Number.isInteger(Number(searchQuery)) &&
+            Number(searchQuery) > 0 &&
+            Number(searchQuery) <= maxPages
+        ) {
+            handleChange(null, Number(searchQuery))
+        }
+
+        if (searchQuery != '') {
+            const searchIndex = allSlugs.indexOf(String(searchQuery)) + 1
+            console.log(searchIndex)
+            const searchQueryPage = Math.ceil(Number(searchIndex) / Number(itemsPerPage))
+            console.log(searchQueryPage)
+            handleChange(null, Number(searchQueryPage))
+        }
+    }
+
+    // function to fetch all table data, sliced data saved into vocabData, all data saved to tableData
+    async function fetchAllData(nLevel, page, itemsPerPage) {
 
         // get all pages from n level
         const allPages = []
@@ -86,8 +143,12 @@ const NewVocabTable = () => {
             const responseJson = await response.json()
             allPages.push(responseJson)
         }
+
         const flatPages = allPages.flatMap(x => x)
         setTableData(flatPages)
+
+        const tableSlugs = flatPages.map(x => x.slug)
+        setAllSlugs(tableSlugs)
 
         // calculate max number of pages
         const slugCount = flatPages.length
@@ -96,25 +157,15 @@ const NewVocabTable = () => {
 
         // slice data based on items per page and page number
         const slicedPages = flatPages.slice((page - 1) * itemsPerPage, Math.min(itemsPerPage * page, slugCount))
-        setTableLoading(false)
         setVocabularyData(slicedPages)
         setPage(1)
         console.log(`page ${page}`, slicedPages)
     }
 
-    const [nButtons, showNbuttons] = useState(false)
-    const [tableConfig, showTableConfig] = useState(false)
-    const [itemsPerPage, setItemsPerPage] = useState(10)
-    const [maxPages, setMaxPages] = useState(172)
-
-    const [tableLoading, setTableLoading] = useState(true)
-
-    useEffect(() => {
-        fetchAllData(nLevel, page, itemsPerPage)
-    }, [nLevel])
-
     // adjusting table for items per page change
     async function adjustTable(page, itemsPerPage) {
+
+        setTableLoading(true)
 
         // calculate max number of pages
         const slugCount = tableData.length
@@ -123,338 +174,600 @@ const NewVocabTable = () => {
 
         // slice data based on items per page and page number
         const slicedPages = tableData.slice((page - 1) * itemsPerPage, Math.min(itemsPerPage * page, slugCount))
-        setTableLoading(false)
         setVocabularyData(slicedPages)
+
+        setTableLoading(false)
     }
 
+    // use effect to handle page table adjustment post slicing option change 
     useEffect(() => {
         adjustTable(page, itemsPerPage)
         setPage(1)
     }, [itemsPerPage])
 
-    useEffect(() => {
-        setTableLoading(true)
-    }, [])
-
-    // state to hold user's known slugs
-    const [knownSlugs, setKnownSlugs] = useState([])
-
-    // function to retrieve all words within user's vocab db
+    // function to retrieve all word ids within user's vocab db
     const getUserVocab = async () => {
 
-        setTableLoading(true)
-        const response = await fetch('/api/GetUserVocab', {
-            method: 'POST',
-            body: JSON.stringify({ message: userid })
-        })
+        if (session) {
+            const response = await fetch('/api/GetUserVocab', {
+                method: 'POST',
+                body: JSON.stringify({ message: userid })
+            })
 
-        const data = await response.json()
-
-        const knownWordIds = data.message.map(a => Number(a.word_id))
-
-        console.log(knownWordIds)
-
-        const knownWords = tableData.filter((word) => (
-            knownWordIds.includes(Number(word.id))
-        ))
-
-        const userKnownSlugs = knownWords.map(x => x.slug)
-        setKnownSlugs(userKnownSlugs)
-        setTableLoading(false)  
-
+            const data = await response.json()
+            const knownWordIds = data.message.map(a => Number(a.word_id))
+            setUserKnownWordIds(knownWordIds)
+            console.log(knownWordIds)
+        }
     }
 
-    // getUserVocab only to run if session exists
+    // get user known word ids only when the session changes
     useEffect(() => {
-        if (session && tableData.length > 0) {
-            getUserVocab()
-        }
-    }, [session, tableData])
+        getUserVocab()
+    }, [session])
 
+    // when n level changes, fetch all data and display, tabledata and vocabdata states get changed
+    useEffect(() => {
+        setTableLoading(true)
+        if (status === "loading") return
+
+        fetchAllData(nLevel, page, itemsPerPage).finally(() => {
+            setTableLoading(false)
+        })
+
+    }, [nLevel, status])
+
+    // when table data changes and is > 0, get user known words according to known ids
+    useEffect(() => {
+        if (tableData.length > 0 && session) {
+    
+            const knownWords = tableData.filter((word) => (
+                userKnownWordIds.includes(Number(word.id))
+            ))
+
+            const userKnownSlugs = knownWords.map(x => x.slug)
+            setKnownSlugs(userKnownSlugs)
+      
+        }
+    }, [tableData])
+
+    // when page is changed, set package key-value pairs
+    useEffect(() => {
+
+        if (vocabularyData.length > 0 && session) {
+
+        
+
+            console.log('im running!!')
+
+            const knownWords = vocabularyData.filter((word) => (
+                userKnownWordIds.includes(Number(word.id))
+            ))
+
+            const userKnownSlugs = knownWords.map(x => x.slug)
+
+            const initialSlugObject = {}
+
+            vocabularyData.forEach(x => (
+                userKnownSlugs.includes(x.slug) ?
+                    initialSlugObject[x.slug] = true :
+                    initialSlugObject[x.slug] = false
+            ))
+
+            setSlugChanges(initialSlugObject)
+
+        }
+
+    }, [vocabularyData])
 
     // logs for testing
     useEffect(() => {
         console.log('alldata', tableData)
+        console.log('allslugs', allSlugs)
+        console.log('slugchanges', slugChanges)
+        console.log(Object.keys(slugChanges).length)
     }, [page])
 
-    return (
-        <>
+    // desktop layout
+    //   <>
 
-            <Box sx={{ display: 'flex', height: 'calc(100vh - 60px)', marginTop: '0px' }}>
+    //     <Box sx={{ display: 'flex', marginTop: '0px' }}>
 
-                <Box sx={{
-                    display: 'flex',
-                    width: '33%',
-                    height: '100%',
-                    justifyContent: 'left',
-                    paddingTop: '300px'
-                }}>
-                    <ToggleButtonGroup orientation='vertical' sx={{ position: 'fixed' }}>
+    //         <Box sx={{
+    //             display: 'flex',
+    //             width: '33%',
+    //             height: '100%',
+    //             justifyContent: 'left',
+    //             paddingTop: '300px'
+    //         }}>
+    //             <ToggleButtonGroup orientation='vertical' sx={{ position: 'fixed' }}>
 
-                        <Tooltip
-                            title='Items per Page'
-                            slots={{ transition: Zoom }}
-                            slotProps={{
-                                popper: {
-                                    modifiers: [
-                                        {
-                                            name: 'offset',
-                                            options: {
-                                                offset: [68, -92],
-                                            },
-                                        },
-                                    ],
-                                },
-                            }}
-                        >
-                            <ToggleButton
-                                onChange={(e) => showTableConfig(!tableConfig)}
-                            >
-                                <ArticleIcon />
-                            </ToggleButton>
-                        </Tooltip>
+    //                 <Tooltip
+    //                     title='項目数'
+    //                     slots={{ transition: Zoom }}
+    //                     slotProps={{
+    //                         popper: {
+    //                             modifiers: [
+    //                                 {
+    //                                     name: 'offset',
+    //                                     options: {
+    //                                         offset: [68, -92],
+    //                                     },
+    //                                 },
+    //                             ],
+    //                         },
+    //                     }}
+    //                 >
+    //                     <ToggleButton
+    //                         onChange={(e) => showTableConfig(!tableConfig)}
+    //                     >
+    //                         <ArticleIcon />
+    //                     </ToggleButton>
+    //                 </Tooltip>
 
-                        <Tooltip
-                            title='JLPT N-Level'
-                            slots={{ transition: Zoom }}
-                            slotProps={{
-                                popper: {
-                                    modifiers: [
-                                        {
-                                            name: 'offset',
-                                            options: {
-                                                offset: [68, -9],
-                                            },
-                                        },
-                                    ],
-                                },
-                            }}
-                        >
-                            <ToggleButton
-                                onChange={(e) => showNbuttons(!nButtons)}>
-                                {
-                                    nLevel === 'n1' ? <LooksOne /> :
-                                        nLevel === 'n2' ? <LooksTwo /> :
-                                            nLevel === 'n3' ? <Looks3 /> :
-                                                nLevel === 'n4' ? <Looks4 /> :
-                                                    nLevel === 'n5' ? <Looks5 /> :
-                                                        null}
-                            </ToggleButton>
-                        </Tooltip>
+    //                 <Tooltip
+    //                     title='JLPTレベル'
+    //                     slots={{ transition: Zoom }}
+    //                     slotProps={{
+    //                         popper: {
+    //                             modifiers: [
+    //                                 {
+    //                                     name: 'offset',
+    //                                     options: {
+    //                                         offset: [68, -9],
+    //                                     },
+    //                                 },
+    //                             ],
+    //                         },
+    //                     }}
+    //                 >
+    //                     <ToggleButton
+    //                         onChange={(e) => showNbuttons(!nButtons)}>
+    //                         {
+    //                             nLevel === 'n1' ? <LooksOne /> :
+    //                                 nLevel === 'n2' ? <LooksTwo /> :
+    //                                     nLevel === 'n3' ? <Looks3 /> :
+    //                                         nLevel === 'n4' ? <Looks4 /> :
+    //                                             nLevel === 'n5' ? <Looks5 /> :
+    //                                                 null}
+    //                     </ToggleButton>
+    //                 </Tooltip>
 
-                        {isExpanded ?
-                            <Tooltip placement='right' title='Collapse All' slots={{ transition: Zoom }} arrow>
-                                <ToggleButton
-                                    onChange={(e) => collapseAll()}>
-                                    <UnfoldLess />
-                                </ToggleButton>
-                            </Tooltip>
+    //                 {isExpanded ?
+    //                     <Tooltip placement='right' title='すべて非表示' slots={{ transition: Zoom }} arrow>
+    //                         <ToggleButton
+    //                             onChange={(e) => collapseAll()}>
+    //                             <UnfoldLess />
+    //                         </ToggleButton>
+    //                     </Tooltip>
 
-                            :
-                            <Tooltip placement='right' title='Expand All' slots={{ transition: Zoom }} arrow>
-                                <ToggleButton
-                                    onChange={(e) => expandAll()}>
-                                    <Expand />
-                                </ToggleButton>
-                            </Tooltip>
+    //                     :
+    //                     <Tooltip placement='right' title='すべて表示' slots={{ transition: Zoom }} arrow>
+    //                         <ToggleButton
+    //                             onChange={(e) => expandAll()}>
+    //                             <Expand />
+    //                         </ToggleButton>
+    //                     </Tooltip>
 
-                        }
+    //                 }
 
-                        <Tooltip placement='right' title='Untick All on Page' slots={{ transition: Zoom }} arrow>
-                            <ToggleButton>
-                                <CheckBoxOutlineBlank />
-                            </ToggleButton>
-                        </Tooltip>
+    //                 <Tooltip placement='right' title='すべて選択' slots={{ transition: Zoom }} arrow>
+    //                     <ToggleButton>
+    //                         <CheckBoxOutlineBlank />
+    //                     </ToggleButton>
+    //                 </Tooltip>
 
-                        <Tooltip placement='right' title='Untick All' slots={{ transition: Zoom }} arrow>
-                            <ToggleButton onClick={() => setOpenWarning(true)}>
-                                <DeleteForever />
-                            </ToggleButton>
-                        </Tooltip>
-                        <Dialog
-                            open={openWarning}
-                            onClose={() => setOpenWarning(false)}
-                        >
-                            <DialogTitle>
-                                {'Are you sure you want to reset every checkbox?'}
-                            </DialogTitle>
-                            <DialogContent>
-                                Selecting this option will uncheck every checkbox across every page, there is no way to undo this process.
-                            </DialogContent>
-                            <DialogActions>
-                                <Button onClick={() => setOpenWarning(false)}>Cancel</Button>
-                                <Button onClick={() => untickAll(nLevel)}>Reset Checkboxes</Button>
-                            </DialogActions>
-                        </Dialog>
+    //                 <Tooltip placement='right' title='すべてのチェックを外す' slots={{ transition: Zoom }} arrow>
+    //                     <ToggleButton onClick={() => setOpenWarning(true)}>
+    //                         <DeleteForever />
+    //                     </ToggleButton>
+    //                 </Tooltip>
+    //                 <Dialog
+    //                     open={openWarning}
+    //                     onClose={() => setOpenWarning(false)}
+    //                 >
+    //                     <DialogTitle>
+    //                         {'Are you sure you want to reset every checkbox?'}
+    //                     </DialogTitle>
+    //                     <DialogContent>
+    //                         Selecting this option will uncheck every checkbox across every page, there is no way to undo this process.
+    //                     </DialogContent>
+    //                     <DialogActions>
+    //                         <Button onClick={() => setOpenWarning(false)}>Cancel</Button>
+    //                         <Button onClick={() => untickAll(nLevel)}>Reset Checkboxes</Button>
+    //                     </DialogActions>
+    //                 </Dialog>
+
+    //                 <Tooltip
+    //                     title='検索'
+    //                     slots={{ transition: Zoom }}
+    //                     slotProps={{
+    //                         popper: {
+    //                             modifiers: [
+    //                                 {
+    //                                     name: 'offset',
+    //                                     options: {
+    //                                         offset: [50, -92],
+    //                                     },
+    //                                 },
+    //                             ],
+    //                         },
+    //                     }}
+    //                 >
+    //                     <ToggleButton onClick={() => toggleShowSearch(prev => !prev)}>
+    //                         <ManageSearchIcon />
+    //                     </ToggleButton>
+    //                 </Tooltip>
+
+    //             </ToggleButtonGroup>
+
+    //             <Collapse orientation='horizontal' in={tableConfig} sx={{ marginLeft: '48px', position: 'fixed' }}>
+    //                 <ToggleButtonGroup orientation='horizontal'>
+    //                     <ToggleButton onClick={() => {
+    //                         showTableConfig(false)
+    //                         setItemsPerPage(5)
+    //                     }}
+    //                     >
+    //                         <SvgIcon>
+    //                             <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="16">
+    //                                 5
+    //                             </text>
+    //                         </SvgIcon>
+    //                     </ToggleButton>
+    //                     <ToggleButton onClick={() => {
+    //                         showTableConfig(false)
+    //                         setItemsPerPage(10)
+    //                         setPage(1)
+    //                     }}
+    //                     >
+    //                         <SvgIcon>
+    //                             <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="16">
+    //                                 10
+    //                             </text>
+    //                         </SvgIcon>
+    //                     </ToggleButton>
+    //                     <ToggleButton onClick={() => {
+    //                         showTableConfig(false)
+    //                         setItemsPerPage(15)
+    //                         setPage(1)
+    //                     }}
+    //                     >
+    //                         <SvgIcon>
+    //                             <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="16">
+    //                                 15
+    //                             </text>
+    //                         </SvgIcon>
+    //                     </ToggleButton>
+    //                     <ToggleButton onClick={() => {
+    //                         showTableConfig(false)
+    //                         setItemsPerPage(20)
+    //                         setPage(1)
+    //                     }}
+    //                     >
+    //                         <SvgIcon>
+    //                             <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="16">
+    //                                 20
+    //                             </text>
+    //                         </SvgIcon>
+    //                     </ToggleButton>
+    //                 </ToggleButtonGroup>
+    //             </Collapse>
+
+
+    //             <Collapse orientation='horizontal' in={nButtons} sx={{ marginLeft: '48px', position: 'fixed', marginTop: '47px' }}>
+    //                 <ToggleButtonGroup orientation='horizontal'>
+    //                     {nLevel != 'n1' ? <ToggleButton onClick={() => nHandler('n1')}><LooksOne /></ToggleButton> : null}
+    //                     {nLevel != 'n2' ? <ToggleButton onClick={() => nHandler('n2')}><LooksTwo /></ToggleButton> : null}
+    //                     {nLevel != 'n3' ? <ToggleButton onClick={() => nHandler('n3')}><Looks3 /></ToggleButton> : null}
+    //                     {nLevel != 'n4' ? <ToggleButton onClick={() => nHandler('n4')}><Looks4 /></ToggleButton> : null}
+    //                     {nLevel != 'n5' ? <ToggleButton onClick={() => nHandler('n5')}><Looks5 /></ToggleButton> : null}
+    //                 </ToggleButtonGroup>
+    //             </Collapse>
+
+    //             <Collapse orientation='horizontal' in={showSearch} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: '55px', position: 'fixed', marginTop: '227px' }}>
+
+    //                 <Box sx={{ display: 'flex', justifyContent: 'left', alignItems: 'center', width: 300, height: 65 }}>
+    //                     <TextField
+    //                         label="単語 / ページ番号"
+    //                         size="small"
+    //                         sx={{ width: '155px' }}
+    //                         value={searchQuery}
+    //                         onChange={(e) => setSearchQuery(e.target.value)}
+    //                     />
+
+    //                     <IconButton onClick={() => tableQuery(searchQuery)} color='success' sx={{ marginTop: '5px', marginLeft: '7px', border: 1 }} size="small">
+    //                         <CheckIcon fontSize="inherit" />
+    //                     </IconButton>
+
+    //                     <IconButton onClick={() => setSearchQuery('')} color='error' sx={{ marginTop: '5px', marginLeft: '7px', border: 1 }} size="small">
+    //                         <ClearIcon fontSize="inherit" />
+    //                     </IconButton>
+    //                 </Box>
+
+    //             </Collapse>
+
+    //         </Box>
+
+    //         <Box sx={{
+    //             width: '34%',
+    //             height: '100%',
+    //             display: 'flex',
+    //             flexDirection: 'column',
+    //             alignItems: 'center',
+    //             justifyContent: 'flex-start',
+    //             paddingTop: 6,
+    //             marginBottom: 10
+    //         }}>
+
+    //             {(tableLoading) ?
+
+    //                 <Card sx={{ marginTop: 10, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    //                     <CardContent sx={{ display: 'flex', gap: '20px', flexDirection: 'row' }}>
+    //                         <Typography variant='h5'>データを読み込み中…</Typography>
+    //                     </CardContent>
+    //                 </Card>
+
+    //                 :
+    //                 <>
+    //                     <Box sx={{ display: 'flex', flexDirection: 'row', gap: '20px', paddingTop: '30px', paddingBottom: '33px', alignItems: 'center', justifyContent: 'center' }}>
+    //                         <Pagination color="error" siblingCount={2} page={page} onChange={handleChange} count={maxPages} showFirstButton showLastButton></Pagination>
+    //                         <Button variant='contained' color='error'>変更を保存</Button>
+    //                     </Box>
+
+    //                     <Box sx={{ width: '100%' }}>
+    //                         <Table>
+    //                             <TableHead>
+    //                                 <TableRow>
+    //                                     <TableCell sx={{ width: '5%', padding: '0' }} />
+    //                                     <TableCell sx={{ width: '5%', padding: '0' }} />
+    //                                     <TableCell sx={{ textAlign: 'center', width: 'auto' }}>
+    //                                     </TableCell>
+    //                                 </TableRow>
+    //                             </TableHead>
+    //                             <TableBody>
+    //                                 {vocabularyData.map((x, index) => (
+    //                                     <React.Fragment key={x.slug}>
+    //                                         <TableRow key={x.slug}>
+    //                                             <TableCell>
+    //                                                 <IconButton
+    //                                                     aria-label='expand row'
+    //                                                     size='small'
+    //                                                     onClick={() => setOpen(prevOpen =>
+    //                                                         prevOpen.includes(index) ? prevOpen.filter(x => x != index) : [...prevOpen, index]
+    //                                                     )}>
+    //                                                     {open.includes(index) ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+    //                                                 </IconButton>
+    //                                             </TableCell>
+    //                                             <TableCell>
+    //                                                 <Checkbox
+    //                                                     defaultChecked={knownSlugs.includes(x.slug)}
+    //                                                     color={(knownSlugs.includes(x.slug)) ? 'success' : 'primary'}
+    //                                                 >
+    //                                                 </Checkbox>
+    //                                             </TableCell>
+    //                                             <TableCell sx={{ textAlign: 'center', fontWeight: searchQuery === x.slug ? 'bold' : 'normal' }}>
+    //                                                 {x.slug}
+    //                                             </TableCell>
+    //                                         </TableRow>
+    //                                         <TableRow>
+    //                                             <TableCell colSpan={3}>
+    //                                                 <Collapse in={open.includes(index)}>
+    //                                                     <Box>
+    //                                                         {[...new Set(x.japanese.map(y => y.word))].map((z, index) => (
+    //                                                             <Typography key={index}>{z}</Typography>
+    //                                                         ))}
+    //                                                         <Typography>Reading</Typography>
+    //                                                         {[...new Set(x.japanese.map(y => y.reading))].map((a, index) => (
+    //                                                             <Typography key={index}>{a}</Typography>
+    //                                                         ))}
+    //                                                         <Typography>Meaning</Typography>
+    //                                                         {x.senses.filter(c => !c.parts_of_speech?.includes('Place') && !c.parts_of_speech?.includes('Wikipedia definition'))
+    //                                                             .map((c, index) => (
+    //                                                                 <div key={index}>
+    //                                                                     <Typography>
+    //                                                                         {c.parts_of_speech.join(", ")}
+    //                                                                     </Typography>
+    //                                                                     <Typography>
+    //                                                                         {c.english_definitions.join(", ")}
+    //                                                                     </Typography>
+    //                                                                 </div>
+    //                                                             ))}
+    //                                                     </Box>
+    //                                                 </Collapse>
+    //                                             </TableCell>
+    //                                         </TableRow>
+    //                                     </React.Fragment>
+    //                                 ))}
+    //                             </TableBody>
+    //                         </Table>
+    //                     </Box>
+    //                 </>
+    //             }
+    //         </Box>
+
+    //         <Box sx={{ width: '33%' }}></Box>
+    //     </Box>
+    // </>
+
+    const nLevelArray = ['n1', 'n2', 'n3', 'n4', 'n5']
+    const sliceArray = [5, 10, 15, 20, 25]
+
+    // states for table option dialogs
+    const [nLevelSelect, openNLevelSelect] = useState(false)
+    const [sliceSelect, openSliceSelect] = useState(false)
+
+    const NLevelDialog = () => (
+        <Dialog open={nLevelSelect} onClose={() => openNLevelSelect(false)}>
+            <DialogTitle variant='subtitle1'>
+                JLPTレベルを選んでください
+            </DialogTitle>
+            <List sx={{ pt: 0 }}>
+                {nLevelArray.map(x => (
+                    <ListItem key={x}>
+                        <ListItemButton onClick={() => {
+                            nHandler(x)
+                            openNLevelSelect(false)
+                        }}>
+                            <ListItemText sx={{ textAlign: 'center' }}>
+                                {x.toUpperCase()}
+                            </ListItemText>
+                        </ListItemButton>
+                    </ListItem>
+                ))}
+            </List>
+        </Dialog>
+    )
+
+    const SliceDialog = () => (
+        <Dialog open={sliceSelect} onClose={() => openSliceSelect(false)}>
+            <DialogTitle variant='subtitle1'>
+                カード何数を表示すればいい？
+            </DialogTitle>
+            <List sx={{ pt: 0 }}>
+                {sliceArray.map(x => (
+                    <ListItem key={x}>
+                        <ListItemButton onClick={() => {
+                            setItemsPerPage(x)
+                            openSliceSelect(false)
+                        }}>
+                            <ListItemText sx={{ textAlign: 'center' }}>
+                                {x}
+                            </ListItemText>
+                        </ListItemButton>
+                    </ListItem>
+                ))}
+            </List>
+        </Dialog>
+    )
+
+    const InProgress = () => (
+        <Container maxWidth='xl' sx={{ minHeight: 'calc(100vh - 56px)', backgroundColor: '', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CircularProgress />
+        </Container>
+
+    )
+
+    const MobileLayout = () => (
+        <Container maxWidth='xl' sx={{ minHeight: 'calc(100vh - 56px)', backgroundColor: 'white' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+
+                <NLevelDialog />
+                <SliceDialog />
+
+                <Box sx={{ pt: 5 }}>
+                    <ToggleButtonGroup>
+
+
+                        <ToggleButton onClick={() => openNLevelSelect(true)} sx={{ borderColor: '#d32f2f' }}>
+                            <Stairs color='error' />
+                        </ToggleButton>
+
+                        <ToggleButton onClick={(() => openSliceSelect(true))} sx={{ borderColor: '#d32f2f' }}>
+                            <ArticleIcon color='error' />
+                        </ToggleButton>
+                        <ToggleButton onClick={() => {
+                            if (!isExpanded) {
+                                const indexArray = vocabularyData.map((x, index) => index)
+                                setOpen(indexArray)
+                                setExpanded(true)
+                            }
+                            else {
+                                setOpen([])
+                                setExpanded(false)
+                            }
+                        }}
+                            sx={{ borderColor: '#d32f2f' }}>
+                            {isExpanded ?
+                                <UnfoldLess color='error' /> :
+                                <Expand color='error' />
+                            }
+                        </ToggleButton>
+
+                        <ToggleButton sx={{ borderColor: '#d32f2f' }}>
+                            <DoneAll color='error' />
+                        </ToggleButton>
+
+                        <ToggleButton sx={{ borderColor: '#d32f2f' }}>
+                            <ManageSearchIcon color='error' />
+                        </ToggleButton>
+
+                        <ToggleButton sx={{ borderColor: '#d32f2f' }}>
+                            <DeleteForever color='error' />
+                        </ToggleButton>
 
                     </ToggleButtonGroup>
-
-                    <Collapse orientation='horizontal' in={tableConfig} sx={{ marginLeft: '48px', position: 'fixed' }}>
-                        <ToggleButtonGroup orientation='horizontal'>
-                            <ToggleButton onClick={() => {
-                                showTableConfig(false)
-                                setItemsPerPage(5)
-                            }}
-                            >
-                                <SvgIcon>
-                                    <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="16">
-                                        5
-                                    </text>
-                                </SvgIcon>
-                            </ToggleButton>
-                            <ToggleButton onClick={() => {
-                                showTableConfig(false)
-                                setItemsPerPage(10)
-                                setPage(1)
-                            }}
-                            >
-                                <SvgIcon>
-                                    <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="16">
-                                        10
-                                    </text>
-                                </SvgIcon>
-                            </ToggleButton>
-                            <ToggleButton onClick={() => {
-                                showTableConfig(false)
-                                setItemsPerPage(15)
-                                setPage(1)
-                            }}
-                            >
-                                <SvgIcon>
-                                    <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="16">
-                                        15
-                                    </text>
-                                </SvgIcon>
-                            </ToggleButton>
-                            <ToggleButton onClick={() => {
-                                showTableConfig(false)
-                                setItemsPerPage(20)
-                                setPage(1)
-                            }}
-                            >
-                                <SvgIcon>
-                                    <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="16">
-                                        20
-                                    </text>
-                                </SvgIcon>
-                            </ToggleButton>
-                        </ToggleButtonGroup>
-                    </Collapse>
-
-
-                    <Collapse orientation='horizontal' in={nButtons} sx={{ marginLeft: '48px', position: 'fixed', marginTop: '47px' }}>
-                        <ToggleButtonGroup orientation='horizontal'>
-                            {nLevel != 'n1' ? <ToggleButton onClick={() => nHandler('n1')}><LooksOne /></ToggleButton> : null}
-                            {nLevel != 'n2' ? <ToggleButton onClick={() => nHandler('n2')}><LooksTwo /></ToggleButton> : null}
-                            {nLevel != 'n3' ? <ToggleButton onClick={() => nHandler('n3')}><Looks3 /></ToggleButton> : null}
-                            {nLevel != 'n4' ? <ToggleButton onClick={() => nHandler('n4')}><Looks4 /></ToggleButton> : null}
-                            {nLevel != 'n5' ? <ToggleButton onClick={() => nHandler('n5')}><Looks5 /></ToggleButton> : null}
-                        </ToggleButtonGroup>
-                    </Collapse>
-
                 </Box>
 
-                <Box sx={{
-                    width: '34%',
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'flex-start'
-                }}>
+                <Box sx={{ pt: 6 }}>
+                    <Pagination color="error" siblingCount={0} page={page} onChange={handleChange} count={maxPages}></Pagination>
+                </Box>
 
-                    {(tableLoading) ?
-                        <Box sx={{ height: '100%', width: '100%' }}>
-                            <Skeleton
-                                height={200}
-                                sx={{ width: '100%' }}
-                                animation='wave'
-                            >
-                            </Skeleton>
-                            <LinearProgress />
-                        </Box>
 
-                        :
-                        <>
-                            <Box sx={{ paddingTop: '30px', paddingBottom: '33px' }}>
-                                <Stack spacing={2}>
-                                    <Pagination siblingCount={2} page={page} onChange={handleChange} count={maxPages} showFirstButton showLastButton></Pagination>
-                                </Stack>
-                            </Box>
 
-                            <Box sx={{ width: '100%' }}>
-                                <Table>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell sx={{ width: '5%', padding: '0' }} />
-                                            <TableCell sx={{ width: '5%', padding: '0' }} />
-                                            <TableCell sx={{ textAlign: 'center', width: 'auto' }}>
-                                            </TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {vocabularyData.map((x, index) => (
-                                            <React.Fragment key={x.slug}>
-                                                <TableRow key={x.slug}>
-                                                    <TableCell>
-                                                        <IconButton
-                                                            aria-label='expand row'
-                                                            size='small'
-                                                            onClick={() => setOpen(prevOpen =>
-                                                                prevOpen.includes(index) ? prevOpen.filter(x => x != index) : [...prevOpen, index]
-                                                            )}>
-                                                            {open.includes(index) ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-                                                        </IconButton>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Checkbox
-                                                            checked={knownSlugs.includes(x.slug)}
-                                                        >
-                                                        </Checkbox>
-                                                    </TableCell>
-                                                    <TableCell sx={{ textAlign: 'center' }}>
-                                                        {x.slug}
-                                                    </TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell colSpan={3}>
-                                                        <Collapse in={open.includes(index)}>
-                                                            <Box>
-                                                                {[...new Set(x.japanese.map(y => y.word))].map((z, index) => (
-                                                                    <Typography key={index}>{z}</Typography>
-                                                                ))}
-                                                                <Typography>Reading</Typography>
-                                                                {[...new Set(x.japanese.map(y => y.reading))].map((a, index) => (
-                                                                    <Typography key={index}>{a}</Typography>
-                                                                ))}
-                                                                <Typography>Meaning</Typography>
-                                                                {x.senses.filter(c => !c.parts_of_speech?.includes('Place') && !c.parts_of_speech?.includes('Wikipedia definition'))
-                                                                    .map((c, index) => (
-                                                                        <div key={index}>
-                                                                            <Typography>
-                                                                                {c.parts_of_speech.join(", ")}
-                                                                            </Typography>
-                                                                            <Typography>
-                                                                                {c.english_definitions.join(", ")}
-                                                                            </Typography>
-                                                                        </div>
-                                                                    ))}
+                <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 6, borderRadius: '16px', mb: 6 }}>
+                    <Table>
+                        <TableBody>
+                            {vocabularyData.map((x, index) => (
+                                <React.Fragment key={x.slug}>
+                                    <TableRow key={`toprow-${x.slug}`}>
+
+                                        <TableCell sx={{ width: '1%', paddingY: 0, paddingRight: 0, paddingLeft: 1 }}>
+                                            <IconButton onClick={() => open.includes(index) ? setOpen(prev => prev.filter(x => x != index)) : setOpen([...open, index])}>
+                                                {open.includes(index) ?
+                                                    <KeyboardArrowUpIcon /> :
+                                                    <KeyboardArrowDownIcon />
+                                                }
+                                            </IconButton>
+                                        </TableCell>
+
+                                        <TableCell sx={{ width: '1%', padding: 0 }}>
+                                            <Checkbox
+                                                defaultChecked={knownSlugs.includes(x.slug)}
+                                                color={(knownSlugs.includes(x.slug)) ? 'success' : 'primary'} />
+                                        </TableCell>
+
+                                        <TableCell sx={{ width: '98%', textAlign: 'center', pr: 9, fontSize: '1rem', fontWeight: 'bold' }}>
+                                            {x.slug}
+                                        </TableCell>
+
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={3}>
+                                            <Collapse in={open.includes(index) ? true : false}>
+                                                <Box sx={{ paddingY: 2 }}>
+                                                    {[...new Set(x.japanese.map(y => y.word))].map((z, zindex) => (
+                                                        <Typography key={zindex} sx={{ fontWeight: 'bold', fontSize: '1rem' }}>{z}</Typography>
+                                                    ))}
+                                                    <Typography sx={{ color: '#ef5350', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>読み方</Typography>
+                                                    {[...new Set(x.japanese.map(y => y.reading))].map((a, aindex) => (
+                                                        <Typography key={aindex} sx={{ fontWeight: 'bold', fontSize: '1rem' }}>{a}</Typography>
+                                                    ))}
+                                                    <Typography sx={{ color: '#ef5350', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>意味</Typography>
+                                                    {x.senses.filter(c => !c.parts_of_speech?.includes('Place') && !c.parts_of_speech?.includes('Wikipedia definition'))
+                                                        .map((c, cindex) => (
+                                                            <Box key={cindex}>
+                                                                <Typography key={`pos-${cindex}`} sx={{ color: 'grey', fontSize: '1rem' }}>{c.parts_of_speech.join(", ")}</Typography>
+                                                                <Typography key={`ed-${cindex}`} sx={{ fontSize: '1rem' }}>{c.english_definitions.join(", ")}</Typography>
                                                             </Box>
-                                                        </Collapse>
-                                                    </TableCell>
-                                                </TableRow>
-                                            </React.Fragment>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </Box>
-                        </>
-                    }
-                </Box>
+                                                        ))}
+                                                </Box>
+                                            </Collapse>
+                                        </TableCell>
+                                    </TableRow>
+                                </React.Fragment>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </Card>
 
-                <Box sx={{ width: '33%' }}></Box>
             </Box>
-        </>
+        </Container>
+    )
+
+
+    return (
+        tableLoading === true ? <InProgress /> :
+            <MobileLayout />
     )
 }
 
