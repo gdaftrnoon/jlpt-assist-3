@@ -28,7 +28,7 @@
     ".next/types/**/*.ts",
     "**/*.ts",
     "**/*.tsx"
-, "app/quizpage/page.js", "app/auth.js", "app/api/SendResults/route.js"  ],
+, "app/quizpage/page.js", "app/auth.js", "app/api/SendResults/route.js", "app/api/SubmitVocabData/route.js"  ],
   "exclude": [
     "node_modules"
   ]

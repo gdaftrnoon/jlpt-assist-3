@@ -81,6 +81,8 @@ const NewVocabTable = () => {
     // state to hold search field text/number
     const [searchQuery, setSearchQuery] = useState('')
 
+    const [initialPackage, setInitialPackage] = useState({})
+
     // state to keep track of checkbox changes for submission to db
     const [slugChanges, setSlugChanges] = useState({})
 
@@ -100,19 +102,6 @@ const NewVocabTable = () => {
         adjustTable(p, itemsPerPage)
     }
 
-    // function to expand all cards 
-    const expandAll = () => {
-        const allIndexNumbers = Array.from({ length: vocabularyData.length }, (_, index) => index)
-        setOpen(allIndexNumbers)
-        setExpanded(true)
-    }
-
-    // function to collapse all cards
-    const collapseAll = () => {
-        setOpen([])
-        setExpanded(false)
-    }
-
     // function for word/page number search
 
     const tableQuery = (searchQuery) => {
@@ -124,12 +113,30 @@ const NewVocabTable = () => {
             handleChange(null, Number(searchQuery))
         }
 
-        if (searchQuery != '') {
+        else if (searchQuery != '') {
             const searchIndex = allSlugs.indexOf(String(searchQuery)) + 1
             console.log(searchIndex)
             const searchQueryPage = Math.ceil(Number(searchIndex) / Number(itemsPerPage))
             console.log(searchQueryPage)
             handleChange(null, Number(searchQueryPage))
+        }
+    }
+
+
+    // function to retrieve all word ids within user's vocab db
+    const getUserVocab = async () => {
+
+        if (session) {
+            const response = await fetch('/api/GetUserVocab', {
+                method: 'POST',
+                body: JSON.stringify({ message: userid })
+            })
+
+            const data = await response.json()
+            const knownWordIds = data.message.map(a => Number(a.word_id))
+            setUserKnownWordIds(knownWordIds)
+            console.log('user known word ids', knownWordIds)
+
         }
     }
 
@@ -147,8 +154,12 @@ const NewVocabTable = () => {
         const flatPages = allPages.flatMap(x => x)
         setTableData(flatPages)
 
+        console.log('table data', flatPages)
+
         const tableSlugs = flatPages.map(x => x.slug)
         setAllSlugs(tableSlugs)
+
+        console.log('table slugs', tableSlugs)
 
         // calculate max number of pages
         const slugCount = flatPages.length
@@ -158,14 +169,60 @@ const NewVocabTable = () => {
         // slice data based on items per page and page number
         const slicedPages = flatPages.slice((page - 1) * itemsPerPage, Math.min(itemsPerPage * page, slugCount))
         setVocabularyData(slicedPages)
-        setPage(1)
-        console.log(`page ${page}`, slicedPages)
+
+        console.log('vocab data', slicedPages)
+
+    }
+
+    // get user known words according to known ids
+    const getKnownSlugs = () => {
+
+        const knownWords = tableData.filter((word) => (
+            userKnownWordIds.includes(Number(word.id))
+        ))
+
+        const userKnownSlugs = knownWords.map(x => x.slug)
+        setKnownSlugs(userKnownSlugs)
+
+        console.log('known slugs', userKnownSlugs)
+
+    }
+
+    // set the initial package and comparison package
+    const setComparators = () => {
+
+        const knownWords = vocabularyData.filter((word) => (
+            userKnownWordIds.includes(Number(word.id))
+        ))
+
+        const userKnownSlugs = knownWords.map(x => x.slug)
+
+        const initialSlugObject = {}
+
+        vocabularyData.forEach(x => (
+            userKnownSlugs.includes(x.slug) ?
+                initialSlugObject[x.slug] = true :
+                initialSlugObject[x.slug] = false
+        ))
+
+        setInitialPackage(initialSlugObject) // an original we can compare against
+        setSlugChanges(initialSlugObject) // the updated package
+
+    }
+
+    // function to refresh vocab table with user changes
+    const fullRefresh = () => {
+
+        setTableLoading(true)
+
+        getUserVocab().finally(
+            () => fetchAllData(nLevel, page, itemsPerPage))
+
+        setTableLoading(false)
     }
 
     // adjusting table for items per page change
     async function adjustTable(page, itemsPerPage) {
-
-        setTableLoading(true)
 
         // calculate max number of pages
         const slugCount = tableData.length
@@ -176,97 +233,92 @@ const NewVocabTable = () => {
         const slicedPages = tableData.slice((page - 1) * itemsPerPage, Math.min(itemsPerPage * page, slugCount))
         setVocabularyData(slicedPages)
 
-        setTableLoading(false)
     }
 
-    // use effect to handle page table adjustment post slicing option change 
+    // to update slug changes object whenever a checkbox is ticked
+    const updatePackage = (boxSlug) => {
+        setSlugChanges({
+            ...slugChanges,
+            [boxSlug]: !slugChanges[boxSlug]
+        })
+        console.log('this is the change', slugChanges)
+    }
+
+    // when tick all option is chosen, set all values in slugchanges to be true
+    const tickAll = () => {
+
+        const allTrueSlugChanges = {}
+
+        Object.keys(slugChanges).forEach(slug =>
+            allTrueSlugChanges[slug] = true
+        )
+
+        setSlugChanges(allTrueSlugChanges)
+
+    }
+
+    // UE when table data or user known words changes, recalculate the comparators
+    useEffect(() => {
+        getKnownSlugs()
+        setComparators()
+        setTableLoading(false)
+    }, [tableData, userKnownWordIds, vocabularyData])
+
+    // UE1 use effect to handle page table adjustment post slicing option change 
     useEffect(() => {
         adjustTable(page, itemsPerPage)
+        setComparators() // set new inital and changed packages for user
         setPage(1)
     }, [itemsPerPage])
 
-    // function to retrieve all word ids within user's vocab db
-    const getUserVocab = async () => {
-
-        if (session) {
-            const response = await fetch('/api/GetUserVocab', {
-                method: 'POST',
-                body: JSON.stringify({ message: userid })
-            })
-
-            const data = await response.json()
-            const knownWordIds = data.message.map(a => Number(a.word_id))
-            setUserKnownWordIds(knownWordIds)
-            console.log(knownWordIds)
-        }
-    }
-
-    // get user known word ids only when the session changes
+    // UE2 when n level changes, fetch all data and display, tabledata and vocabdata states get changed
     useEffect(() => {
-        getUserVocab()
-    }, [session])
-
-    // when n level changes, fetch all data and display, tabledata and vocabdata states get changed
-    useEffect(() => {
-        setTableLoading(true)
         if (status === "loading") return
 
-        fetchAllData(nLevel, page, itemsPerPage).finally(() => {
-            setTableLoading(false)
-        })
+        if (status === 'unauthenticated') {
+            fetchAllData(nLevel, page, itemsPerPage).finally(() => {
+                setTableLoading(false)
+            })
+        }
+
+        if (status === 'authenticated') {
+            fullRefresh()
+        }
 
     }, [nLevel, status])
 
-    // when table data changes and is > 0, get user known words according to known ids
+    // UE3 when page changes, set new comparator, adjust table but do not set page to 1
     useEffect(() => {
-        if (tableData.length > 0 && session) {
-    
-            const knownWords = tableData.filter((word) => (
-                userKnownWordIds.includes(Number(word.id))
-            ))
+        adjustTable(page, itemsPerPage)
+        setComparators() // set new inital and changed packages for user
+    }, [page])
 
-            const userKnownSlugs = knownWords.map(x => x.slug)
-            setKnownSlugs(userKnownSlugs)
-      
-        }
-    }, [tableData])
+    const sendChanges = async () => {
 
-    // when page is changed, set package key-value pairs
-    useEffect(() => {
+        const vocabTableIds = vocabularyData.map(x => x.id)
 
-        if (vocabularyData.length > 0 && session) {
+        const toSend = { usersid: userid, initial: initialPackage, changes: slugChanges, ids: vocabTableIds }
+        console.log("tosend", toSend)
+        const resp = await fetch('/api/SubmitVocabData',
+            {
+                method: 'POST',
+                body: JSON.stringify(toSend)
+            }
+        )
 
-        
+        const result = await resp.json()
 
-            console.log('im running!!')
+        console.log(result)
 
-            const knownWords = vocabularyData.filter((word) => (
-                userKnownWordIds.includes(Number(word.id))
-            ))
+        fullRefresh()
 
-            const userKnownSlugs = knownWords.map(x => x.slug)
-
-            const initialSlugObject = {}
-
-            vocabularyData.forEach(x => (
-                userKnownSlugs.includes(x.slug) ?
-                    initialSlugObject[x.slug] = true :
-                    initialSlugObject[x.slug] = false
-            ))
-
-            setSlugChanges(initialSlugObject)
-
-        }
-
-    }, [vocabularyData])
+    }
 
     // logs for testing
-    useEffect(() => {
-        console.log('alldata', tableData)
-        console.log('allslugs', allSlugs)
-        console.log('slugchanges', slugChanges)
-        console.log(Object.keys(slugChanges).length)
-    }, [page])
+    // useEffect(() => {
+    //     console.log('vocabdata', vocabularyData)
+    //     console.log('ukwid', userKnownWordIds)
+    // }, [page])
 
     // desktop layout
     //   <>
@@ -595,6 +647,16 @@ const NewVocabTable = () => {
     // states for table option dialogs
     const [nLevelSelect, openNLevelSelect] = useState(false)
     const [sliceSelect, openSliceSelect] = useState(false)
+    const [searchSelect, openSearchSelect] = useState(false)
+
+    const handleSearchSubmit = (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.currentTarget);
+        const formJson = Object.fromEntries(formData.entries());
+        const query = formJson.query;
+        tableQuery(query)
+        openSearchSelect(false)
+    }
 
     const NLevelDialog = () => (
         <Dialog open={nLevelSelect} onClose={() => openNLevelSelect(false)}>
@@ -640,6 +702,34 @@ const NewVocabTable = () => {
         </Dialog>
     )
 
+    const SearchDialog = () => (
+
+        <Dialog open={searchSelect} onClose={() => openSearchSelect(false)}>
+            <DialogTitle variant='subtitle1'>
+                ページ番号や探索したい単語を入力してください
+            </DialogTitle>
+            <DialogContent>
+                <form onSubmit={handleSearchSubmit} id="search-form">
+                    <TextField
+                        autoFocus
+                        required
+                        margin="dense"
+                        name="query"
+                        label="ページ / 単語"
+                        fullWidth
+                        variant="standard"
+                    />
+                </form>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => openSearchSelect(false)}>Cancel</Button>
+                <Button type="submit" form="search-form">
+                    Search
+                </Button>
+            </DialogActions>
+        </Dialog>
+    )
+
     const InProgress = () => (
         <Container maxWidth='xl' sx={{ minHeight: 'calc(100vh - 56px)', backgroundColor: '', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <CircularProgress />
@@ -653,6 +743,7 @@ const NewVocabTable = () => {
 
                 <NLevelDialog />
                 <SliceDialog />
+                <SearchDialog />
 
                 <Box sx={{ pt: 5 }}>
                     <ToggleButtonGroup>
@@ -683,11 +774,11 @@ const NewVocabTable = () => {
                             }
                         </ToggleButton>
 
-                        <ToggleButton sx={{ borderColor: '#d32f2f' }}>
+                        <ToggleButton onClick={() => tickAll()} sx={{ borderColor: '#d32f2f' }}>
                             <DoneAll color='error' />
                         </ToggleButton>
 
-                        <ToggleButton sx={{ borderColor: '#d32f2f' }}>
+                        <ToggleButton onClick={() => openSearchSelect(true)} sx={{ borderColor: '#d32f2f' }}>
                             <ManageSearchIcon color='error' />
                         </ToggleButton>
 
@@ -698,7 +789,27 @@ const NewVocabTable = () => {
                     </ToggleButtonGroup>
                 </Box>
 
-                <Box sx={{ pt: 6 }}>
+                <Box sx={{ mt: 3 }}>
+                    <Button
+                        onClick={() => sendChanges()}
+                        disabled={JSON.stringify(initialPackage) === JSON.stringify(slugChanges)}
+                        variant="contained"
+                        color="error"
+                        size="small"
+                        sx={{
+                            fontWeight: 'bold',
+                            fontSize: '0.95rem',
+                            borderRadius: '12px',
+                            px: 2,
+                            py: 1
+                        }}
+
+                    >
+                        変更を保存
+                    </Button>
+                </Box>
+
+                <Box sx={{ pt: 3 }}>
                     <Pagination color="error" siblingCount={0} page={page} onChange={handleChange} count={maxPages}></Pagination>
                 </Box>
 
@@ -722,8 +833,10 @@ const NewVocabTable = () => {
 
                                         <TableCell sx={{ width: '1%', padding: 0 }}>
                                             <Checkbox
-                                                defaultChecked={knownSlugs.includes(x.slug)}
-                                                color={(knownSlugs.includes(x.slug)) ? 'success' : 'primary'} />
+                                                color={(knownSlugs.includes(x.slug)) ? 'success' : 'primary'}
+                                                onClick={() => updatePackage(x.slug)}
+                                                checked={slugChanges[x.slug] === true}
+                                            />
                                         </TableCell>
 
                                         <TableCell sx={{ width: '98%', textAlign: 'center', pr: 9, fontSize: '1rem', fontWeight: 'bold' }}>
