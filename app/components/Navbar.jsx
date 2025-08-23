@@ -1,20 +1,14 @@
 'use client'
 
-import React, { useState, useEffect, useContext } from 'react'
-import { AppBar, IconButton, Stack, Toolbar, Typography, Button, Box, Dialog, DialogTitle, DialogContent, DialogContentText, Popper, Paper, MenuList, MenuItem, ClickAwayListener, Grow, ButtonGroup, CircularProgress, Zoom, Container } from '@mui/material'
-import DarkModeIcon from '@mui/icons-material/DarkMode';
+import React, { useState, useContext } from 'react'
+import { AppBar, IconButton, Toolbar, Typography, Button, Box, Popper, Paper, MenuList, MenuItem, ClickAwayListener, Zoom, Container, Avatar, CircularProgress } from '@mui/material'
 import Link from 'next/link'
-import { Google } from '@mui/icons-material';
-import { SessionProvider, useSession } from 'next-auth/react'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { signOut } from 'next-auth/react';
-import Skeleton from '@mui/material/Skeleton';
 import SunnySnowingIcon from '@mui/icons-material/SunnySnowing';
 import { UserContext } from '../context/UserSession';
 import Slide from '@mui/material/Slide';
 import SchoolIcon from '@mui/icons-material/School';
-import Fade from '@mui/material/Fade';
-import AdbIcon from '@mui/icons-material/Adb';
 import MenuIcon from '@mui/icons-material/Menu';
 import Menu from '@mui/material/Menu';
 
@@ -134,49 +128,69 @@ const Navbar = () => {
 
     )
 
-    const [mobileAnchorEl, setMobileAnchorEl] = React.useState(null);
-
-    const MobileNavbar = () => (
-        <AppBar color='error' position="sticky">
-            <Container maxWidth='xl'>
-                <Toolbar>
-                    <Box sx={{display:'flex', flexDirection:'row', justifyContent:'space-between', alignItems:'center', width:'100%'}}>
-                        <Box>
-                            <IconButton onClick={(event) => setMobileAnchorEl(event.currentTarget)}>
-                                <MenuIcon sx={{color:'white'}} />
-                            </IconButton>
+    const MobileNavbar = () => {
+        const [mobileAnchorEl, setMobileAnchorEl] = React.useState(null);
+        const [avatarAnchorEl, setAvatarAnchorEl] = useState(null)
+        return (
+            <AppBar color='error' position="sticky">
+                <Container>
+                    <Toolbar>
+                        <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                            <Box>
+                                <IconButton onClick={(event) => setMobileAnchorEl(event.currentTarget)}>
+                                    <MenuIcon sx={{ color: 'white' }} />
+                                </IconButton>
+                            </Box>
+                            <Box component={Link} href='/' sx={{ display: 'flex', flexDirection: 'row', gap: 1 }}>
+                                <SunnySnowingIcon />
+                                <Typography>
+                                    JLPT ASSIST
+                                </Typography>
+                            </Box>
+                            <Box sx={{ display:'flex', minWidth:64, minHeight:37, justifyContent:'right'}}>
+                                {(status) === 'loading' ? null :
+                                (status === 'authenticated' && (username)) ?
+                                    <>
+                                        <Avatar
+                                            disableFocusRipple
+                                            disableRipple
+                                            component={IconButton}
+                                            onClick={(event) => {setAvatarAnchorEl(event.currentTarget)}}
+                                            sx={{ bgcolor: 'white', color: 'red' }}
+                                        >
+                                            {username[0].toUpperCase()}
+                                        </Avatar>
+                                        <Menu anchorEl={avatarAnchorEl} open={Boolean(avatarAnchorEl)} onClose={() => setAvatarAnchorEl(null)}>
+                                            <MenuItem onClick={() => signOut()}>Logout</MenuItem>
+                                            <MenuItem>Settings</MenuItem>
+                                        </Menu>
+                                    </>
+                                    :
+                                    <Button
+                                        component={Link}
+                                        sx={{ color: 'white' }}
+                                        href='/login'
+                                    >
+                                        Login
+                                    </Button>
+                                }
+                                <Menu
+                                    color='black'
+                                    anchorEl={mobileAnchorEl}
+                                    open={Boolean(mobileAnchorEl)}
+                                    onClose={() => setMobileAnchorEl(null)}
+                                >
+                                    <MenuItem component={Link} href='/vocab' sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>文字語彙</MenuItem>
+                                    <MenuItem component={Link} href='/quiz' sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>クイズ</MenuItem>
+                                    <MenuItem component={Link} href='/' sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>成績</MenuItem>
+                                </Menu>
+                            </Box>
                         </Box>
-                        <Box component={Link} href='/' sx={{display:'flex', flexDirection:'row', gap:1}}>
-                            <SunnySnowingIcon/>
-                            <Typography>
-                                JLPT ASSIST
-                            </Typography>
-                        </Box>
-                        <Box>
-                            <Button
-                            component={Link}
-                            sx={{color:'white'}}
-                            href='/login'
-                            >
-                                Login
-                            </Button>
-                            <Menu
-                            sx={{marginTop:4}}
-                            color='black'
-                            anchorEl={mobileAnchorEl}
-                            open={Boolean(mobileAnchorEl)}
-                            onClose={() => setMobileAnchorEl(null)}
-                            >
-                                <MenuItem component={Link} href='/vocab' sx={{display:'flex', justifyContent:'center', alignItems:'center'}}>文字語彙</MenuItem>
-                                <MenuItem component={Link} href='/quiz' sx={{display:'flex', justifyContent:'center', alignItems:'center'}}>クイズ</MenuItem>
-                                <MenuItem component={Link} href='/' sx={{display:'flex', justifyContent:'center', alignItems:'center'}}>成績</MenuItem>
-                            </Menu>
-                        </Box>
-                    </Box>
-                </Toolbar>
-            </Container>
-        </AppBar>
-    )
+                    </Toolbar>
+                </Container>
+            </AppBar>
+        )
+    }
 
     return (
         <MobileNavbar />

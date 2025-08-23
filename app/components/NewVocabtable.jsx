@@ -706,7 +706,7 @@ const NewVocabTable = () => {
 
         <Dialog open={searchSelect} onClose={() => openSearchSelect(false)}>
             <DialogTitle variant='subtitle1'>
-                ページ番号や探索したい単語を入力してください
+                ページ番号や単語を入力してください
             </DialogTitle>
             <DialogContent>
                 <form onSubmit={handleSearchSubmit} id="search-form">
@@ -722,9 +722,9 @@ const NewVocabTable = () => {
                 </form>
             </DialogContent>
             <DialogActions>
-                <Button onClick={() => openSearchSelect(false)}>Cancel</Button>
+                <Button onClick={() => openSearchSelect(false)}>キャンセル</Button>
                 <Button type="submit" form="search-form">
-                    Search
+                    探索
                 </Button>
             </DialogActions>
         </Dialog>

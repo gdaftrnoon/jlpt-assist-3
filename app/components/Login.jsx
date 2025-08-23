@@ -52,9 +52,6 @@ const LoginLogout = () => {
 
   )
 
-
-
-
   return (
     <MobileLogin />
   );
