@@ -24,10 +24,6 @@ const Navbar = () => {
     const [pagePopper, setPagePopper] = useState(false)
     const studyButtonAnchorRef = React.useRef(null)
 
-    const handlePopperToggle = () => {
-        setPopperStatus((prevOpen) => !prevOpen)
-    }
-
     async function signOutHelper() {
         await signOut({ redirectTo: '/' })
     }

@@ -1,20 +1,16 @@
 'use client'
-import { SvgIcon, Alert, Box, Button, Card, ClickAwayListener, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, Fade, FormControl, IconButton, InputLabel, MenuItem, Select, Stack, Table, TableBody, TableCell, TableHead, TableRow, ToggleButton, ToggleButtonGroup, Tooltip, Typography, Skeleton, LinearProgress, CardContent, CircularProgress, TextField, Container, List, ListItemButton, ListItemText, ListItem } from '@mui/material'
+import { Box, Button, Card, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Table, TableBody, TableCell, TableRow, ToggleButton, ToggleButtonGroup, Typography, CircularProgress, TextField, Container, List, ListItemButton, ListItemText, ListItem, Alert, CardContent, Paper, DialogContentText } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Pagination from '@mui/material/Pagination';
 import Checkbox from '@mui/material/Checkbox';
-import Zoom from '@mui/material/Zoom';
-import { CheckBoxOutlineBlank, DeleteForever, DoneAll, Expand, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Stairs, UnfoldLess } from '@mui/icons-material';
+import { DeleteForever, DoneAll, Expand, Info, Stairs, UnfoldLess } from '@mui/icons-material';
 import ArticleIcon from '@mui/icons-material/Article';
 import { useSession } from 'next-auth/react';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
-import CheckIcon from '@mui/icons-material/Check';
-import ClearIcon from '@mui/icons-material/Clear';
-import { convertToObject } from 'typescript';
-import { checkboxClasses } from "@mui/material/Checkbox";
-
+import CheckBoxOutlineBlankRoundedIcon from '@mui/icons-material/CheckBoxOutlineBlankRounded';
+import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 
 const NewVocabTable = () => {
 
@@ -48,9 +44,6 @@ const NewVocabTable = () => {
     // state determining whether all cards are open/closed
     const [isExpanded, setExpanded] = useState(false)
 
-    // state to determine whether the "untick all boxes" warning is shown
-    const [openWarning, setOpenWarning] = useState(false)
-
     // const to hold all slugs, could be useful
     const [allSlugs, setAllSlugs] = useState([])
 
@@ -60,37 +53,28 @@ const NewVocabTable = () => {
     // state to hold user's known slugs
     const [knownSlugs, setKnownSlugs] = useState([])
 
-    // state to manage whether side n buttons are shown
-    const [nButtons, showNbuttons] = useState(false)
-
-    // state to manage whether side pagination buttons are shown
-    const [tableConfig, showTableConfig] = useState(false)
-
     // state to manage how pages are sliced
     const [itemsPerPage, setItemsPerPage] = useState(10)
 
     // state to manage max pages, initialised with max pages for n1
     const [maxPages, setMaxPages] = useState(172)
 
-    // state to manage table loading ui display
-    const [tableLoading, setTableLoading] = useState(true)
-
-    // state to manage whether the vocab search tool is shown
-    const [showSearch, toggleShowSearch] = useState(false)
-
-    // state to hold search field text/number
-    const [searchQuery, setSearchQuery] = useState('')
-
     const [initialPackage, setInitialPackage] = useState({})
 
     // state to keep track of checkbox changes for submission to db
     const [slugChanges, setSlugChanges] = useState({})
 
+    // state for intro page
+    const [introDialog, toggleIntroDialog] = useState(true)
+
+    // state to manage table loading ui display
+    const [loading, setLoading] = useState(false)
+
     // function handling n level change
     const nHandler = (level) => {
+        setLoading(true)
         setNLevel(level)
         setPage(1)
-        showNbuttons(false)
         setOpen([])
     }
 
@@ -177,48 +161,43 @@ const NewVocabTable = () => {
     // get user known words according to known ids
     const getKnownSlugs = () => {
 
-        const knownWords = tableData.filter((word) => (
-            userKnownWordIds.includes(Number(word.id))
-        ))
+        if (session) {
 
-        const userKnownSlugs = knownWords.map(x => x.slug)
-        setKnownSlugs(userKnownSlugs)
+            const knownWords = tableData.filter((word) => (
+                userKnownWordIds.includes(Number(word.id))
+            ))
 
-        console.log('known slugs', userKnownSlugs)
+            const userKnownSlugs = knownWords.map(x => x.slug)
+            setKnownSlugs(userKnownSlugs)
 
+            console.log('known slugs', userKnownSlugs)
+
+        }
     }
 
     // set the initial package and comparison package
     const setComparators = () => {
 
-        const knownWords = vocabularyData.filter((word) => (
-            userKnownWordIds.includes(Number(word.id))
-        ))
+        if (session) {
 
-        const userKnownSlugs = knownWords.map(x => x.slug)
+            const knownWords = vocabularyData.filter((word) => (
+                userKnownWordIds.includes(Number(word.id))
+            ))
 
-        const initialSlugObject = {}
+            const userKnownSlugs = knownWords.map(x => x.slug)
 
-        vocabularyData.forEach(x => (
-            userKnownSlugs.includes(x.slug) ?
-                initialSlugObject[x.slug] = true :
-                initialSlugObject[x.slug] = false
-        ))
+            const initialSlugObject = {}
 
-        setInitialPackage(initialSlugObject) // an original we can compare against
-        setSlugChanges(initialSlugObject) // the updated package
+            vocabularyData.forEach(x => (
+                userKnownSlugs.includes(x.slug) ?
+                    initialSlugObject[x.slug] = true :
+                    initialSlugObject[x.slug] = false
+            ))
 
-    }
+            setInitialPackage(initialSlugObject) // an original we can compare against
+            setSlugChanges(initialSlugObject) // the updated package
 
-    // function to refresh vocab table with user changes
-    const fullRefresh = () => {
-
-        setTableLoading(true)
-
-        getUserVocab().finally(
-            () => fetchAllData(nLevel, page, itemsPerPage))
-
-        setTableLoading(false)
+        }
     }
 
     // adjusting table for items per page change
@@ -257,48 +236,39 @@ const NewVocabTable = () => {
 
     }
 
-    // UE when table data or user known words changes, recalculate the comparators
-    useEffect(() => {
-        getKnownSlugs()
-        setComparators()
-        setTableLoading(false)
-    }, [tableData, userKnownWordIds, vocabularyData])
+    // when tick all option is chosen, set all values in slugchanges to be true
+    const untickAll = async () => {
 
-    // UE1 use effect to handle page table adjustment post slicing option change 
-    useEffect(() => {
-        adjustTable(page, itemsPerPage)
-        setComparators() // set new inital and changed packages for user
-        setPage(1)
-    }, [itemsPerPage])
+        openUntickAllSelect(false)
 
-    // UE2 when n level changes, fetch all data and display, tabledata and vocabdata states get changed
-    useEffect(() => {
-        if (status === "loading") return
+        const knownSlugsSet = new Set(knownSlugs)
+        const knownSlugsOnLevel = allSlugs.filter(x => knownSlugsSet.has(x))
+        const knownSlugsOnLevelSet = new Set(knownSlugsOnLevel)
 
-        if (status === 'unauthenticated') {
-            fetchAllData(nLevel, page, itemsPerPage).finally(() => {
-                setTableLoading(false)
-            })
-        }
+        const knownObjectsOnLevel = (tableData.filter(x => knownSlugsOnLevelSet.has(x.slug)))
 
-        if (status === 'authenticated') {
-            fullRefresh()
-        }
+        console.log("known slugs that will be deleted on n level", knownSlugsOnLevel)
 
-    }, [nLevel, status])
+        const allFalseSlugChanges = {}
 
-    // UE3 when page changes, set new comparator, adjust table but do not set page to 1
-    useEffect(() => {
-        adjustTable(page, itemsPerPage)
-        setComparators() // set new inital and changed packages for user
-    }, [page])
+        const allTrueSlugs = {}
 
-    const sendChanges = async () => {
+        knownSlugsOnLevel.forEach(slug =>
+            allFalseSlugChanges[slug] = false
+        )
 
-        const vocabTableIds = vocabularyData.map(x => x.id)
+        knownSlugsOnLevel.forEach(slug =>
+            allTrueSlugs[slug] = true
+        )
 
-        const toSend = { usersid: userid, initial: initialPackage, changes: slugChanges, ids: vocabTableIds }
+        setInitialPackage(allTrueSlugs)
+        setSlugChanges(allFalseSlugChanges)
+
+        const vocabTableIds = knownObjectsOnLevel.map(x => x.id)
+
+        const toSend = { usersid: userid, initial: allTrueSlugs, changes: allFalseSlugChanges, ids: vocabTableIds }
         console.log("tosend", toSend)
+        setLoading(true)
         const resp = await fetch('/api/SubmitVocabData',
             {
                 method: 'POST',
@@ -310,336 +280,88 @@ const NewVocabTable = () => {
 
         console.log(result)
 
-        fullRefresh()
+        getUserVocab().finally(
+            () => fetchAllData(nLevel, page, itemsPerPage))
 
     }
 
+    // UE A when n level changes, fetch all data and display, tabledata and vocabdata states get changed
+    useEffect(() => {
+
+        if (status === "loading") return
+
+        if (status === 'unauthenticated') {
+            fetchAllData(nLevel, page, itemsPerPage)
+            setLoading(false)
+        }
+
+        if (status === 'authenticated')
+
+            getUserVocab().finally(
+                () => {
+                    fetchAllData(nLevel, page, itemsPerPage)
+                })
+
+
+    }, [nLevel, status])
+
+    // UEB when table data or user known words changes, recalculate the comparators
+    useEffect(() => {
+        if (session) {
+            getKnownSlugs()
+            setComparators()
+            setLoading(false)
+        }
+    }, [tableData, userKnownWordIds, vocabularyData])
+
+    // UE use effect to handle page table adjustment post slicing option change 
+    useEffect(() => {
+        adjustTable(page, itemsPerPage)
+        if (session) {
+            setComparators()
+        }
+        setPage(1)
+    }, [itemsPerPage])
+
+    // UE when page changes, set new comparator, adjust table but do not set page to 1
+    useEffect(() => {
+        adjustTable(page, itemsPerPage)
+        if (session) {
+            setComparators()
+        }
+    }, [page])
+
+    const sendChanges = async () => {
+
+        if (session) {
+
+            setLoading(true)
+
+            const vocabTableIds = vocabularyData.map(x => x.id)
+
+            const toSend = { usersid: userid, initial: initialPackage, changes: slugChanges, ids: vocabTableIds }
+            console.log("tosend", toSend)
+            const resp = await fetch('/api/SubmitVocabData',
+                {
+                    method: 'POST',
+                    body: JSON.stringify(toSend)
+                }
+            )
+
+            const result = await resp.json()
+
+            console.log(result)
+
+            getUserVocab().finally(
+                () => fetchAllData(nLevel, page, itemsPerPage))
+
+        }
+    }
+
     // logs for testing
-    // useEffect(() => {
-    //     console.log('vocabdata', vocabularyData)
-    //     console.log('ukwid', userKnownWordIds)
-    // }, [page])
-
-    // desktop layout
-    //   <>
-
-    //     <Box sx={{ display: 'flex', marginTop: '0px' }}>
-
-    //         <Box sx={{
-    //             display: 'flex',
-    //             width: '33%',
-    //             height: '100%',
-    //             justifyContent: 'left',
-    //             paddingTop: '300px'
-    //         }}>
-    //             <ToggleButtonGroup orientation='vertical' sx={{ position: 'fixed' }}>
-
-    //                 <Tooltip
-    //                     title='項目数'
-    //                     slots={{ transition: Zoom }}
-    //                     slotProps={{
-    //                         popper: {
-    //                             modifiers: [
-    //                                 {
-    //                                     name: 'offset',
-    //                                     options: {
-    //                                         offset: [68, -92],
-    //                                     },
-    //                                 },
-    //                             ],
-    //                         },
-    //                     }}
-    //                 >
-    //                     <ToggleButton
-    //                         onChange={(e) => showTableConfig(!tableConfig)}
-    //                     >
-    //                         <ArticleIcon />
-    //                     </ToggleButton>
-    //                 </Tooltip>
-
-    //                 <Tooltip
-    //                     title='JLPTレベル'
-    //                     slots={{ transition: Zoom }}
-    //                     slotProps={{
-    //                         popper: {
-    //                             modifiers: [
-    //                                 {
-    //                                     name: 'offset',
-    //                                     options: {
-    //                                         offset: [68, -9],
-    //                                     },
-    //                                 },
-    //                             ],
-    //                         },
-    //                     }}
-    //                 >
-    //                     <ToggleButton
-    //                         onChange={(e) => showNbuttons(!nButtons)}>
-    //                         {
-    //                             nLevel === 'n1' ? <LooksOne /> :
-    //                                 nLevel === 'n2' ? <LooksTwo /> :
-    //                                     nLevel === 'n3' ? <Looks3 /> :
-    //                                         nLevel === 'n4' ? <Looks4 /> :
-    //                                             nLevel === 'n5' ? <Looks5 /> :
-    //                                                 null}
-    //                     </ToggleButton>
-    //                 </Tooltip>
-
-    //                 {isExpanded ?
-    //                     <Tooltip placement='right' title='すべて非表示' slots={{ transition: Zoom }} arrow>
-    //                         <ToggleButton
-    //                             onChange={(e) => collapseAll()}>
-    //                             <UnfoldLess />
-    //                         </ToggleButton>
-    //                     </Tooltip>
-
-    //                     :
-    //                     <Tooltip placement='right' title='すべて表示' slots={{ transition: Zoom }} arrow>
-    //                         <ToggleButton
-    //                             onChange={(e) => expandAll()}>
-    //                             <Expand />
-    //                         </ToggleButton>
-    //                     </Tooltip>
-
-    //                 }
-
-    //                 <Tooltip placement='right' title='すべて選択' slots={{ transition: Zoom }} arrow>
-    //                     <ToggleButton>
-    //                         <CheckBoxOutlineBlank />
-    //                     </ToggleButton>
-    //                 </Tooltip>
-
-    //                 <Tooltip placement='right' title='すべてのチェックを外す' slots={{ transition: Zoom }} arrow>
-    //                     <ToggleButton onClick={() => setOpenWarning(true)}>
-    //                         <DeleteForever />
-    //                     </ToggleButton>
-    //                 </Tooltip>
-    //                 <Dialog
-    //                     open={openWarning}
-    //                     onClose={() => setOpenWarning(false)}
-    //                 >
-    //                     <DialogTitle>
-    //                         {'Are you sure you want to reset every checkbox?'}
-    //                     </DialogTitle>
-    //                     <DialogContent>
-    //                         Selecting this option will uncheck every checkbox across every page, there is no way to undo this process.
-    //                     </DialogContent>
-    //                     <DialogActions>
-    //                         <Button onClick={() => setOpenWarning(false)}>Cancel</Button>
-    //                         <Button onClick={() => untickAll(nLevel)}>Reset Checkboxes</Button>
-    //                     </DialogActions>
-    //                 </Dialog>
-
-    //                 <Tooltip
-    //                     title='検索'
-    //                     slots={{ transition: Zoom }}
-    //                     slotProps={{
-    //                         popper: {
-    //                             modifiers: [
-    //                                 {
-    //                                     name: 'offset',
-    //                                     options: {
-    //                                         offset: [50, -92],
-    //                                     },
-    //                                 },
-    //                             ],
-    //                         },
-    //                     }}
-    //                 >
-    //                     <ToggleButton onClick={() => toggleShowSearch(prev => !prev)}>
-    //                         <ManageSearchIcon />
-    //                     </ToggleButton>
-    //                 </Tooltip>
-
-    //             </ToggleButtonGroup>
-
-    //             <Collapse orientation='horizontal' in={tableConfig} sx={{ marginLeft: '48px', position: 'fixed' }}>
-    //                 <ToggleButtonGroup orientation='horizontal'>
-    //                     <ToggleButton onClick={() => {
-    //                         showTableConfig(false)
-    //                         setItemsPerPage(5)
-    //                     }}
-    //                     >
-    //                         <SvgIcon>
-    //                             <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="16">
-    //                                 5
-    //                             </text>
-    //                         </SvgIcon>
-    //                     </ToggleButton>
-    //                     <ToggleButton onClick={() => {
-    //                         showTableConfig(false)
-    //                         setItemsPerPage(10)
-    //                         setPage(1)
-    //                     }}
-    //                     >
-    //                         <SvgIcon>
-    //                             <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="16">
-    //                                 10
-    //                             </text>
-    //                         </SvgIcon>
-    //                     </ToggleButton>
-    //                     <ToggleButton onClick={() => {
-    //                         showTableConfig(false)
-    //                         setItemsPerPage(15)
-    //                         setPage(1)
-    //                     }}
-    //                     >
-    //                         <SvgIcon>
-    //                             <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="16">
-    //                                 15
-    //                             </text>
-    //                         </SvgIcon>
-    //                     </ToggleButton>
-    //                     <ToggleButton onClick={() => {
-    //                         showTableConfig(false)
-    //                         setItemsPerPage(20)
-    //                         setPage(1)
-    //                     }}
-    //                     >
-    //                         <SvgIcon>
-    //                             <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="16">
-    //                                 20
-    //                             </text>
-    //                         </SvgIcon>
-    //                     </ToggleButton>
-    //                 </ToggleButtonGroup>
-    //             </Collapse>
-
-
-    //             <Collapse orientation='horizontal' in={nButtons} sx={{ marginLeft: '48px', position: 'fixed', marginTop: '47px' }}>
-    //                 <ToggleButtonGroup orientation='horizontal'>
-    //                     {nLevel != 'n1' ? <ToggleButton onClick={() => nHandler('n1')}><LooksOne /></ToggleButton> : null}
-    //                     {nLevel != 'n2' ? <ToggleButton onClick={() => nHandler('n2')}><LooksTwo /></ToggleButton> : null}
-    //                     {nLevel != 'n3' ? <ToggleButton onClick={() => nHandler('n3')}><Looks3 /></ToggleButton> : null}
-    //                     {nLevel != 'n4' ? <ToggleButton onClick={() => nHandler('n4')}><Looks4 /></ToggleButton> : null}
-    //                     {nLevel != 'n5' ? <ToggleButton onClick={() => nHandler('n5')}><Looks5 /></ToggleButton> : null}
-    //                 </ToggleButtonGroup>
-    //             </Collapse>
-
-    //             <Collapse orientation='horizontal' in={showSearch} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: '55px', position: 'fixed', marginTop: '227px' }}>
-
-    //                 <Box sx={{ display: 'flex', justifyContent: 'left', alignItems: 'center', width: 300, height: 65 }}>
-    //                     <TextField
-    //                         label="単語 / ページ番号"
-    //                         size="small"
-    //                         sx={{ width: '155px' }}
-    //                         value={searchQuery}
-    //                         onChange={(e) => setSearchQuery(e.target.value)}
-    //                     />
-
-    //                     <IconButton onClick={() => tableQuery(searchQuery)} color='success' sx={{ marginTop: '5px', marginLeft: '7px', border: 1 }} size="small">
-    //                         <CheckIcon fontSize="inherit" />
-    //                     </IconButton>
-
-    //                     <IconButton onClick={() => setSearchQuery('')} color='error' sx={{ marginTop: '5px', marginLeft: '7px', border: 1 }} size="small">
-    //                         <ClearIcon fontSize="inherit" />
-    //                     </IconButton>
-    //                 </Box>
-
-    //             </Collapse>
-
-    //         </Box>
-
-    //         <Box sx={{
-    //             width: '34%',
-    //             height: '100%',
-    //             display: 'flex',
-    //             flexDirection: 'column',
-    //             alignItems: 'center',
-    //             justifyContent: 'flex-start',
-    //             paddingTop: 6,
-    //             marginBottom: 10
-    //         }}>
-
-    //             {(tableLoading) ?
-
-    //                 <Card sx={{ marginTop: 10, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-    //                     <CardContent sx={{ display: 'flex', gap: '20px', flexDirection: 'row' }}>
-    //                         <Typography variant='h5'>データを読み込み中…</Typography>
-    //                     </CardContent>
-    //                 </Card>
-
-    //                 :
-    //                 <>
-    //                     <Box sx={{ display: 'flex', flexDirection: 'row', gap: '20px', paddingTop: '30px', paddingBottom: '33px', alignItems: 'center', justifyContent: 'center' }}>
-    //                         <Pagination color="error" siblingCount={2} page={page} onChange={handleChange} count={maxPages} showFirstButton showLastButton></Pagination>
-    //                         <Button variant='contained' color='error'>変更を保存</Button>
-    //                     </Box>
-
-    //                     <Box sx={{ width: '100%' }}>
-    //                         <Table>
-    //                             <TableHead>
-    //                                 <TableRow>
-    //                                     <TableCell sx={{ width: '5%', padding: '0' }} />
-    //                                     <TableCell sx={{ width: '5%', padding: '0' }} />
-    //                                     <TableCell sx={{ textAlign: 'center', width: 'auto' }}>
-    //                                     </TableCell>
-    //                                 </TableRow>
-    //                             </TableHead>
-    //                             <TableBody>
-    //                                 {vocabularyData.map((x, index) => (
-    //                                     <React.Fragment key={x.slug}>
-    //                                         <TableRow key={x.slug}>
-    //                                             <TableCell>
-    //                                                 <IconButton
-    //                                                     aria-label='expand row'
-    //                                                     size='small'
-    //                                                     onClick={() => setOpen(prevOpen =>
-    //                                                         prevOpen.includes(index) ? prevOpen.filter(x => x != index) : [...prevOpen, index]
-    //                                                     )}>
-    //                                                     {open.includes(index) ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-    //                                                 </IconButton>
-    //                                             </TableCell>
-    //                                             <TableCell>
-    //                                                 <Checkbox
-    //                                                     defaultChecked={knownSlugs.includes(x.slug)}
-    //                                                     color={(knownSlugs.includes(x.slug)) ? 'success' : 'primary'}
-    //                                                 >
-    //                                                 </Checkbox>
-    //                                             </TableCell>
-    //                                             <TableCell sx={{ textAlign: 'center', fontWeight: searchQuery === x.slug ? 'bold' : 'normal' }}>
-    //                                                 {x.slug}
-    //                                             </TableCell>
-    //                                         </TableRow>
-    //                                         <TableRow>
-    //                                             <TableCell colSpan={3}>
-    //                                                 <Collapse in={open.includes(index)}>
-    //                                                     <Box>
-    //                                                         {[...new Set(x.japanese.map(y => y.word))].map((z, index) => (
-    //                                                             <Typography key={index}>{z}</Typography>
-    //                                                         ))}
-    //                                                         <Typography>Reading</Typography>
-    //                                                         {[...new Set(x.japanese.map(y => y.reading))].map((a, index) => (
-    //                                                             <Typography key={index}>{a}</Typography>
-    //                                                         ))}
-    //                                                         <Typography>Meaning</Typography>
-    //                                                         {x.senses.filter(c => !c.parts_of_speech?.includes('Place') && !c.parts_of_speech?.includes('Wikipedia definition'))
-    //                                                             .map((c, index) => (
-    //                                                                 <div key={index}>
-    //                                                                     <Typography>
-    //                                                                         {c.parts_of_speech.join(", ")}
-    //                                                                     </Typography>
-    //                                                                     <Typography>
-    //                                                                         {c.english_definitions.join(", ")}
-    //                                                                     </Typography>
-    //                                                                 </div>
-    //                                                             ))}
-    //                                                     </Box>
-    //                                                 </Collapse>
-    //                                             </TableCell>
-    //                                         </TableRow>
-    //                                     </React.Fragment>
-    //                                 ))}
-    //                             </TableBody>
-    //                         </Table>
-    //                     </Box>
-    //                 </>
-    //             }
-    //         </Box>
-
-    //         <Box sx={{ width: '33%' }}></Box>
-    //     </Box>
-    // </>
+    useEffect(() => {
+        console.log('tabledata', tableData)
+    }, [page])
 
     const nLevelArray = ['n1', 'n2', 'n3', 'n4', 'n5']
     const sliceArray = [5, 10, 15, 20, 25]
@@ -648,6 +370,7 @@ const NewVocabTable = () => {
     const [nLevelSelect, openNLevelSelect] = useState(false)
     const [sliceSelect, openSliceSelect] = useState(false)
     const [searchSelect, openSearchSelect] = useState(false)
+    const [untickAllSelect, openUntickAllSelect] = useState(false)
 
     const handleSearchSubmit = (event) => {
         event.preventDefault();
@@ -667,8 +390,13 @@ const NewVocabTable = () => {
                 {nLevelArray.map(x => (
                     <ListItem key={x}>
                         <ListItemButton onClick={() => {
-                            nHandler(x)
-                            openNLevelSelect(false)
+                            if (nLevel != x) {
+                                nHandler(x)
+                                openNLevelSelect(false)
+                            }
+                            else {
+                                openNLevelSelect(false)
+                            }
                         }}>
                             <ListItemText sx={{ textAlign: 'center' }}>
                                 {x.toUpperCase()}
@@ -730,24 +458,94 @@ const NewVocabTable = () => {
         </Dialog>
     )
 
-    const InProgress = () => (
-        <Container maxWidth='xl' sx={{ minHeight: 'calc(100vh - 56px)', backgroundColor: '', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <CircularProgress />
-        </Container>
-
+    const UntickAllDialog = () => (
+        <Dialog open={untickAllSelect} onClose={() => openUntickAllSelect(false)}>
+            <DialogTitle variant='subtitle1'>
+                {nLevel.toUpperCase()}レベルの全データを削除する？
+            </DialogTitle>
+            <DialogContent>
+                <DialogContentText>
+                    削除すると後戻りはできません
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => openUntickAllSelect(false)}>戻る</Button>
+                <Button onClick={() => untickAll()}>削除</Button>
+            </DialogActions>
+        </Dialog>
     )
 
-    const MobileLayout = () => (
+    return (
         <Container maxWidth='xl' sx={{ minHeight: 'calc(100vh - 56px)', backgroundColor: 'white' }}>
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+
+                <Dialog open={introDialog}>
+                    <DialogTitle sx={{ fontSize: '1.25rem', textAlign: 'center' }}>
+                        文字語彙データの使い方
+                    </DialogTitle>
+                    <DialogContent>
+                        <Box>
+                            <Box>
+                                <Alert severity='error' sx={{ mb: 2 }}>
+                                    ロッグインしてない方は機能を利用できません
+                                </Alert>
+                                <Alert severity='success' sx={{ mb: 2 }}>
+                                    単語を知るとチェックを入力してください、ロッグインするとデータを保存できます
+                                </Alert>
+                            </Box>
+                            <Box>
+                                <Card>
+                                    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <Stairs /><Typography sx={{ fontSize: '0.95rem' }}>Nレベルの選択</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <ArticleIcon /><Typography sx={{ fontSize: '0.95rem' }}>表示件数</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <Expand /><Typography sx={{ fontSize: '0.95rem' }}>詳細を展開</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <UnfoldLess /><Typography sx={{ fontSize: '0.95rem' }}>詳細を隠す</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <DoneAll /><Typography sx={{ fontSize: '0.95rem' }}>ページ全チェック</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <CheckBoxOutlineBlankRoundedIcon /><Typography sx={{ fontSize: '0.95rem' }}>ページ全解除</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <ManageSearchIcon /><Typography sx={{ fontSize: '0.95rem' }}>ページや単語を検索</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <DeleteForever /><Typography sx={{ fontSize: '0.95rem' }}>レベル全解除</Typography>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Box>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            onClick={() => { toggleIntroDialog(false) }}
+                            sx={{ fontWeight: 'bold' }}>
+                            閉じる
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
                 <NLevelDialog />
                 <SliceDialog />
                 <SearchDialog />
+                <UntickAllDialog />
 
                 <Box sx={{ pt: 5 }}>
+
                     <ToggleButtonGroup>
 
+                        <ToggleButton onClick={() => toggleIntroDialog(true)} sx={{ borderColor: '#d32f2f' }}>
+                            <InfoOutlineIcon color='error' />
+                        </ToggleButton>
 
                         <ToggleButton onClick={() => openNLevelSelect(true)} sx={{ borderColor: '#d32f2f' }}>
                             <Stairs color='error' />
@@ -774,46 +572,53 @@ const NewVocabTable = () => {
                             }
                         </ToggleButton>
 
-                        <ToggleButton onClick={() => tickAll()} sx={{ borderColor: '#d32f2f' }}>
-                            <DoneAll color='error' />
+                        <ToggleButton onClick={(session) ? () => tickAll() : null} sx={{ borderColor: '#d32f2f' }}>
+                            <DoneAll color={(session) ? 'error' : ''} />
                         </ToggleButton>
 
                         <ToggleButton onClick={() => openSearchSelect(true)} sx={{ borderColor: '#d32f2f' }}>
                             <ManageSearchIcon color='error' />
                         </ToggleButton>
 
-                        <ToggleButton sx={{ borderColor: '#d32f2f' }}>
-                            <DeleteForever color='error' />
+                        <ToggleButton onClick={() => openUntickAllSelect(true)} sx={{ borderColor: '#d32f2f' }}>
+                            <DeleteForever color={(session) ? 'error' : ''} />
                         </ToggleButton>
 
                     </ToggleButtonGroup>
                 </Box>
 
-                <Box sx={{ mt: 3 }}>
-                    <Button
-                        onClick={() => sendChanges()}
-                        disabled={JSON.stringify(initialPackage) === JSON.stringify(slugChanges)}
-                        variant="contained"
-                        color="error"
-                        size="small"
-                        sx={{
-                            fontWeight: 'bold',
-                            fontSize: '0.95rem',
-                            borderRadius: '12px',
-                            px: 2,
-                            py: 1
-                        }}
+                {
+                    (status === 'unauthenticated') || (status === 'loading') ?
+                        <Box sx={{ mt: 3 }}>
+                            <Alert sx={{ fontWeight: 'bold' }} severity="info">ロッグインすると機能を利用できます</Alert>
+                        </Box>
+                        :
+                        <Box sx={{ mt: 3 }}>
+                            <Button
+                                onClick={() => sendChanges()}
+                                disabled={JSON.stringify(initialPackage) === JSON.stringify(slugChanges)}
+                                variant="contained"
+                                color="error"
+                                size="small"
+                                sx={{
+                                    fontWeight: 'bold',
+                                    fontSize: '0.95rem',
+                                    borderRadius: '12px',
+                                    px: 2,
+                                    py: 1,
+                                    minWidth: 111,
+                                    minHeight: 43
+                                }}
 
-                    >
-                        変更を保存
-                    </Button>
-                </Box>
+                            >
+                                {(loading) ? <CircularProgress sx={{ color: 'white' }} size='25px' /> : `変更を保存`}
+                            </Button>
+                        </Box>
+                }
 
                 <Box sx={{ pt: 3 }}>
                     <Pagination color="error" siblingCount={0} page={page} onChange={handleChange} count={maxPages}></Pagination>
                 </Box>
-
-
 
                 <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 6, borderRadius: '16px', mb: 6 }}>
                     <Table>
@@ -836,6 +641,7 @@ const NewVocabTable = () => {
                                                 color={(knownSlugs.includes(x.slug)) ? 'success' : 'primary'}
                                                 onClick={() => updatePackage(x.slug)}
                                                 checked={slugChanges[x.slug] === true}
+                                                disabled={(!session) ? true : false}
                                             />
                                         </TableCell>
 
@@ -873,14 +679,9 @@ const NewVocabTable = () => {
                     </Table>
                 </Card>
 
+
             </Box>
         </Container>
-    )
-
-
-    return (
-        tableLoading === true ? <InProgress /> :
-            <MobileLayout />
     )
 }
 
