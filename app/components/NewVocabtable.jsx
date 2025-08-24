@@ -303,7 +303,12 @@ const NewVocabTable = () => {
                 })
 
 
-    }, [nLevel, status])
+    }, [status])
+
+    // when n level changes, fetch data again
+    useEffect(() => {
+        fetchAllData(nLevel, page, itemsPerPage)
+    }, [nLevel])
 
     // UEB when table data or user known words changes, recalculate the comparators
     useEffect(() => {
@@ -312,7 +317,7 @@ const NewVocabTable = () => {
             setComparators()
             setLoading(false)
         }
-    }, [tableData, userKnownWordIds, vocabularyData])
+    }, [tableData, userKnownWordIds])
 
     // UE use effect to handle page table adjustment post slicing option change 
     useEffect(() => {
@@ -620,7 +625,7 @@ const NewVocabTable = () => {
                     <Pagination color="error" siblingCount={0} page={page} onChange={handleChange} count={maxPages}></Pagination>
                 </Box>
 
-                <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 6, borderRadius: '16px', mb: 6 }}>
+                <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 6, borderRadius: '16px', mb: 6, minWidth:343 }}>
                     <Table>
                         <TableBody>
                             {vocabularyData.map((x, index) => (
