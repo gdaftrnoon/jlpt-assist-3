@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from '@supabase/supabase-js'
+import { auth } from "../../auth"
 
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY
@@ -8,17 +9,26 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function POST(request) {
 
-    // contains initial and changes
+    const session = await auth()
+
     const resp = await request.json()
 
-    const uid = resp.usersid
+    const uid = session?.user?.userId
 
-    const initial = Object.values(resp.initial)
+    const initial = Object.values(resp.initial) 
     const changes = Object.values(resp.changes)
 
-    const initialKeys = Object.keys(resp.initial)
+    // preventing api misuse
+    if (initial.length > 25 || changes.length > 25) {
+        return NextResponse.json({ message: 'Error - Batch contains invalid number of word IDs' })
+    }
 
     const wordIds = resp.ids
+
+    // preventing api misuse
+    if (wordIds.some(x => !Number.isInteger(x) || Number(x) > 9999 || Number(x) < 0)) {
+         return NextResponse.json({ message: 'Error - Batch contains invalid entries' })
+    }
 
     const toDelete = []
     const toAppend = []

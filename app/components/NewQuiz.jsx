@@ -11,7 +11,7 @@ const NewQuizMaster = () => {
         'n2': 91,
         'n3': 89,
         'n4': 29,
-        'n5': 3,
+        'n5': 33,
     }
 
     // states to hold quiz control options
