@@ -99,9 +99,7 @@ const NewVocabTable = () => {
 
         else if (searchQuery != '') {
             const searchIndex = allSlugs.indexOf(String(searchQuery)) + 1
-            console.log(searchIndex)
             const searchQueryPage = Math.ceil(Number(searchIndex) / Number(itemsPerPage))
-            console.log(searchQueryPage)
             handleChange(null, Number(searchQueryPage))
         }
     }
@@ -119,8 +117,6 @@ const NewVocabTable = () => {
             const data = await response.json()
             const knownWordIds = data.message.map(a => Number(a.word_id))
             setUserKnownWordIds(knownWordIds)
-            console.log('user known word ids', knownWordIds)
-
         }
     }
 
@@ -138,12 +134,8 @@ const NewVocabTable = () => {
         const flatPages = allPages.flatMap(x => x)
         setTableData(flatPages)
 
-        console.log('table data', flatPages)
-
         const tableSlugs = flatPages.map(x => x.slug)
         setAllSlugs(tableSlugs)
-
-        console.log('table slugs', tableSlugs)
 
         // calculate max number of pages
         const slugCount = flatPages.length
@@ -153,9 +145,6 @@ const NewVocabTable = () => {
         // slice data based on items per page and page number
         const slicedPages = flatPages.slice((page - 1) * itemsPerPage, Math.min(itemsPerPage * page, slugCount))
         setVocabularyData(slicedPages)
-
-        console.log('vocab data', slicedPages)
-
     }
 
     // get user known words according to known ids
@@ -169,9 +158,6 @@ const NewVocabTable = () => {
 
             const userKnownSlugs = knownWords.map(x => x.slug)
             setKnownSlugs(userKnownSlugs)
-
-            console.log('known slugs', userKnownSlugs)
-
         }
     }
 
@@ -220,7 +206,7 @@ const NewVocabTable = () => {
             ...slugChanges,
             [boxSlug]: !slugChanges[boxSlug]
         })
-        console.log('this is the change', slugChanges)
+
     }
 
     // when tick all option is chosen, set all values in slugchanges to be true
@@ -236,7 +222,20 @@ const NewVocabTable = () => {
 
     }
 
-    // when tick all option is chosen, set all values in slugchanges to be true
+    // untick all on PAGE option is chosen, set all values in slugchanges to be true
+    const untickAllPage = () => {
+
+        const allFalseSlugChanges = {}
+
+        Object.keys(slugChanges).forEach(slug =>
+            allFalseSlugChanges[slug] = false
+        )
+
+        setSlugChanges(allFalseSlugChanges)
+
+    }
+
+    // when tick all FOR ENTIRE LEVEL option is chosen, set all values in slugchanges to be true
     const untickAll = async () => {
 
         openUntickAllSelect(false)
@@ -247,7 +246,7 @@ const NewVocabTable = () => {
 
         const knownObjectsOnLevel = (tableData.filter(x => knownSlugsOnLevelSet.has(x.slug)))
 
-        console.log("known slugs that will be deleted on n level", knownSlugsOnLevel)
+
 
         const allFalseSlugChanges = {}
 
@@ -267,7 +266,7 @@ const NewVocabTable = () => {
         const vocabTableIds = knownObjectsOnLevel.map(x => x.id)
 
         const toSend = { usersid: userid, initial: allTrueSlugs, changes: allFalseSlugChanges, ids: vocabTableIds }
-        console.log("tosend", toSend)
+
         setLoading(true)
         const resp = await fetch('/api/SubmitVocabData',
             {
@@ -278,14 +277,12 @@ const NewVocabTable = () => {
 
         const result = await resp.json()
 
-        console.log(result)
-
         getUserVocab().finally(
             () => fetchAllData(nLevel, page, itemsPerPage))
 
     }
 
-    // UE A when n level changes, fetch all data and display, tabledata and vocabdata states get changed
+    // UEA gets user vocab and fetches default table data, TRIGGERS UEB
     useEffect(() => {
 
         if (status === "loading") return
@@ -302,39 +299,27 @@ const NewVocabTable = () => {
                     fetchAllData(nLevel, page, itemsPerPage)
                 })
 
-
     }, [status])
-
-    // when n level changes, fetch data again
-    useEffect(() => {
-        fetchAllData(nLevel, page, itemsPerPage)
-    }, [nLevel])
 
     // UEB when table data or user known words changes, recalculate the comparators
     useEffect(() => {
         if (session) {
-            getKnownSlugs()
-            setComparators()
+            getKnownSlugs() // matches word ids to word slugs
+            setComparators() // sets initial and change package depending on vocab data
             setLoading(false)
         }
-    }, [tableData, userKnownWordIds])
+    }, [tableData, userKnownWordIds, vocabularyData])
 
-    // UE use effect to handle page table adjustment post slicing option change 
+    // UEC handle table change after slice change, TRIGGERS UEB 
     useEffect(() => {
         adjustTable(page, itemsPerPage)
-        if (session) {
-            setComparators()
-        }
         setPage(1)
     }, [itemsPerPage])
 
-    // UE when page changes, set new comparator, adjust table but do not set page to 1
+    // UED fetch data upon N Level change, triggers UEB
     useEffect(() => {
-        adjustTable(page, itemsPerPage)
-        if (session) {
-            setComparators()
-        }
-    }, [page])
+        fetchAllData(nLevel, page, itemsPerPage)
+    }, [nLevel])
 
     const sendChanges = async () => {
 
@@ -345,7 +330,7 @@ const NewVocabTable = () => {
             const vocabTableIds = vocabularyData.map(x => x.id)
 
             const toSend = { usersid: userid, initial: initialPackage, changes: slugChanges, ids: vocabTableIds }
-            console.log("tosend", toSend)
+
             const resp = await fetch('/api/SubmitVocabData',
                 {
                     method: 'POST',
@@ -355,17 +340,15 @@ const NewVocabTable = () => {
 
             const result = await resp.json()
 
-            console.log(result)
-
-            getUserVocab().finally(
-                () => fetchAllData(nLevel, page, itemsPerPage))
+            getUserVocab()
 
         }
     }
 
     // logs for testing
     useEffect(() => {
-        console.log('tabledata', tableData)
+        console.log("slugchanges", slugChanges)
+
     }, [page])
 
     const nLevelArray = ['n1', 'n2', 'n3', 'n4', 'n5']
@@ -577,8 +560,11 @@ const NewVocabTable = () => {
                             }
                         </ToggleButton>
 
-                        <ToggleButton onClick={(session) ? () => tickAll() : null} sx={{ borderColor: '#d32f2f' }}>
-                            <DoneAll color={(session) ? 'error' : ''} />
+                        <ToggleButton sx={{ borderColor: '#d32f2f' }}>
+                            {Object.values(slugChanges).includes(false) ?
+                                <DoneAll onClick={(session) ? () => tickAll() : null} color={(session) ? 'error' : ''} /> :
+                                <CheckBoxOutlineBlankRoundedIcon onClick={(session) ? () => untickAllPage() : null} color={(session) ? 'error' : ''} />
+                            }
                         </ToggleButton>
 
                         <ToggleButton onClick={() => openSearchSelect(true)} sx={{ borderColor: '#d32f2f' }}>
@@ -625,11 +611,11 @@ const NewVocabTable = () => {
                     <Pagination color="error" siblingCount={0} page={page} onChange={handleChange} count={maxPages}></Pagination>
                 </Box>
 
-                <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 6, borderRadius: '16px', mb: 6, minWidth:343 }}>
+                <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 6, borderRadius: '16px', mb: 6, minWidth: 343 }}>
                     <Table>
                         <TableBody>
                             {vocabularyData.map((x, index) => (
-                                <React.Fragment key={x.slug}>
+                                <React.Fragment key={`${index}-${x.slug}`}>
                                     <TableRow key={`toprow-${x.slug}`}>
 
                                         <TableCell sx={{ width: '1%', paddingY: 0, paddingRight: 0, paddingLeft: 1 }}>
