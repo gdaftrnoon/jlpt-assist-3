@@ -393,7 +393,8 @@ const NewVocabTable = () => {
 
                 getUserVocab().finally(
                     () => {
-                        fetchAllData(nLevel, page, itemsPerPage)
+                        fetchAllData(nLevel, page, itemsPerPage).finally(() =>
+                            setTableLoading(false))
                     })
 
         }, [status])
@@ -401,10 +402,8 @@ const NewVocabTable = () => {
         // UEB when table data or user known words changes, recalculate the comparators
         useEffect(() => {
             if (status === 'authenticated') {
-                getKnownSlugs() // matches word ids to word slugs
-                setComparators() // sets initial and change package depending on vocab data
-                setTimeout(() => setTableLoading(false), 1000)
-                setDisableSubmit(false)
+                getKnownSlugs()
+                setComparators()
             }
             if (status === 'unauthenticated') {
                 setTableLoading(false)
@@ -708,30 +707,28 @@ const NewVocabTable = () => {
                         </ToggleButtonGroup>
                     </Box>
 
-                    {(session) &&
-                        <Collapse in={JSON.stringify(initialPackage) != JSON.stringify(slugChanges)}>
-                            <Box sx={{ mt: 3 }}>
-                                <Button
-                                    onClick={() => sendChanges()}
-                                    disabled={(JSON.stringify(initialPackage) === JSON.stringify(slugChanges)) || disableSubmit}
-                                    variant="contained"
-                                    color="error"
-                                    size="small"
-                                    sx={{
-                                        fontWeight: 'bold',
-                                        fontSize: '0.95rem',
-                                        borderRadius: '12px',
-                                        px: 2,
-                                        py: 1,
-                                        minWidth: 111,
-                                        minHeight: 43
-                                    }}
+                    {(session && (!tableLoading)) &&
+                        <Box sx={{ mt: 3 }}>
+                            <Button
+                                onClick={() => sendChanges()}
+                                disabled={(JSON.stringify(initialPackage) === JSON.stringify(slugChanges))}
+                                variant="contained"
+                                color="error"
+                                size="small"
+                                sx={{
+                                    fontWeight: 'bold',
+                                    fontSize: '0.95rem',
+                                    borderRadius: '12px',
+                                    px: 2,
+                                    py: 1,
+                                    minWidth: 111,
+                                    minHeight: 43
+                                }}
 
-                                >
-                                    変更を保存
-                                </Button>
-                            </Box>
-                        </Collapse>
+                            >
+                                変更を保存
+                            </Button>
+                        </Box>
                     }
 
                     {
