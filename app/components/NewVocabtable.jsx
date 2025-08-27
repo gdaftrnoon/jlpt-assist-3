@@ -1,11 +1,11 @@
 'use client'
-import { Box, Button, Card, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Table, TableBody, TableCell, TableRow, ToggleButton, ToggleButtonGroup, Typography, CircularProgress, TextField, Container, List, ListItemButton, ListItemText, ListItem, Alert, CardContent, Paper, DialogContentText } from '@mui/material'
+import { Box, Button, Card, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Table, TableBody, TableCell, TableRow, ToggleButton, ToggleButtonGroup, Typography, CircularProgress, TextField, Container, List, ListItemButton, ListItemText, ListItem, Alert, CardContent, Paper, DialogContentText, Skeleton, LinearProgress } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Pagination from '@mui/material/Pagination';
 import Checkbox from '@mui/material/Checkbox';
-import { DeleteForever, DoneAll, Expand, Info, Stairs, UnfoldLess } from '@mui/icons-material';
+import { DeleteForever, DoneAll, Expand, Info, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Stairs, UnfoldLess } from '@mui/icons-material';
 import ArticleIcon from '@mui/icons-material/Article';
 import { useSession } from 'next-auth/react';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
@@ -21,6 +21,9 @@ const NewVocabTable = () => {
         ///////////////////////////////////////// STATES + CONSTS ///////////////////////////////////////////////
 
 
+        // state for intro page
+        const [introDialog, toggleIntroDialog] = useState(false)
+
         // getting user session if it exists
         const { data: session, status } = useSession()
         const userid = session?.user?.userId
@@ -34,7 +37,7 @@ const NewVocabTable = () => {
             'n2': 91,
             'n3': 89,
             'n4': 29,
-            'n5': 33,
+            'n5': 1,
         }
 
         // holds all fetched page data pre-slicing
@@ -75,12 +78,6 @@ const NewVocabTable = () => {
         // state to keep track of checkbox changes for submission to db
         const [slugChanges, setSlugChanges] = useState({})
 
-        // state for intro page
-        const [introDialog, toggleIntroDialog] = useState(true)
-
-        // state to manage table loading ui display
-        const [loading, setLoading] = useState(true)
-
         // states for table option dialogs
         const [nLevelSelect, openNLevelSelect] = useState(false)
         const [sliceSelect, openSliceSelect] = useState(false)
@@ -94,14 +91,21 @@ const NewVocabTable = () => {
         const [apiResp, showApiResp] = useState(false)
 
         // state to show table
-        const [showTable, toggleShowTable] = useState(true)
+        const [showTable, toggleShowTable] = useState(false)
+
+        // don't show again intro checkbox
+        const [introCheckbox, setIntroCheckbox] = useState(false)
+
+        const [tableLoading, setTableLoading] = useState(true)
+
+        const [disableSubmit, setDisableSubmit] = useState(false)
 
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
 
 
         // function handling n level change
         const nHandler = (level) => {
-            setLoading(true)
+            setTableLoading(true)
             setNLevel(level)
             setPage(1)
             setOpen([])
@@ -311,7 +315,6 @@ const NewVocabTable = () => {
 
             const toSend = { usersid: userid, initial: allTrueSlugs, changes: allFalseSlugChanges, ids: vocabTableIds }
 
-            setLoading(true)
             const resp = await fetch('/api/SubmitVocabData',
                 {
                     method: 'POST',
@@ -330,8 +333,6 @@ const NewVocabTable = () => {
         const sendChanges = async () => {
 
             if (session) {
-
-                setLoading(true)
 
                 const vocabTableIds = vocabularyData.map(x => x.id)
 
@@ -363,6 +364,19 @@ const NewVocabTable = () => {
             openSearchSelect(false)
         }
 
+        // checkbox don't show again
+        const changeCheckbox = (introCheckbox) => {
+            if (introCheckbox === false) {
+                setIntroCheckbox(true)
+                localStorage.setItem('vtintroCheckbox', true)
+            }
+            else {
+                setIntroCheckbox(false)
+                localStorage.setItem('vtintroCheckbox', false)
+            }
+        }
+
+
         ///////////////////////////////////////// EFFECTS ///////////////////////////////////////////////
 
         // UEA gets user vocab and fetches default table data, TRIGGERS UEB
@@ -372,7 +386,7 @@ const NewVocabTable = () => {
 
             if (status === 'unauthenticated') {
                 fetchAllData(nLevel, page, itemsPerPage)
-                setLoading(false)
+                console.log('status', status)
             }
 
             if (status === 'authenticated')
@@ -386,10 +400,14 @@ const NewVocabTable = () => {
 
         // UEB when table data or user known words changes, recalculate the comparators
         useEffect(() => {
-            if (session) {
+            if (status === 'authenticated') {
                 getKnownSlugs() // matches word ids to word slugs
                 setComparators() // sets initial and change package depending on vocab data
-                setLoading(false)
+                setTimeout(() => setTableLoading(false), 1000)
+                setDisableSubmit(false)
+            }
+            if (status === 'unauthenticated') {
+                setTableLoading(false)
             }
         }, [tableData, userKnownWordIds, vocabularyData])
 
@@ -401,14 +419,37 @@ const NewVocabTable = () => {
 
         // UED fetch data upon N Level change, triggers UEB
         useEffect(() => {
-            fetchAllData(nLevel, page, itemsPerPage)
+            if (status === 'loading') {
+                return
+            }
+
+            if (status === 'unauthenticated') {
+                fetchAllData(nLevel, page, itemsPerPage).then(() =>
+                    setTableLoading(false)
+                )
+            }
+            if (status === 'authenticated') {
+                setDisableSubmit(true)
+                fetchAllData(nLevel, page, itemsPerPage)
+            }
         }, [nLevel])
 
         // logs for testing
         useEffect(() => {
             console.log("slugchanges", slugChanges)
 
-        }, [page])
+        }, [page,])
+
+        useEffect(() => {
+            if (localStorage.getItem('vtintroCheckbox')) { // if ls item exists
+                const stored = JSON.parse(localStorage.getItem('vtintroCheckbox'))
+                setIntroCheckbox(stored) // set check to value 
+                toggleIntroDialog(!stored) // if checked -> don't show, if not checked -> show 
+            }
+            else {
+                toggleIntroDialog(true)
+            }
+        }, [])
 
 
         ///////////////////////////////////////// DIALOGS ///////////////////////////////////////////////
@@ -508,13 +549,44 @@ const NewVocabTable = () => {
             </Dialog>
         )
 
+        const TableLoadingSkeleton = () => (
+            <>
+                <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 6, borderRadius: '16px', mb: 6, minWidth: 343 }}>
+                    <Table>
+                        <TableBody>
+
+                            {Array.from(Array(itemsPerPage).keys()).map((x, index) => (
+
+                                <TableRow key={index}>
+                                    <TableCell key={`A-${x}-${index}`} sx={{ width: '1%', paddingY: 0, paddingRight: 0, paddingLeft: 1 }}>
+                                        <IconButton>
+                                            <KeyboardArrowDownIcon />
+                                        </IconButton>
+                                    </TableCell>
+
+                                    <TableCell key={`B-${x}-${index}`} sx={{ width: '1%', padding: 0 }}>
+                                        <Checkbox disabled />
+                                    </TableCell>
+
+                                    <TableCell key={`C-${x}-${index}`} sx={{ width: '98%', textAlign: 'center', pr: 9, fontSize: '1rem', fontWeight: 'bold' }}>
+                                        <Skeleton animation="wave" variant="text" />
+                                    </TableCell>
+                                </TableRow>
+
+                            ))}
+
+                        </TableBody>
+                    </Table>
+                </Card>
+            </>
+        )
 
         return (
             <Container maxWidth='xl' sx={{ minHeight: 'calc(100vh - 56px)', backgroundColor: 'white' }}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
 
                     <Dialog open={introDialog}>
-                        <DialogTitle sx={{ fontSize: '1.25rem', textAlign: 'center' }}>
+                        <DialogTitle sx={{ fontSize: '1.25rem', textAlign: 'center', mb: 1 }}>
                             文字語彙データの使い方
                         </DialogTitle>
                         <DialogContent>
@@ -559,7 +631,11 @@ const NewVocabTable = () => {
                                 </Box>
                             </Box>
                         </DialogContent>
-                        <DialogActions>
+                        <DialogActions sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                                <Checkbox onClick={() => changeCheckbox(introCheckbox)} checked={introCheckbox} />
+                                <Typography variant='subtitle1'>起動時に表示しない</Typography>
+                            </Box>
                             <Button
                                 onClick={() => { toggleIntroDialog(false) }}
                                 sx={{ fontWeight: 'bold' }}>
@@ -582,7 +658,15 @@ const NewVocabTable = () => {
                             </ToggleButton>
 
                             <ToggleButton onClick={() => openNLevelSelect(true)} sx={{ borderColor: '#d32f2f' }}>
-                                <Stairs color='error' />
+                                {
+                                    (nLevel) === 'n1' ? <LooksOne color='error' /> :
+                                        (nLevel) === 'n2' ? <LooksTwo color='error' /> :
+                                            (nLevel) === 'n3' ? <Looks3 color='error' /> :
+                                                (nLevel) === 'n4' ? <Looks4 color='error' /> :
+                                                    (nLevel) === 'n5' ? <Looks5 color='error' /> :
+                                                        null
+
+                                }
                             </ToggleButton>
 
                             <ToggleButton onClick={(() => openSliceSelect(true))} sx={{ borderColor: '#d32f2f' }}>
@@ -617,23 +701,19 @@ const NewVocabTable = () => {
                                 <ManageSearchIcon color='error' />
                             </ToggleButton>
 
-                            <ToggleButton onClick={() => openUntickAllSelect(true)} sx={{ borderColor: '#d32f2f' }}>
+                            <ToggleButton onClick={(session) && (() => openUntickAllSelect(true))} sx={{ borderColor: '#d32f2f' }}>
                                 <DeleteForever color={(session) ? 'error' : ''} />
                             </ToggleButton>
 
                         </ToggleButtonGroup>
                     </Box>
 
-                    {
-                        (status === 'unauthenticated') || (status === 'loading') ?
-                            <Box sx={{ mt: 3 }}>
-                                <Alert sx={{ fontWeight: 'bold' }} severity="info">ロッグインする機能を利用できる</Alert>
-                            </Box>
-                            :
+                    {(session) &&
+                        <Collapse in={JSON.stringify(initialPackage) != JSON.stringify(slugChanges)}>
                             <Box sx={{ mt: 3 }}>
                                 <Button
                                     onClick={() => sendChanges()}
-                                    disabled={JSON.stringify(initialPackage) === JSON.stringify(slugChanges)}
+                                    disabled={(JSON.stringify(initialPackage) === JSON.stringify(slugChanges)) || disableSubmit}
                                     variant="contained"
                                     color="error"
                                     size="small"
@@ -648,9 +728,10 @@ const NewVocabTable = () => {
                                     }}
 
                                 >
-                                    {(loading) ? <CircularProgress sx={{ color: 'white' }} size='25px' /> : `変更を保存`}
+                                    変更を保存
                                 </Button>
                             </Box>
+                        </Collapse>
                     }
 
                     {
@@ -661,11 +742,19 @@ const NewVocabTable = () => {
                             : null
                     }
 
-                    <Box sx={{ pt: 3 }}>
-                        <Pagination color="error" siblingCount={0} page={page} onChange={handleChange} count={maxPages}></Pagination>
-                    </Box>
 
-                    {(showTable) &&
+                    {(tableLoading) ?
+                        <Paper sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 3, px: 2, py: 1, borderRadius: '16px' }}>
+                            <Typography>読み込み中...</Typography>
+                        </Paper>
+                        :
+                        <Box sx={{ pt: 3 }}>
+                            <Pagination color="error" siblingCount={0} page={page} onChange={handleChange} count={maxPages}></Pagination>
+                        </Box>
+                    }
+
+                    {(tableLoading) ? <TableLoadingSkeleton /> :
+
                         <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 6, borderRadius: '16px', mb: 6, minWidth: 343 }}>
                             <Table>
                                 <TableBody>
@@ -677,8 +766,7 @@ const NewVocabTable = () => {
                                                     <IconButton onClick={() => open.includes(index) ? setOpen(prev => prev.filter(x => x != index)) : setOpen([...open, index])}>
                                                         {open.includes(index) ?
                                                             <KeyboardArrowUpIcon /> :
-                                                            <KeyboardArrowDownIcon />
-                                                        }
+                                                            <KeyboardArrowDownIcon />}
                                                     </IconButton>
                                                 </TableCell>
 
@@ -687,8 +775,7 @@ const NewVocabTable = () => {
                                                         color={(knownSlugs.includes(x.slug)) ? 'success' : 'primary'}
                                                         onClick={() => updatePackage(x.slug)}
                                                         checked={slugChanges[x.slug] === true}
-                                                        disabled={(!session) ? true : false}
-                                                    />
+                                                        disabled={(!session) ? true : false} />
                                                 </TableCell>
 
                                                 <TableCell sx={{ width: '98%', textAlign: 'center', pr: 9, fontSize: '1rem', fontWeight: 'bold' }}>
@@ -703,11 +790,11 @@ const NewVocabTable = () => {
                                                             {[...new Set(x.japanese.map(y => y.word))].map((z, zindex) => (
                                                                 <Typography key={zindex} sx={{ fontWeight: 'bold', fontSize: '1rem' }}>{z}</Typography>
                                                             ))}
-                                                            <Typography sx={{ color: '#ef5350', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>読み方</Typography>
+                                                            <Typography sx={{ color: 'orange', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>Reading</Typography>
                                                             {[...new Set(x.japanese.map(y => y.reading))].map((a, aindex) => (
                                                                 <Typography key={aindex} sx={{ fontWeight: 'bold', fontSize: '1rem' }}>{a}</Typography>
                                                             ))}
-                                                            <Typography sx={{ color: '#ef5350', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>意味</Typography>
+                                                            <Typography sx={{ color: 'orange', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>Meaning</Typography>
                                                             {x.senses.filter(c => !c.parts_of_speech?.includes('Place') && !c.parts_of_speech?.includes('Wikipedia definition'))
                                                                 .map((c, cindex) => (
                                                                     <Box key={cindex}>
@@ -724,7 +811,9 @@ const NewVocabTable = () => {
                                 </TableBody>
                             </Table>
                         </Card>
+
                     }
+
                 </Box>
             </Container>
         )

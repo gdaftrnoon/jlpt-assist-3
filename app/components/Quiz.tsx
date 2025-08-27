@@ -742,3 +742,136 @@ const MyComponent: React.FC<Props> = () => {
 }
 
 export default MyComponent
+
+{/* box containing n controls, quiz types, random switch + start/end button DEFUNCT */}
+                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+
+                    <Box sx={{ display: 'flex', padding: 0, margin: 0 }}>
+                        <FormControlLabel disabled={quizOn} control={<Switch onChange={() => setRandomQuiz(prev => !prev)} />} label="Random" />
+                    </Box>
+
+                    <Box>
+                        <ToggleButtonGroup
+                            exclusive
+                            color="primary"
+                            value={nLevel}
+                            disabled={quizOn}
+                        >
+                            <ToggleButton onClick={() => setNLevel('n1')} value='n1'>N1</ToggleButton>
+                            <ToggleButton onClick={() => setNLevel('n2')} value='n2'>N2</ToggleButton>
+                            <ToggleButton onClick={() => setNLevel('n3')} value='n3'>N3</ToggleButton>
+                            <ToggleButton onClick={() => setNLevel('n4')} value='n4'>N4</ToggleButton>
+                            <ToggleButton onClick={() => setNLevel('n5')} value='n5'>N5</ToggleButton>
+                        </ToggleButtonGroup>
+                    </Box>
+
+                    <Box>
+                        <ToggleButtonGroup
+                            disabled={quizOn}
+                            color="secondary"
+                            value={quizType}
+                            sx={{ alignItems: 'center', display: 'flex' }}
+                            exclusive
+                        >
+                            <ToggleButton onClick={() => { setQuizType('all'); setCustomCardCount('') }} value='all'>全て</ToggleButton>
+                            <ToggleButton onClick={() => { setQuizType('allUnknown'); setCustomCardCount('') }} value='allUnknown'>知らない全て</ToggleButton>
+                            <ToggleButton onClick={() => setQuizType('custom')} value='custom'>カスタム</ToggleButton>
+                        </ToggleButtonGroup>
+                    </Box>
+
+                    <Box>
+                        <Collapse orientation="horizontal" in={(quizType) === 'custom'}>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    justifyContent: 'left',
+                                    gap: '20px',
+                                    width: '112px',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                <TextField
+                                    disabled={quizOn}
+                                    // error={customAlert}
+                                    label="カードの数"
+                                    size="small"
+                                    sx={{ width: '100%' }}
+                                    value={customCardCount}
+                                    onChange={(e) => setCustomCardCount(e.target.value)} />
+                            </Box>
+                        </Collapse>
+                    </Box>
+
+                    {/* start/stop quiz button */}
+
+                    {(!quizOn) ?
+                        <Button onClick={() => getAllCards(nLevel)} variant="contained">Start</Button>
+                        :
+                        <Button onClick={() => endQuiz()} variant="contained">End</Button>
+                    }
+
+                </Box>
+
+
+                {/* main box for flashcard */}
+                <Card sx={{ marginTop: '50px', display: 'flex', flexDirection: 'column', minWidth: 1000, padding: 0.5, marginBottom: 10 }}>
+                    {(!quizOn) ?
+                        <Typography sx={{ textAlign: 'center' }}>poop</Typography>
+                        :
+                        <>
+                            <Box sx={{ display: 'flex', flexDirection: 'row' }}>
+
+                                <CardContent sx={{ width: '30%' }}>
+                                    <Box>
+                                        <Typography variant='h3'>
+                                            {quizData[cardNumber].slug}
+                                        </Typography>
+                                    </Box>
+                                </CardContent>
+                            </Box>
+                            
+                            <Collapse in={showCard} timeout={{ enter: 250, exit: 10 }}>
+                                <CardContent>
+                                    <Box>
+
+                                        <Typography gutterBottom sx={{ color: 'orange' }}>Reading</Typography>
+
+                                        {[...new Set(quizData[cardNumber].japanese.map((x => x.reading)))].map(b => (
+                                            <Typography key={b} sx={{ fontWeight: 'bold' }}>{b}</Typography>
+                                        ))}
+
+                                        <Typography gutterBottom sx={{ color: 'orange', mt: 1 }}>Meaning</Typography>
+
+                                        <Box sx={{ mb: 1 }}>
+
+                                            {quizData[cardNumber].senses.map((x, senseIndex) => (
+                                                x.parts_of_speech != 'Wikipedia definition' && x.parts_of_speech != 'Place' ?
+                                                    <Box key={senseIndex}>
+
+                                                        {x.parts_of_speech.map((f, posIndex) => (
+                                                            <Typography key={posIndex} sx={{ color: 'grey' }}>
+                                                                {f}
+                                                            </Typography>
+                                                        ))}
+
+                                                        {x.tags.map((g, tagIndex) => (
+                                                            <Typography key={tagIndex} sx={{ color: 'grey' }}>
+                                                                {g}
+                                                            </Typography>
+                                                        ))}
+
+                                                        <Typography sx={{ mb: 1 }}>
+                                                            {x.english_definitions.join(', ')}
+                                                        </Typography>
+                                                    </Box>
+                                                    : null
+                                            ))}
+                                        </Box>
+                                    </Box>
+                                </CardContent>
+                            </Collapse>
+                        </>
+                    }
+                </Card>
