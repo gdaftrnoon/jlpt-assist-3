@@ -7,10 +7,15 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import PauseIcon from '@mui/icons-material/Pause';
+import { useSession } from 'next-auth/react';
 
 const NewQuizMaster = () => {
 
     const MobileLayout = () => {
+
+        // getting user session if it exists
+        const { data: session, status } = useSession()
+        const userid = session?.user?.userId
 
         const fileCount = {
             'n1': 172,
@@ -65,6 +70,9 @@ const NewQuizMaster = () => {
         // don't show again intro checkbox
         const [introCheckbox, setIntroCheckbox] = useState(false)
 
+        // state to hold user's known word ids
+        const [userKnownWordIds, setUserKnownWordIds] = useState([])
+
 
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
 
@@ -86,7 +94,7 @@ const NewQuizMaster = () => {
 
 
         // function to fetch and return ALL cards for a selected N level, and set quiz data
-        const runQuiz = async (nLevel, quizType, randomQuiz, customCardCount) => {
+        const runQuizx = async (nLevel, quizType, randomQuiz, customCardCount) => {
 
             const allPages = []
 
@@ -113,6 +121,43 @@ const NewQuizMaster = () => {
                 catch (err) {
                     console.log(err)
                 }
+                finally {
+                    setLoading(false)
+                    toggleQuizOn(true)
+                }
+            }
+        }
+
+        // function to fetch and return ALL cards for a selected N level, and set quiz data
+        const runQuiz = async (nLevel, quizType, randomQuiz, customCardCount) => {
+
+            const allPages = []
+
+            for (let index = 1; index <= fileCount[nLevel]; index++) {
+                const data = await (await fetch(`vocab/${nLevel}/${nLevel}_page${index}.json`)).json()
+                allPages.push(data)
+            }
+            const flatPages = allPages.flatMap(x => x)
+
+            if (randomQuiz) {
+                shuffle(flatPages)
+            }
+
+            if (quizType === 'all') {
+                try { setQuizData(flatPages) }
+                catch (err) { console.log(err) }
+                finally {
+                    setLoading(false)
+                    toggleQuizOn(true)
+                }
+            }
+
+            if (quizType === 'unknown') {
+                try {
+                    const unknownQuizData = flatPages.filter(x => userKnownWordIds.includes(x.id))
+                    setQuizData(unknownQuizData)
+                }
+                catch (err) { console.log(err) }
                 finally {
                     setLoading(false)
                     toggleQuizOn(true)
@@ -164,6 +209,33 @@ const NewQuizMaster = () => {
             }
         }
 
+        // function to retrieve all word ids within user's vocab db
+        const getUserVocab = async () => {
+
+            if (session) {
+                const response = await fetch('/api/GetUserVocab', {
+                    method: 'GET',
+                })
+
+                const data = await response.json()
+                console.log('heres our resp', data)
+
+                // if error, show error message
+                if (!response.ok) {
+                    alert(data.message)
+                    setTimeout(() => {
+                        redirect('/')
+                    }, 2000)
+                }
+
+                if (response.ok && data) {
+                    const knownWordIds = data.message.map(a => Number(a.word_id))
+                    setUserKnownWordIds(knownWordIds)
+                    console.log('user word ids', knownWordIds)
+                }
+            }
+        }
+
 
         ///////////////////////////////////////// EFFECTS ///////////////////////////////////////////////
 
@@ -184,6 +256,15 @@ const NewQuizMaster = () => {
                 toggleIntroDialog(true)
             }
         }, [])
+
+        // getting initial vocab ids
+        useEffect(() => {
+
+            if (status === 'authenticated') {
+                getUserVocab()
+            }
+
+        }, [status])
 
 
         ///////////////////////////////////////// DIALOGS ///////////////////////////////////////////////

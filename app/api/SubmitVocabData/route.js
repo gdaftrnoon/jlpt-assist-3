@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server"
 import { createClient } from '@supabase/supabase-js'
 import { auth } from "../../auth"
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+const redis = Redis.fromEnv()
+
+const ratelimit = new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(5, "10 s"),
+    timeout: 10000,
+    analytics: true
+});
 
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY
@@ -11,11 +22,25 @@ export async function POST(request) {
 
     const session = await auth()
 
-    const resp = await request.json()
-
     const uid = session?.user?.userId
 
-    const initial = Object.values(resp.initial) 
+
+    // RATE LIMITING
+    const identifier = uid;
+    const { success, pending, limit, reset, remaining } = await ratelimit.limit(identifier);
+
+    // if rate limit has been hit
+    if (!success) {
+        console.log("limit", limit)
+        console.log("reset", reset)
+        console.log("remaining", remaining)
+        return NextResponse.json({ message: 'Rate limited - Redirecting to homepage' }, { status: 429 })
+    }
+
+    // PROCESSING RESPONSE
+    const resp = await request.json()
+
+    const initial = Object.values(resp.initial)
     const changes = Object.values(resp.changes)
 
     // preventing api misuse
@@ -27,7 +52,7 @@ export async function POST(request) {
 
     // preventing api misuse
     if (wordIds.some(x => !Number.isInteger(x) || Number(x) > 9999 || Number(x) < 0)) {
-         return NextResponse.json({ message: 'Error - Batch contains invalid entries' })
+        return NextResponse.json({ message: 'Error - Batch contains invalid entries' })
     }
 
     const toDelete = []

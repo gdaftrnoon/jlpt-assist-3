@@ -100,7 +100,7 @@ const NewVocabTable = () => {
         const [tableLoading, setTableLoading] = useState(true)
 
         // for submit changes loading spinner
-        const [submitChangesLoading, setSubmitChangesLoading] = useState(false) 
+        const [submitChangesLoading, setSubmitChangesLoading] = useState(false)
 
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
 
@@ -145,8 +145,7 @@ const NewVocabTable = () => {
 
             if (session) {
                 const response = await fetch('/api/GetUserVocab', {
-                    method: 'POST',
-                    body: JSON.stringify({ message: userid })
+                    method: 'GET',
                 })
 
                 const data = await response.json()
@@ -256,7 +255,6 @@ const NewVocabTable = () => {
                 ...slugChanges,
                 [boxSlug]: !slugChanges[boxSlug]
             })
-
         }
 
         // when tick all option is chosen, set all values in slugchanges to be true
@@ -285,49 +283,56 @@ const NewVocabTable = () => {
 
         }
 
-        // when tick all FOR ENTIRE LEVEL option is chosen, set all values in slugchanges to be true
+        // when untick all FOR ENTIRE LEVEL option is chosen, set all values in slugchanges to be false
         const untickAll = async () => {
 
             openUntickAllSelect(false)
 
             const knownSlugsSet = new Set(knownSlugs)
             const knownSlugsOnLevel = allSlugs.filter(x => knownSlugsSet.has(x))
-            const knownSlugsOnLevelSet = new Set(knownSlugsOnLevel)
+            console.log(knownSlugsOnLevel)
 
-            const knownObjectsOnLevel = (tableData.filter(x => knownSlugsOnLevelSet.has(x.slug)))
+            if (knownSlugsOnLevel != []) {
 
+                const knownSlugsOnLevelSet = new Set(knownSlugsOnLevel)
 
+                const knownObjectsOnLevel = (tableData.filter(x => knownSlugsOnLevelSet.has(x.slug)))
 
-            const allFalseSlugChanges = {}
+                const allFalseSlugChanges = {}
 
-            const allTrueSlugs = {}
+                const allTrueSlugs = {}
 
-            knownSlugsOnLevel.forEach(slug =>
-                allFalseSlugChanges[slug] = false
-            )
+                knownSlugsOnLevel.forEach(slug =>
+                    allFalseSlugChanges[slug] = false
+                )
 
-            knownSlugsOnLevel.forEach(slug =>
-                allTrueSlugs[slug] = true
-            )
+                knownSlugsOnLevel.forEach(slug =>
+                    allTrueSlugs[slug] = true
+                )
 
-            setInitialPackage(allTrueSlugs)
-            setSlugChanges(allFalseSlugChanges)
+                setInitialPackage(allTrueSlugs)
+                setSlugChanges(allFalseSlugChanges)
 
-            const vocabTableIds = knownObjectsOnLevel.map(x => x.id)
+                const vocabTableIds = knownObjectsOnLevel.map(x => x.id)
 
-            const toSend = { usersid: userid, initial: allTrueSlugs, changes: allFalseSlugChanges, ids: vocabTableIds }
+                const toSend = { usersid: userid, initial: allTrueSlugs, changes: allFalseSlugChanges, ids: vocabTableIds }
 
-            const resp = await fetch('/api/SubmitVocabData',
-                {
-                    method: 'POST',
-                    body: JSON.stringify(toSend)
-                }
-            )
+                const resp = await fetch('/api/SubmitVocabData',
+                    {
+                        method: 'POST',
+                        body: JSON.stringify(toSend)
+                    }
+                )
 
-            const result = await resp.json()
+                const result = await resp.json()
 
-            getUserVocab().finally(
-                () => fetchAllData(nLevel, page, itemsPerPage))
+                setUserKnownWordIds(prev => prev.filter(x => !vocabTableIds.includes(x)))
+
+                // no longer hitting the db after every change, we update the state instead
+                // getUserVocab().finally(
+                //     () => fetchAllData(nLevel, page, itemsPerPage))
+
+            }
 
         }
 
@@ -351,7 +356,22 @@ const NewVocabTable = () => {
 
                 console.log(result.message)
 
-                getUserVocab().finally(() => setSubmitChangesLoading(false))
+                // update user known word ids
+                Object.keys(slugChanges).forEach(x => {
+                    const result = slugChanges[x] // true or false
+                    const slugId = (vocabularyData.find(vocabObject => vocabObject.slug === x)).id
+                    if (result === true && !userKnownWordIds.includes(slugId)) {
+                        setUserKnownWordIds(prev => [...prev, slugId])
+                    }
+                    else if (result === false && userKnownWordIds.includes(slugId)) {
+                        setUserKnownWordIds(prev => prev.filter(x => x != slugId))
+                    }
+                })
+
+                setSubmitChangesLoading(false)
+
+                // no longer hitting the db after every change, we update the state instead
+                // getUserVocab().finally(() => setSubmitChangesLoading(false))
 
             }
         }
@@ -437,7 +457,7 @@ const NewVocabTable = () => {
 
         // logs for testing
         useEffect(() => {
-            console.log("slugchanges", slugChanges)
+            console.log("vocabdata", vocabularyData)
 
         }, [page,])
 
@@ -652,7 +672,7 @@ const NewVocabTable = () => {
 
                     <Box sx={{ pt: 5 }}>
 
-                        <ToggleButtonGroup>
+                        <ToggleButtonGroup disabled={tableLoading}>
 
                             <ToggleButton onClick={() => toggleIntroDialog(true)} sx={{ borderColor: '#d32f2f' }}>
                                 <InfoOutlineIcon color='error' />
@@ -712,7 +732,7 @@ const NewVocabTable = () => {
                     {(session && (!tableLoading)) &&
                         <Box sx={{ mt: 3 }}>
                             <Button
-                                onClick={() => {sendChanges(); setSubmitChangesLoading(true)}}
+                                onClick={() => { sendChanges(); setSubmitChangesLoading(true) }}
                                 disabled={(JSON.stringify(initialPackage) === JSON.stringify(slugChanges))}
                                 variant="contained"
                                 color="error"

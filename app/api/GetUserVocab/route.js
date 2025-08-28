@@ -8,7 +8,7 @@ const redis = Redis.fromEnv()
 
 const ratelimit = new Ratelimit({
     redis: redis,
-    limiter: Ratelimit.slidingWindow(10, "20 s"),
+    limiter: Ratelimit.slidingWindow(5, "20 s"),
     timeout: 10000,
     analytics: true
 });
@@ -18,7 +18,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-export async function POST(request) {
+export async function GET() {
 
     const session = await auth()
     const userid = session?.user?.userId
@@ -33,8 +33,6 @@ export async function POST(request) {
         console.log("remaining", remaining)
         return NextResponse.json({ message: 'Rate limited - Redirecting to homepage'}, { status: 429 })
     }
-
-    const body = await request.json()
 
     const { data, error } = await supabase
         .from('user_vocab')

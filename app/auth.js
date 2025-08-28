@@ -2,6 +2,8 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google"
 import { createClient } from '@supabase/supabase-js'
 
+// nextauth config
+
 const supabaseUrl = process.env.SUPABASE_URL
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY
 
@@ -10,24 +12,26 @@ const supabaseServerside = createClient(supabaseUrl, supabaseServiceKey)
 export const { handlers, signIn, signOut, auth } = NextAuth({
     providers: [Google],
     callbacks: {
-        async jwt({ token, account, profile }) {
-            console.log("JWT callback:", { token })
-            console.log("JWT account:", { account })
-            console.log("JWT profile:", { profile })
-            if (token?.email && !token.userId) {
-                const { data } = await supabaseServerside
-                    .from('users')
-                    .select('username, user_id')
-                    .eq('email', token.email)
-                    .maybeSingle()
+            async jwt({ token, account, profile }) {
 
-                if (data) {
-                    token.username = data.username;
-                    token.userId = data.user_id
+                console.log("JWT callback:", { token })
+                console.log("JWT account:", { account })
+                console.log("JWT profile:", { profile })
+
+                if (token?.email && !token.userId) {
+                    const { data } = await supabaseServerside
+                        .from('users')
+                        .select('username, user_id')
+                        .eq('email', token.email)
+                        .maybeSingle()
+
+                    if (data) {
+                        token.username = data.username;
+                        token.userId = data.user_id
+                    }
                 }
-            }
-            return token
-        },
+                return token
+            },
 
         async session({ session, token }) {
             if (token.username) session.user.username = token.username
