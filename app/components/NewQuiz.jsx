@@ -73,6 +73,13 @@ const NewQuizMaster = () => {
         // state to hold user's known word ids
         const [userKnownWordIds, setUserKnownWordIds] = useState([])
 
+        // true if the custom input is an error
+        const inputError = (
+            isNaN(Number(customCardCount)) ||
+            (customCardCount != '' && Number(customCardCount) < 30)
+            || (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel])) ||
+            customCardCount.length > 0 && customCardCount.trim() === ''
+        )
 
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
 
@@ -92,41 +99,6 @@ const NewQuizMaster = () => {
             }
         }
 
-
-        // function to fetch and return ALL cards for a selected N level, and set quiz data
-        const runQuizx = async (nLevel, quizType, randomQuiz, customCardCount) => {
-
-            const allPages = []
-
-            if (quizType === 'all') {
-
-                try {
-                    for (let index = 1; index <= fileCount[nLevel]; index++) {
-                        const data = await (await fetch(`vocab/${nLevel}/${nLevel}_page${index}.json`)).json()
-                        allPages.push(data)
-                    }
-
-                    const allPagesFlatMap = allPages.flatMap(x => x)
-
-                    if (randomQuiz) {
-                        shuffle(allPagesFlatMap)
-                        setQuizData(allPagesFlatMap)
-                    }
-
-                    else {
-                        setQuizData(allPagesFlatMap)
-                    }
-                }
-
-                catch (err) {
-                    console.log(err)
-                }
-                finally {
-                    setLoading(false)
-                    toggleQuizOn(true)
-                }
-            }
-        }
 
         // function to fetch and return ALL cards for a selected N level, and set quiz data
         const runQuiz = async (nLevel, quizType, randomQuiz, customCardCount) => {
@@ -154,8 +126,15 @@ const NewQuizMaster = () => {
 
             if (quizType === 'unknown') {
                 try {
-                    const unknownQuizData = flatPages.filter(x => userKnownWordIds.includes(x.id))
-                    setQuizData(unknownQuizData)
+                    const unknownQuizData = flatPages.filter(x => !userKnownWordIds.includes(x.id))
+
+                    if (customCardCount != '') {
+                        const slicedUnknownQuizData = unknownQuizData.slice(0, customCardCount)
+                        setQuizData(slicedUnknownQuizData)
+                    }
+                    else {
+                        setQuizData(unknownQuizData)
+                    }
                 }
                 catch (err) { console.log(err) }
                 finally {
@@ -347,7 +326,7 @@ const NewQuizMaster = () => {
                         <Card sx={{ minHeight: 460, minWidth: 285 }}>
                             <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
 
-                                <ToggleButtonGroup color='error' exclusive onChange={(someEvent, newN) => (newN) != null ? setNLevel(newN) : null} value={nLevel} size='small' sx={{ mt: 2 }}>
+                                <ToggleButtonGroup disabled={quizOn} color='error' exclusive onChange={(someEvent, newN) => (newN) != null ? setNLevel(newN) : null} value={nLevel} size='small' sx={{ mt: 2 }}>
                                     <ToggleButton value='n1'>N1</ToggleButton>
                                     <ToggleButton value='n2'>N2</ToggleButton>
                                     <ToggleButton value='n3'>N3</ToggleButton>
@@ -355,7 +334,7 @@ const NewQuizMaster = () => {
                                     <ToggleButton value='n5'>N5</ToggleButton>
                                 </ToggleButtonGroup>
 
-                                <ToggleButtonGroup color='error' onChange={(event, newA) => (newA) != null ? setQuizType(newA) : null} exclusive value={quizType} size='small' sx={{ mt: 2 }}>
+                                <ToggleButtonGroup disabled={quizOn} color='error' onChange={(event, newA) => (newA) != null ? setQuizType(newA) : null} exclusive value={quizType} size='small' sx={{ mt: 2 }}>
                                     <ToggleButton onClick={() => setCustomCardCount('')} value='all'>All</ToggleButton>
                                     <ToggleButton value='unknown'>Unknown</ToggleButton>
                                 </ToggleButtonGroup>
@@ -363,7 +342,7 @@ const NewQuizMaster = () => {
                                 <Divider sx={{ mt: 2, width: '80%' }} />
 
                                 <Box sx={{ pl: 2, mt: 2 }}>
-                                    <FormControlLabel control={<Switch checked={randomQuiz} size='small' color='error' onChange={() => setRandomQuiz(prev => !prev)} />} label="Randomise card order" />
+                                    <FormControlLabel control={<Switch disabled={quizOn} checked={randomQuiz} size='small' color='error' onChange={() => setRandomQuiz(prev => !prev)} />} label="Randomise card order" />
                                 </Box>
 
                                 <Box sx={{ minWidth: '100%', mt: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -371,16 +350,17 @@ const NewQuizMaster = () => {
                                         sx={{ minWidth: '100%' }}
                                         error={isNaN(Number(customCardCount)) || (customCardCount != '' && Number(customCardCount) < 30) || (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel]))}
                                         label="Number of Cards"
-                                        disabled={(quizType) === 'all'}
+                                        disabled={(quizType) === 'all' || quizOn}
                                         size="small"
                                         variant="outlined"
                                         value={customCardCount}
                                         onChange={(e) => setCustomCardCount(e.target.value)}
                                         helperText={
                                             isNaN(Number(customCardCount)) ? "Please enter a valid number." :
-                                                (customCardCount != '' && Number(customCardCount) < 30) ? "A quiz must hold at least 30 cards." :
-                                                    (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel])) ? `Exceeds ${nLevel.toUpperCase()} max card count (${slugCount[nLevel]}).` :
-                                                        null
+                                                customCardCount.length > 0 && customCardCount.trim() === '' ? "Please enter a valid number." :
+                                                    (customCardCount.trim() != '' && Number(customCardCount) < 30) ? "A quiz must hold at least 30 cards." :
+                                                        (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel])) ? `Exceeds ${nLevel.toUpperCase()} max card count (${slugCount[nLevel]}).` :
+                                                            null
                                         }
                                     />
                                 </Box>
@@ -431,7 +411,7 @@ const NewQuizMaster = () => {
                         </Card>
                     </DialogContent>
                     <DialogActions>
-                        <Button size='small' onClick={() => toggleSettingsDialog(false)}>Save Changes</Button>
+                        <Button size='small' onClick={() => { (!inputError) && toggleSettingsDialog(false) }}>Save Changes</Button>
                     </DialogActions>
                 </Dialog>
 
@@ -520,7 +500,7 @@ const NewQuizMaster = () => {
                                 </ToggleButton>
 
                                 <ToggleButton onClick={() => toggleSettingsDialog(true)} size='small' sx={{ borderColor: '#d32f2f' }}>
-                                    <SettingsIcon color={(!quizOn) ? 'error' : ''} />
+                                    <SettingsIcon color={'error'} />
                                 </ToggleButton>
 
 
@@ -528,9 +508,12 @@ const NewQuizMaster = () => {
                                     if (quizOn) {
                                         openPauseSelect(true)
                                     } else {
-                                        toggleCardToolbar(true)
-                                        setLoading(true)
-                                        runQuiz(nLevel, quizType, randomQuiz, customCardCount)
+                                        if (!inputError) {
+                                            toggleCardToolbar(true)
+                                            setLoading(true)
+                                            runQuiz(nLevel, quizType, randomQuiz, customCardCount)
+                                        }
+
                                     }
                                 }} variant='contained' size='small' sx={{ borderColor: '#d32f2f' }}>
                                     {(quizOn) ? <PauseIcon color='error' /> : <PlayArrowIcon color='error' />}
@@ -542,6 +525,10 @@ const NewQuizMaster = () => {
 
                             </ToggleButtonGroup>
                         </Box>
+
+                        <Collapse sx={{ mt: 2 }} in={inputError}>
+                            <Alert severity='error'>Error in quiz settings</Alert>
+                        </Collapse>
 
                         <Collapse in={cardToolbar} orientation='vertical'>
 
