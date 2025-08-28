@@ -96,9 +96,11 @@ const NewVocabTable = () => {
         // don't show again intro checkbox
         const [introCheckbox, setIntroCheckbox] = useState(false)
 
+        // for table loading skeleton
         const [tableLoading, setTableLoading] = useState(true)
 
-        const [disableSubmit, setDisableSubmit] = useState(false)
+        // for submit changes loading spinner
+        const [submitChangesLoading, setSubmitChangesLoading] = useState(false) 
 
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
 
@@ -349,7 +351,7 @@ const NewVocabTable = () => {
 
                 console.log(result.message)
 
-                getUserVocab()
+                getUserVocab().finally(() => setSubmitChangesLoading(false))
 
             }
         }
@@ -428,8 +430,8 @@ const NewVocabTable = () => {
                 )
             }
             if (status === 'authenticated') {
-                setDisableSubmit(true)
-                fetchAllData(nLevel, page, itemsPerPage)
+                fetchAllData(nLevel, page, itemsPerPage).finally(() =>
+                    setTableLoading(false))
             }
         }, [nLevel])
 
@@ -710,7 +712,7 @@ const NewVocabTable = () => {
                     {(session && (!tableLoading)) &&
                         <Box sx={{ mt: 3 }}>
                             <Button
-                                onClick={() => sendChanges()}
+                                onClick={() => {sendChanges(); setSubmitChangesLoading(true)}}
                                 disabled={(JSON.stringify(initialPackage) === JSON.stringify(slugChanges))}
                                 variant="contained"
                                 color="error"
@@ -726,7 +728,7 @@ const NewVocabTable = () => {
                                 }}
 
                             >
-                                変更を保存
+                                {(submitChangesLoading) ? <CircularProgress sx={{ color: 'white' }} size='25px' /> : `変更を保存`}
                             </Button>
                         </Box>
                     }
@@ -782,7 +784,7 @@ const NewVocabTable = () => {
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={3}>
-                                                    <Collapse in={open.includes(index) ? true : false}>
+                                                    <Collapse timeout={{ enter: 250, exit: 250 }} in={open.includes(index) ? true : false}>
                                                         <Box sx={{ paddingY: 2 }}>
                                                             {[...new Set(x.japanese.map(y => y.word))].map((z, zindex) => (
                                                                 <Typography key={zindex} sx={{ fontWeight: 'bold', fontSize: '1rem' }}>{z}</Typography>

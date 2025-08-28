@@ -1,6 +1,6 @@
 "use client"
-import { Alert, Box, Button, Card, CardContent, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, FormControlLabel, FormGroup, IconButton, List, ListItem, ListItemButton, ListItemText, Slide, Stack, Switch, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
-import React, { useEffect, useState } from 'react'
+import { Alert, Box, Button, Card, CardContent, Checkbox, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, FormGroup, IconButton, List, ListItem, ListItemButton, ListItemText, Slide, Stack, Switch, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import React, { createContext, useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, CancelOutlined, Check, Clear, DoneOutline, Info, InfoOutline, Looks3, Looks4, Looks5, LooksOne, LooksTwo, PersonAddAlt1, Quiz, Visibility } from '@mui/icons-material';
 import Collapse from '@mui/material/Collapse';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -9,222 +9,6 @@ import StopIcon from '@mui/icons-material/Stop';
 import PauseIcon from '@mui/icons-material/Pause';
 
 const NewQuizMaster = () => {
-
-    const DesktopVer = () => {
-        // // king box
-        // <Box sx={{ display: 'flex', flex: 4, flexDirection: 'row', minHeight: 'calc(100vh - 60px)', minWidth: '100vw', backgroundColor: '' }}>
-
-        //     {/* column left box */}
-        //     <Box flex={1} />
-
-        //     {/* column centre box */}
-        //     <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center' }} flex={2}>
-
-        //         {/* box containing n controls, quiz types, random switch + start/end button */}
-        //         <Box sx={{ display: 'flex', flexDirection: 'row', gap: '20px', alignItems: 'center', justifyContent: 'center', maxHeight: 70, minWidth: 1167, marginTop: 10 }}>
-
-        //             <Box sx={{ display: 'flex', padding: 0, margin: 0 }}>
-        //                 <FormControlLabel disabled={quizOn} control={<Switch onChange={() => setRandomQuiz(prev => !prev)} />} label="Random" />
-        //             </Box>
-
-        //             <Box>
-        //                 <ToggleButtonGroup
-        //                     exclusive
-        //                     color="primary"
-        //                     value={nLevel}
-        //                     disabled={quizOn}
-        //                 >
-        //                     <ToggleButton onClick={() => setNLevel('n1')} value='n1'>N1</ToggleButton>
-        //                     <ToggleButton onClick={() => setNLevel('n2')} value='n2'>N2</ToggleButton>
-        //                     <ToggleButton onClick={() => setNLevel('n3')} value='n3'>N3</ToggleButton>
-        //                     <ToggleButton onClick={() => setNLevel('n4')} value='n4'>N4</ToggleButton>
-        //                     <ToggleButton onClick={() => setNLevel('n5')} value='n5'>N5</ToggleButton>
-        //                 </ToggleButtonGroup>
-        //             </Box>
-
-        //             <Box>
-        //                 <ToggleButtonGroup
-        //                     disabled={quizOn}
-        //                     color="secondary"
-        //                     value={quizType}
-        //                     sx={{ alignItems: 'center', display: 'flex' }}
-        //                     exclusive
-        //                 >
-        //                     <ToggleButton onClick={() => { setQuizType('all'); setCustomCardCount('') }} value='all'>全て</ToggleButton>
-        //                     <ToggleButton onClick={() => { setQuizType('allUnknown'); setCustomCardCount('') }} value='allUnknown'>知らない全て</ToggleButton>
-        //                     <ToggleButton onClick={() => setQuizType('custom')} value='custom'>カスタム</ToggleButton>
-        //                 </ToggleButtonGroup>
-        //             </Box>
-
-        //             <Box>
-        //                 <Collapse orientation="horizontal" in={(quizType) === 'custom'}>
-        //                     <Box
-        //                         sx={{
-        //                             display: 'flex',
-        //                             flexDirection: 'row',
-        //                             alignItems: 'center',
-        //                             justifyContent: 'left',
-        //                             gap: '20px',
-        //                             width: '112px',
-        //                             whiteSpace: 'nowrap'
-        //                         }}
-        //                     >
-        //                         <TextField
-        //                             disabled={quizOn}
-        //                             // error={customAlert}
-        //                             label="カードの数"
-        //                             size="small"
-        //                             sx={{ width: '100%' }}
-        //                             value={customCardCount}
-        //                             onChange={(e) => setCustomCardCount(e.target.value)} />
-        //                     </Box>
-        //                 </Collapse>
-        //             </Box>
-
-        //             {/* start/stop quiz button */}
-
-        //             {(!quizOn) ?
-        //                 <Button onClick={() => getAllCards(nLevel)} variant="contained">Start</Button>
-        //                 :
-        //                 <Button onClick={() => endQuiz()} variant="contained">End</Button>
-        //             }
-
-        //         </Box>
-
-        //         {/* card number, correct + incorrect count buttons once quiz is on */}
-        //         <Collapse sx={{ gap: '20px' }} in={quizOn} orientation='vertical'>
-        //             <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '20px', paddingTop: 4 }}>
-
-        //                 <Button disableRipple disableFocusRipple startIcon={<Quiz />} variant="outlined" color="info">
-        //                     <Typography variant="body1">{`カード ${cardNumber + 1} / ${quizData.length}`}</Typography>
-        //                 </Button>
-
-
-        //                 <Button startIcon={<DoneOutline />} disableRipple disableFocusRipple variant='outlined' color="success">
-        //                     <Typography variant="body1">0</Typography>
-        //                 </Button>
-
-        //                 <Button startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant='outlined' color="error">
-        //                     <Typography variant="body1">0</Typography>
-        //                 </Button>
-        //             </Box>
-        //         </Collapse>
-
-        //         {/* main box for flashcard */}
-        //         <Card sx={{ marginTop: '50px', display: 'flex', flexDirection: 'column', minWidth: 1000, padding: 0.5, marginBottom:10 }}>
-        //             {(!quizOn) ?
-        //                 <Typography sx={{ textAlign: 'center' }}>poop</Typography>
-        //                 :
-        //                 <>
-        //                     <Box sx={{ display: 'flex', flexDirection: 'row' }}>
-
-        //                         <CardContent sx={{ width: '30%' }}>
-        //                             <Box>
-        //                                 <Typography variant='h3'>
-        //                                     {quizData[cardNumber].slug}
-        //                                 </Typography>
-        //                             </Box>
-        //                         </CardContent>
-
-        //                         <CardContent sx={{ width: '70%', display: 'flex', justifyContent: 'right', maxHeight: 80 }}>
-        //                             <Box sx={{ display: 'flex', gap: '10px' }}>
-
-        //                                 <Button
-        //                                     size='small'
-        //                                     variant="outlined"
-        //                                     color="primary"
-        //                                     startIcon={<ArrowLeft />}
-        //                                     onClick={() => changeCard('back')}
-
-        //                                 >
-        //                                     前
-        //                                 </Button>
-
-        //                                 <Button
-        //                                     size='small'
-        //                                     variant="outlined"
-        //                                     color="primary"
-        //                                     endIcon={<ArrowRight />}
-        //                                     onClick={() => changeCard('forward')}
-
-        //                                 >
-        //                                     次
-        //                                 </Button>
-
-        //                                 <Button onClick={() => toggleShowCard(true)} size='small' variant="contained" color="primary">
-        //                                     <Typography><Visibility /> 表示</Typography>
-        //                                 </Button>
-
-        //                                 <Button
-
-
-        //                                     size='small'
-        //                                     variant="contained"
-        //                                     color="success"
-        //                                     startIcon={<Check />}
-        //                                 >
-        //                                     正解
-        //                                 </Button>
-        //                                 <Button
-
-
-        //                                     size='small'
-        //                                     variant="contained"
-        //                                     color="error"
-        //                                     startIcon={<Clear />}
-        //                                 >
-        //                                     不正解
-        //                                 </Button>
-        //                             </Box>
-        //                         </CardContent>
-        //                     </Box>
-        //                     <Collapse in={showCard} timeout={{ enter: 250, exit: 10 }}>
-        //                         <CardContent>
-        //                             <Box>
-
-        //                                 <Typography gutterBottom sx={{ color: 'orange' }}>Reading</Typography>
-
-        //                                 {[...new Set(quizData[cardNumber].japanese.map((x => x.reading)))].map(b => (
-        //                                     <Typography key={b} sx={{ fontWeight: 'bold' }}>{b}</Typography>
-        //                                 ))}
-
-        //                                 <Typography gutterBottom sx={{ color: 'orange', mt: 1 }}>Meaning</Typography>
-
-        //                                 <Box sx={{ mb: 1 }}>
-
-        //                                     {quizData[cardNumber].senses.map((x, senseIndex) => (
-        //                                         x.parts_of_speech != 'Wikipedia definition' && x.parts_of_speech != 'Place' ?
-        //                                             <Box key={senseIndex}>
-
-        //                                                 {x.parts_of_speech.map((f, posIndex) => (
-        //                                                     <Typography key={posIndex} sx={{ color: 'grey' }}>
-        //                                                         {f}
-        //                                                     </Typography>
-        //                                                 ))}
-
-        //                                                 {x.tags.map((g, tagIndex) => (
-        //                                                     <Typography key={tagIndex} sx={{ color: 'grey' }}>
-        //                                                         {g}
-        //                                                     </Typography>
-        //                                                 ))}
-
-        //                                                 <Typography sx={{ mb: 1 }}>
-        //                                                     {x.english_definitions.join(', ')}
-        //                                                 </Typography>
-        //                                             </Box>
-        //                                             : null
-        //                                     ))}
-        //                                 </Box>
-        //                             </Box>
-        //                         </CardContent>
-        //                     </Collapse>
-        //                 </>
-        //             }
-        //         </Card>
-        //     </Box>
-        //     <Box flex={1} />
-        // </Box >
-    }
 
     const MobileLayout = () => {
 
@@ -236,12 +20,24 @@ const NewQuizMaster = () => {
             'n5': 1,
         }
 
+        const slugCount = {
+            'n1': 3440,
+            'n2': 1802,
+            'n3': 1778,
+            'n4': 577,
+            'n5': 40,
+        }
+
         const nLevelArray = ['n1', 'n2', 'n3', 'n4', 'n5']
 
         ///////////////////////////////////////// STATES ///////////////////////////////////////////////
 
+        const [nLevel, setNLevel] = useState('n5')
+        const [quizType, setQuizType] = useState('all')
+        const [randomQuiz, setRandomQuiz] = useState(false)
+        const [customCardCount, setCustomCardCount] = useState('')
 
-        // state to toggle quiz on/off
+        // state to toggle quiz toolbar on/off
         const [cardToolbar, toggleCardToolbar] = useState(false)
 
         // state to toggle quiz on/off
@@ -250,16 +46,12 @@ const NewQuizMaster = () => {
         // state for loading
         const [loading, setLoading] = useState(false)
 
-        // states to hold quiz control options
-        const [nLevel, setNLevel] = useState('n1')
-        const [quizType, setQuizType] = useState('all')
-        const [customCardCount, setCustomCardCount] = useState('')
-        const [randomQuiz, setRandomQuiz] = useState(false)
-
         // states for dialogs
         const [nLevelSelect, openNLevelSelect] = useState(false)
         const [pauseSelect, openPauseSelect] = useState(false)
         const [stopSelect, openStopSelect] = useState(false)
+        const [introDialog, toggleIntroDialog] = useState(false)
+        const [settingsDialog, toggleSettingsDialog] = useState(true)
 
         // states to control card, custom field collapse
         const [showCard, toggleShowCard] = useState(false)
@@ -270,29 +62,61 @@ const NewQuizMaster = () => {
         // state to manage card number
         const [cardNumber, setCardNumber] = useState(0)
 
+        // don't show again intro checkbox
+        const [introCheckbox, setIntroCheckbox] = useState(false)
 
 
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
 
+        function shuffle(array) {
+            let currentIndex = array.length;
+
+            // While there remain elements to shuffle...
+            while (currentIndex != 0) {
+
+                // Pick a remaining element...
+                let randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+
+                // And swap it with the current element.
+                [array[currentIndex], array[randomIndex]] = [
+                    array[randomIndex], array[currentIndex]];
+            }
+        }
+
 
         // function to fetch and return ALL cards for a selected N level, and set quiz data
-        const getAllCards = async (nLevel) => {
+        const runQuiz = async (nLevel, quizType, randomQuiz, customCardCount) => {
 
             const allPages = []
 
-            try {
-                for (let index = 1; index <= fileCount[nLevel]; index++) {
-                    const data = await (await fetch(`vocab/${nLevel}/${nLevel}_page${index}.json`)).json()
-                    allPages.push(data)
+            if (quizType === 'all') {
+
+                try {
+                    for (let index = 1; index <= fileCount[nLevel]; index++) {
+                        const data = await (await fetch(`vocab/${nLevel}/${nLevel}_page${index}.json`)).json()
+                        allPages.push(data)
+                    }
+
+                    const allPagesFlatMap = allPages.flatMap(x => x)
+
+                    if (randomQuiz) {
+                        shuffle(allPagesFlatMap)
+                        setQuizData(allPagesFlatMap)
+                    }
+
+                    else {
+                        setQuizData(allPagesFlatMap)
+                    }
                 }
-                setQuizData(allPages.flatMap(x => x))
-            }
-            catch (err) {
-                console.log(err)
-            }
-            finally {
-                setLoading(false)
-                toggleQuizOn(true)
+
+                catch (err) {
+                    console.log(err)
+                }
+                finally {
+                    setLoading(false)
+                    toggleQuizOn(true)
+                }
             }
         }
 
@@ -328,6 +152,18 @@ const NewQuizMaster = () => {
             changeCard('forward')
         }
 
+        // checkbox don't show again
+        const changeCheckbox = (introCheckbox) => {
+            if (introCheckbox === false) {
+                setIntroCheckbox(true)
+                localStorage.setItem('qintroCheckbox', true)
+            }
+            else {
+                setIntroCheckbox(false)
+                localStorage.setItem('qintroCheckbox', false)
+            }
+        }
+
 
         ///////////////////////////////////////// EFFECTS ///////////////////////////////////////////////
 
@@ -336,6 +172,18 @@ const NewQuizMaster = () => {
         useEffect(() => {
             console.log('flat quiz data', quizData)
         }, [quizData])
+
+        // for don't show again
+        useEffect(() => {
+            if (localStorage.getItem('qintroCheckbox')) { // if ls item exists
+                const stored = JSON.parse(localStorage.getItem('qintroCheckbox'))
+                setIntroCheckbox(stored) // set check to value 
+                toggleIntroDialog(!stored) // if checked -> don't show, if not checked -> show 
+            }
+            else {
+                toggleIntroDialog(true)
+            }
+        }, [])
 
 
         ///////////////////////////////////////// DIALOGS ///////////////////////////////////////////////
@@ -410,6 +258,161 @@ const NewQuizMaster = () => {
                 <PauseDialog />
                 <StopDialog />
 
+                <Dialog sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} open={settingsDialog} onClose={() => toggleSettingsDialog(false)}>
+                    <DialogTitle sx={{ textAlign: 'center' }} variant='subtitle1'>
+                        Quiz Settings
+                    </DialogTitle>
+                    <DialogContent>
+                        <Card sx={{ minHeight: 460, minWidth: 285 }}>
+                            <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+
+                                <ToggleButtonGroup color='error' exclusive onChange={(someEvent, newN) => (newN) != null ? setNLevel(newN) : null} value={nLevel} size='small' sx={{ mt: 2 }}>
+                                    <ToggleButton value='n1'>N1</ToggleButton>
+                                    <ToggleButton value='n2'>N2</ToggleButton>
+                                    <ToggleButton value='n3'>N3</ToggleButton>
+                                    <ToggleButton value='n4'>N4</ToggleButton>
+                                    <ToggleButton value='n5'>N5</ToggleButton>
+                                </ToggleButtonGroup>
+
+                                <ToggleButtonGroup color='error' onChange={(event, newA) => (newA) != null ? setQuizType(newA) : null} exclusive value={quizType} size='small' sx={{ mt: 2 }}>
+                                    <ToggleButton onClick={() => setCustomCardCount('')} value='all'>All</ToggleButton>
+                                    <ToggleButton value='unknown'>Unknown</ToggleButton>
+                                </ToggleButtonGroup>
+
+                                <Divider sx={{ mt: 2, width: '80%' }} />
+
+                                <Box sx={{ pl: 2, mt: 2 }}>
+                                    <FormControlLabel control={<Switch checked={randomQuiz} size='small' color='error' onChange={() => setRandomQuiz(prev => !prev)} />} label="Randomise card order" />
+                                </Box>
+
+                                <Box sx={{ minWidth: '100%', mt: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                    <TextField
+                                        sx={{ minWidth: '100%' }}
+                                        error={isNaN(Number(customCardCount)) || (customCardCount != '' && Number(customCardCount) < 30) || (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel]))}
+                                        label="Number of Cards"
+                                        disabled={(quizType) === 'all'}
+                                        size="small"
+                                        variant="outlined"
+                                        value={customCardCount}
+                                        onChange={(e) => setCustomCardCount(e.target.value)}
+                                        helperText={
+                                            isNaN(Number(customCardCount)) ? "Please enter a valid number." :
+                                                (customCardCount != '' && Number(customCardCount) < 30) ? "A quiz must hold at least 30 cards." :
+                                                    (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel])) ? `Exceeds ${nLevel.toUpperCase()} max card count (${slugCount[nLevel]}).` :
+                                                        null
+                                        }
+                                    />
+                                </Box>
+
+                                <Alert color='error' icon={false} sx={{ mt: 2, textAlign: 'center', fontSize: '0.85rem' }} severity='info'>30 card minimum. If left blank, all available cards will be tested.</Alert>
+
+                                {
+                                    (quizType) === 'all' && (randomQuiz) ?
+                                        <Alert
+                                            color='error'
+                                            variant='filled'
+                                            sx={{ mt: 2, textAlign: 'center', fontSize: '0.85rem' }}
+                                            severity='info'
+                                            icon={false}>
+                                            Quiz on {nLevel.toUpperCase()} cards, cards arranged randomly.
+                                        </Alert>
+                                        :
+                                        (quizType) === 'all' && (!randomQuiz) ?
+                                            <Alert
+                                                color='error'
+                                                variant='filled'
+                                                sx={{ mt: 2, textAlign: 'center', fontSize: '0.85rem' }}
+                                                severity='info'
+                                                icon={false}>
+                                                Quiz on {nLevel.toUpperCase()} cards, cards arranged in default order.
+                                            </Alert>
+                                            :
+                                            (quizType) === 'unknown' && (randomQuiz) ?
+                                                <Alert
+                                                    color='error'
+                                                    variant='filled'
+                                                    sx={{ mt: 2, textAlign: 'center', fontSize: '0.85rem' }}
+                                                    severity='info'
+                                                    icon={false}>
+                                                    Quiz on {nLevel.toUpperCase()} cards that have yet to be ticked in your vocabulary table, cards arranged randomly.
+                                                </Alert>
+                                                :
+                                                <Alert
+                                                    color='error'
+                                                    variant='filled'
+                                                    sx={{ mt: 2, textAlign: 'center', fontSize: '0.85rem' }}
+                                                    severity='info'
+                                                    icon={false}>
+                                                    Quiz on {nLevel.toUpperCase()} cards that have yet to be ticked in your vocabulary table, cards arranged in default order.
+                                                </Alert>
+                                }
+                            </CardContent>
+                        </Card>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button size='small' onClick={() => toggleSettingsDialog(false)}>Save Changes</Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog open={introDialog}>
+                    <DialogTitle sx={{ fontSize: '1.25rem', textAlign: 'center', mb: 1 }}>
+                        文字語彙データの使い方
+                    </DialogTitle>
+                    <DialogContent>
+                        <Box>
+                            <Box>
+                                <Alert severity='error' sx={{ mb: 2 }}>
+                                    ロッグインしてない方は機能を利用できません
+                                </Alert>
+                                <Alert severity='success' sx={{ mb: 2 }}>
+                                    単語を知るとチェックを入力してください、ロッグインするとデータを保存できます
+                                </Alert>
+                            </Box>
+                            <Box>
+                                <Card>
+                                    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <SettingsIcon /><Typography sx={{ fontSize: '0.95rem' }}>Nレベルの選択</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <SettingsIcon /><Typography sx={{ fontSize: '0.95rem' }}>表示件数</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <SettingsIcon /><Typography sx={{ fontSize: '0.95rem' }}>詳細を展開</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <SettingsIcon /><Typography sx={{ fontSize: '0.95rem' }}>詳細を隠す</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <SettingsIcon /><Typography sx={{ fontSize: '0.95rem' }}>ページ全チェック</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <SettingsIcon /><Typography sx={{ fontSize: '0.95rem' }}>ページ全解除</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <SettingsIcon /><Typography sx={{ fontSize: '0.95rem' }}>ページや単語を検索</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <SettingsIcon /><Typography sx={{ fontSize: '0.95rem' }}>レベル全解除</Typography>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Box>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                            <Checkbox onClick={() => changeCheckbox(introCheckbox)} checked={introCheckbox} />
+                            <Typography variant='subtitle1'>起動時に表示しない</Typography>
+                        </Box>
+                        <Button
+                            onClick={() => { toggleIntroDialog(false) }}
+                            sx={{ fontWeight: 'bold' }}>
+                            閉じる
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
                 <Card sx={{ mt: 3, mb: 6 }}>
 
                     {/* for controls */}
@@ -419,7 +422,7 @@ const NewQuizMaster = () => {
 
                             <ToggleButtonGroup size='small'>
 
-                                <ToggleButton sx={{ borderColor: '#d32f2f' }}>
+                                <ToggleButton onClick={() => toggleIntroDialog(true)} sx={{ borderColor: '#d32f2f' }}>
                                     <InfoOutline color='error' />
                                 </ToggleButton>
 
@@ -435,7 +438,7 @@ const NewQuizMaster = () => {
                                     }
                                 </ToggleButton>
 
-                                <ToggleButton size='small' sx={{ borderColor: '#d32f2f' }}>
+                                <ToggleButton onClick={() => toggleSettingsDialog(true)} size='small' sx={{ borderColor: '#d32f2f' }}>
                                     <SettingsIcon color={(!quizOn) ? 'error' : ''} />
                                 </ToggleButton>
 
@@ -446,7 +449,7 @@ const NewQuizMaster = () => {
                                     } else {
                                         toggleCardToolbar(true)
                                         setLoading(true)
-                                        getAllCards(nLevel)
+                                        runQuiz(nLevel, quizType, randomQuiz, customCardCount)
                                     }
                                 }} variant='contained' size='small' sx={{ borderColor: '#d32f2f' }}>
                                     {(quizOn) ? <PauseIcon color='error' /> : <PlayArrowIcon color='error' />}
