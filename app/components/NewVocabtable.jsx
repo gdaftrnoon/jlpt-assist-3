@@ -12,6 +12,8 @@ import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import CheckBoxOutlineBlankRoundedIcon from '@mui/icons-material/CheckBoxOutlineBlankRounded';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import { redirect } from 'next/navigation'
+import ArrowLeftIcon from '@mui/icons-material/ArrowLeft';
+import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 
 const NewVocabTable = () => {
 
@@ -610,47 +612,51 @@ const NewVocabTable = () => {
                         <DialogTitle sx={{ fontSize: '1.25rem', textAlign: 'center', mb: 1 }}>
                             文字語彙データの使い方
                         </DialogTitle>
-                        <DialogContent>
-                            <Box>
+                        <DialogContent sx={{paddingBottom:0}}>
+                            <Box sx={{}}>
+
                                 <Box>
-                                    <Alert severity='error' sx={{ mb: 2 }}>
-                                        ロッグインしてない方は機能を利用できません
-                                    </Alert>
-                                    <Alert severity='success' sx={{ mb: 2 }}>
+                                    <Alert icon={false} severity='info' sx={{ mb: 2, textAlign:'center' }}>
                                         単語を知るとチェックを入力してください、ロッグインするとデータを保存できます
                                     </Alert>
                                 </Box>
-                                <Box>
-                                    <Card>
-                                        <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
-                                            <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                                <Stairs /><Typography sx={{ fontSize: '0.95rem' }}>Nレベルの選択</Typography>
-                                            </Box>
-                                            <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                                <ArticleIcon /><Typography sx={{ fontSize: '0.95rem' }}>表示件数</Typography>
-                                            </Box>
-                                            <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                                <Expand /><Typography sx={{ fontSize: '0.95rem' }}>詳細を展開</Typography>
-                                            </Box>
-                                            <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                                <UnfoldLess /><Typography sx={{ fontSize: '0.95rem' }}>詳細を隠す</Typography>
-                                            </Box>
-                                            <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                                <DoneAll /><Typography sx={{ fontSize: '0.95rem' }}>ページ全チェック</Typography>
-                                            </Box>
-                                            <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                                <CheckBoxOutlineBlankRoundedIcon /><Typography sx={{ fontSize: '0.95rem' }}>ページ全解除</Typography>
-                                            </Box>
-                                            <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                                <ManageSearchIcon /><Typography sx={{ fontSize: '0.95rem' }}>ページや単語を検索</Typography>
-                                            </Box>
-                                            <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                                <DeleteForever /><Typography sx={{ fontSize: '0.95rem' }}>レベル全解除</Typography>
-                                            </Box>
-                                        </CardContent>
-                                    </Card>
-                                </Box>
+
+                                <Card>
+                                    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <Stairs /><Typography sx={{ fontSize: '0.95rem' }}>Nレベルの選択</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <ArticleIcon /><Typography sx={{ fontSize: '0.95rem' }}>表示件数</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <Expand /><Typography sx={{ fontSize: '0.95rem' }}>詳細を展開</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <UnfoldLess /><Typography sx={{ fontSize: '0.95rem' }}>詳細を隠す</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <DoneAll /><Typography sx={{ fontSize: '0.95rem' }}>ページ全チェック</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <CheckBoxOutlineBlankRoundedIcon /><Typography sx={{ fontSize: '0.95rem' }}>ページ全解除</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <ManageSearchIcon /><Typography sx={{ fontSize: '0.95rem' }}>ページや単語を検索</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <DeleteForever /><Typography sx={{ fontSize: '0.95rem' }}>レベル全解除</Typography>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+
                             </Box>
+
+                            <Box sx={{ display:'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', mt:1.9 }}>
+                                <IconButton><ArrowLeftIcon color='primary' sx={{borderRadius:'16px', border:1}} /></IconButton>
+                                <IconButton><ArrowRightIcon color='primary' sx={{borderRadius:'16px', border:1}} /></IconButton>
+                            </Box>
+
                         </DialogContent>
                         <DialogActions sx={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
