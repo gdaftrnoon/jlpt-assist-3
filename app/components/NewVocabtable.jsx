@@ -1,11 +1,11 @@
 'use client'
-import { Box, Button, Card, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Table, TableBody, TableCell, TableRow, ToggleButton, ToggleButtonGroup, Typography, CircularProgress, TextField, Container, List, ListItemButton, ListItemText, ListItem, Alert, CardContent, Paper, DialogContentText, Skeleton, LinearProgress } from '@mui/material'
+import { Box, Button, Card, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Table, TableBody, TableCell, TableRow, ToggleButton, ToggleButtonGroup, Typography, CircularProgress, TextField, Container, List, ListItemButton, ListItemText, ListItem, Alert, CardContent, Paper, DialogContentText, Skeleton, LinearProgress, TableContainer, TableHead } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Pagination from '@mui/material/Pagination';
 import Checkbox from '@mui/material/Checkbox';
-import { DeleteForever, DoneAll, Expand, Info, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Stairs, UnfoldLess } from '@mui/icons-material';
+import { Check, DeleteForever, DoneAll, Expand, Info, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Stairs, UnfoldLess } from '@mui/icons-material';
 import ArticleIcon from '@mui/icons-material/Article';
 import { useSession } from 'next-auth/react';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
@@ -14,6 +14,10 @@ import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import { redirect } from 'next/navigation'
 import ArrowLeftIcon from '@mui/icons-material/ArrowLeft';
 import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import StairsIcon from '@mui/icons-material/Stairs';
+import CheckIcon from '@mui/icons-material/Check';
+import QuizIcon from '@mui/icons-material/Quiz';
+import PercentIcon from '@mui/icons-material/Percent';
 
 const NewVocabTable = () => {
 
@@ -104,6 +108,8 @@ const NewVocabTable = () => {
         // for submit changes loading spinner
         const [submitChangesLoading, setSubmitChangesLoading] = useState(false)
 
+        const [infoPageNumber, setInfoPageNumber] = useState(1)
+
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
 
 
@@ -177,7 +183,7 @@ const NewVocabTable = () => {
             // get all pages from n level
             const allPages = []
             for (let index = 1; index <= fileCount[nLevel]; index++) {
-                const response = await fetch(`vocab/${nLevel}/${nLevel}_page${index}.json`)
+                const response = await fetch(`vocab/${nLevel}/${nLevel}_page${index}_v1.json`)
                 const responseJson = await response.json()
                 allPages.push(responseJson)
             }
@@ -609,17 +615,15 @@ const NewVocabTable = () => {
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
 
                     <Dialog open={introDialog}>
-                        <DialogTitle sx={{ fontSize: '1.25rem', textAlign: 'center', mb: 1 }}>
+                        <DialogTitle sx={{ fontSize: '1.25rem', textAlign: 'center', mb: 0 }}>
                             文字語彙データの使い方
                         </DialogTitle>
-                        <DialogContent sx={{paddingBottom:0}}>
-                            <Box sx={{}}>
+                        <DialogContent sx={{ paddingBottom: 0, minHeight: 400 }}>
 
-                                <Box>
-                                    <Alert icon={false} severity='info' sx={{ mb: 2, textAlign:'center' }}>
-                                        単語を知るとチェックを入力してください、ロッグインするとデータを保存できます
-                                    </Alert>
-                                </Box>
+                            <Box>
+                                <Alert icon={false} severity='info' sx={{ mb: 2, textAlign: 'center', padding: 0, fontSize: '0.8rem' }}>
+                                    単語を知るとチェックを入力してください、ロッグインするとデータを保存できます
+                                </Alert>
 
                                 <Card>
                                     <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
@@ -649,13 +653,34 @@ const NewVocabTable = () => {
                                         </Box>
                                     </CardContent>
                                 </Card>
-
                             </Box>
 
-                            <Box sx={{ display:'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', mt:1.9 }}>
-                                <IconButton><ArrowLeftIcon color='primary' sx={{borderRadius:'16px', border:1}} /></IconButton>
-                                <IconButton><ArrowRightIcon color='primary' sx={{borderRadius:'16px', border:1}} /></IconButton>
-                            </Box>
+                            <TableContainer sx={{ pb: 1.5, mt:1 }}>
+                                <Table>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ textAlign: 'center', py:1 }}><StairsIcon fontSize='small' /></TableCell>
+                                            <TableCell sx={{ textAlign: 'center', py:1 }}><Check fontSize='small' /></TableCell>
+                                            <TableCell sx={{ textAlign: 'center', py:1 }}><QuizIcon fontSize='small' /></TableCell>
+                                            <TableCell sx={{ textAlign: 'center', py:1 }}><PercentIcon fontSize='small' /></TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        <TableRow>
+                                            <TableCell sx={{ textAlign: 'center', py:1 }}>{nLevel.toUpperCase()}</TableCell>
+                                            <TableCell sx={{ textAlign: 'center', py:1 }}>
+                                                {(session) && (knownSlugs.length > 0) ? knownSlugs.length : `...`}
+                                            </TableCell>
+                                            <TableCell sx={{ textAlign: 'center', py:1 }}>
+                                                {(tableData.length) === 0 ? `...` : tableData.length}
+                                            </TableCell>
+                                            <TableCell sx={{ textAlign: 'center', py:1 }}>
+                                                {(knownSlugs.length) === 0 ? `...` : ((knownSlugs.length / tableData.length)*100).toFixed(2)}
+                                            </TableCell>
+                                        </TableRow>
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
 
                         </DialogContent>
                         <DialogActions sx={{ display: 'flex', justifyContent: 'space-between' }}>

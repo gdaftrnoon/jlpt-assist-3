@@ -1,13 +1,14 @@
 "use client"
-import { Alert, Box, Button, Card, CardContent, Checkbox, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, FormGroup, IconButton, List, ListItem, ListItemButton, ListItemText, Slide, Stack, Switch, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import { Alert, Box, Button, Card, CardContent, Checkbox, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, FormGroup, IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Slide, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TablePagination, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import React, { createContext, useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, CancelOutlined, Check, Clear, DoneOutline, Info, InfoOutline, Looks3, Looks4, Looks5, LooksOne, LooksTwo, PersonAddAlt1, Quiz, Visibility } from '@mui/icons-material';
+import { ArrowLeft, ArrowRight, Cancel, CancelOutlined, Check, Clear, DoneOutline, Info, InfoOutline, Looks3, Looks4, Looks5, LooksOne, LooksTwo, PersonAddAlt1, Quiz, Visibility } from '@mui/icons-material';
 import Collapse from '@mui/material/Collapse';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import PauseIcon from '@mui/icons-material/Pause';
 import { useSession } from 'next-auth/react';
+import { useStorageState } from '@toolpad/core/persistence';
 
 const NewQuizMaster = () => {
 
@@ -22,7 +23,7 @@ const NewQuizMaster = () => {
             'n2': 91,
             'n3': 89,
             'n4': 29,
-            'n5': 1,
+            'n5': 2,
         }
 
         const slugCount = {
@@ -56,7 +57,8 @@ const NewQuizMaster = () => {
         const [pauseSelect, openPauseSelect] = useState(false)
         const [stopSelect, openStopSelect] = useState(false)
         const [introDialog, toggleIntroDialog] = useState(false)
-        const [settingsDialog, toggleSettingsDialog] = useState(true)
+        const [settingsDialog, toggleSettingsDialog] = useState(false)
+        const [quizProgressDialog, toggleQuizProgressDialog] = useState(false)
 
         // states to control card, custom field collapse
         const [showCard, toggleShowCard] = useState(false)
@@ -80,6 +82,30 @@ const NewQuizMaster = () => {
             || (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel])) ||
             customCardCount.length > 0 && customCardCount.trim() === ''
         )
+
+        // orignal pre slice
+        const [orgProgData, setOrgProgData] = useState({
+            blank: [],
+            correct: [],
+            incorrect: []
+        })
+
+        // post slice
+        const [progData, setProgData] = useState({
+            blank: [],
+            correct: [],
+            incorrect: []
+        })
+
+        // page control for progress table
+        const [page, setPage] = useState(0)
+
+        // active button in progress table toggle button group
+        const [progTableButton, setProgTableButton] = useState('blank')
+
+        // just an array holding each slug in the quiz
+        const [slugArray, setSlugArray] = useState([])
+
 
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
 
@@ -106,18 +132,33 @@ const NewQuizMaster = () => {
             const allPages = []
 
             for (let index = 1; index <= fileCount[nLevel]; index++) {
-                const data = await (await fetch(`vocab/${nLevel}/${nLevel}_page${index}.json`)).json()
+                const data = await (await fetch(`vocab/${nLevel}/${nLevel}_page${index}_v1.json`)).json()
                 allPages.push(data)
             }
             const flatPages = allPages.flatMap(x => x)
+            console.log('first flat pages', flatPages)
 
             if (randomQuiz) {
                 shuffle(flatPages)
             }
 
             if (quizType === 'all') {
-                try { setQuizData(flatPages) }
+
+                try {
+                    if (customCardCount === '') {
+                        setQuizData(flatPages)
+                        setSlugArray(flatPages.map(x => x.slug))
+                    }
+
+                    else {
+                        const slicedQuizData = flatPages.slice(0, customCardCount)
+                        setQuizData(slicedQuizData)
+                        setSlugArray(slicedQuizData.map(x => x.slug))
+                    }
+                }
+
                 catch (err) { console.log(err) }
+
                 finally {
                     setLoading(false)
                     toggleQuizOn(true)
@@ -126,16 +167,49 @@ const NewQuizMaster = () => {
 
             if (quizType === 'unknown') {
                 try {
+
                     const unknownQuizData = flatPages.filter(x => !userKnownWordIds.includes(x.id))
 
-                    if (customCardCount != '') {
+                    // if unknown is less than min and custom field blank, get enough filler cards to reach 30
+                    if (unknownQuizData.length < 30) {
+                        if (customCardCount === '') {
+                            const fillerCardCount = 30 - unknownQuizData.length
+                            shuffle(flatPages) // shuffle the cards
+                            const unknownSlugs = unknownQuizData.map(x => x.slug)
+                            const fillerCards = flatPages.filter(x => !unknownSlugs.includes(x.slug)).slice(0, fillerCardCount)
+                            const safeQuizData = unknownQuizData.concat(fillerCards)
+                            setQuizData(safeQuizData)
+                            setSlugArray(safeQuizData.map(x => x.slug))
+
+                        }
+
+                        // if unknown is less than min and custom field exists, get enough filler cards to reach custom number
+                        else {
+                            const fillerCardCount = customCardCount - unknownQuizData.length
+                            shuffle(flatPages) // shuffle the cards
+                            const unknownSlugs = unknownQuizData.map(x => x.slug)
+                            const fillerCards = flatPages.filter(x => !unknownSlugs.includes(x => x.slug)).slice(0, fillerCardCount)
+                            const safeQuizData = unknownQuizData.concat(fillerCards)
+                            setQuizData(safeQuizData)
+                            setSlugArray(safeQuizData.map(x => x.slug))
+                        }
+                    }
+
+                    // if unknown is more than min and custom field exists, simply slice
+                    else if (unknownQuizData.length >= 30 && customCardCount != '') {
                         const slicedUnknownQuizData = unknownQuizData.slice(0, customCardCount)
                         setQuizData(slicedUnknownQuizData)
+                        setSlugArray(slicedUnknownQuizData.map(x => x.slug))
                     }
-                    else {
+
+                    // if unknown is more than min and custom field is blank, just give all unknown
+                    else if (unknownQuizData.length >= 30 && customCardCount === '') {
                         setQuizData(unknownQuizData)
+                        setSlugArray(unknownQuizData.map(x => x.slug))
                     }
+
                 }
+
                 catch (err) { console.log(err) }
                 finally {
                     setLoading(false)
@@ -215,6 +289,30 @@ const NewQuizMaster = () => {
             }
         }
 
+        // change prog table page function
+        const changePage = (progTableButton, direction) => {
+            const maxPages = Math.ceil(orgProgData[progTableButton].length / 5)
+            console.log('maxpages', maxPages)
+
+            if (direction === 'back') {
+                if (page > 0) {
+                    setPage(prev => prev - 1)
+                }
+            }
+            if (direction === 'forward') {
+                if (page < maxPages - 1) {
+                    setPage(prev => prev + 1)
+                }
+            }
+        }
+
+        // handle prog table toggle button group value change
+        const handleProgButtonChange = (event, newButton) => {
+            if (newButton !== null) {
+                setProgTableButton(newButton)
+                setPage(0)
+            }
+        }
 
         ///////////////////////////////////////// EFFECTS ///////////////////////////////////////////////
 
@@ -244,6 +342,29 @@ const NewQuizMaster = () => {
             }
 
         }, [status])
+
+        // altering progdata when quizdata changes
+        useEffect(() => {
+            const correctCards = quizData.filter(x => x.result === true)
+            const incorrectCards = quizData.filter(x => x.result === false)
+            const blankCards = quizData.filter(x => x.result === null)
+
+            setOrgProgData({
+                blank: blankCards,
+                correct: correctCards,
+                incorrect: incorrectCards,
+            })
+
+            const blankSliced = blankCards.slice(page * 5, 5 + (page * 5))
+            const correctSliced = correctCards.slice(page * 5, 5 + (page * 5))
+            const incorrectSliced = incorrectCards.slice(page * 5, 5 + (page * 5))
+
+            setProgData({
+                blank: blankSliced,
+                correct: correctSliced,
+                incorrect: incorrectSliced,
+            })
+        }, [quizData, page])
 
 
         ///////////////////////////////////////// DIALOGS ///////////////////////////////////////////////
@@ -319,10 +440,10 @@ const NewQuizMaster = () => {
                 <StopDialog />
 
                 <Dialog sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} open={settingsDialog} onClose={() => toggleSettingsDialog(false)}>
-                    <DialogTitle sx={{ textAlign: 'center' }} variant='subtitle1'>
+                    <DialogTitle sx={{ textAlign: 'center', maxWidth: 340 }} variant='subtitle1'>
                         Quiz Settings
                     </DialogTitle>
-                    <DialogContent>
+                    <DialogContent sx={{ maxWidth: 340 }}>
                         <Card sx={{ minHeight: 460, minWidth: 285 }}>
                             <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
 
@@ -348,9 +469,10 @@ const NewQuizMaster = () => {
                                 <Box sx={{ minWidth: '100%', mt: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                                     <TextField
                                         sx={{ minWidth: '100%' }}
+                                        autoFocus
                                         error={isNaN(Number(customCardCount)) || (customCardCount != '' && Number(customCardCount) < 30) || (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel]))}
                                         label="Number of Cards"
-                                        disabled={(quizType) === 'all' || quizOn}
+                                        disabled={quizOn}
                                         size="small"
                                         variant="outlined"
                                         value={customCardCount}
@@ -474,6 +596,69 @@ const NewQuizMaster = () => {
                     </DialogActions>
                 </Dialog>
 
+                {(quizOn) &&
+                    <Dialog sx={{}} open={quizProgressDialog}>
+                        <DialogTitle sx={{ textAlign: 'center' }}>
+                            Quiz Progress
+                        </DialogTitle>
+                        <DialogContent sx={{ minWidth: 300, minHeight: 440 }}>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <ToggleButtonGroup exclusive onChange={handleProgButtonChange} value={progTableButton} sx={{ pb: 2 }} size='small'>
+                                    <ToggleButton value='blank'><Quiz /></ToggleButton>
+                                    <ToggleButton value='correct'><Check /></ToggleButton>
+                                    <ToggleButton value='incorrect'><Cancel /></ToggleButton>
+                                </ToggleButtonGroup>
+                            </Box>
+
+                            <TableContainer sx={{}}>
+                                <Table sx={{}}>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ width: '50%', textAlign: 'center' }}>Card Number</TableCell>
+                                            <TableCell sx={{ width: '50%', textAlign: 'center' }}>Word</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {progData[progTableButton]
+                                            .map((x, index) => (
+                                                <TableRow sx={{}} key={index}>
+                                                    <TableCell sx={{ textAlign: 'center', py: 1.3 }}>
+                                                        <Button disableRipple onClick={() => {
+                                                            setCardNumber(slugArray.indexOf(x.slug) )
+                                                            toggleQuizProgressDialog(false)
+                                                        }}
+                                                            size='small'>
+                                                            {slugArray.indexOf(x.slug) + 1}
+                                                        </Button>
+                                                    </TableCell>
+                                                    <TableCell sx={{ textAlign: 'center', py: 1.3 }}>{x.slug}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                    </TableBody>
+                                    <TableFooter sx={{ padding: 0 }}>
+                                        <TableRow sx={{ padding: 0 }}>
+                                            {progData[progTableButton].length < 1 ? null :
+                                                <>
+                                                    <TableCell sx={{ padding: 0, textAlign: 'center' }}>
+                                                        {`Page ${page + 1}`}
+                                                    </TableCell><TableCell sx={{ padding: 0, textAlign: 'center' }}>
+                                                        <IconButton onClick={() => changePage(progTableButton, 'back')}><ArrowLeft fontSize='small' /></IconButton>
+                                                        <IconButton onClick={() => changePage(progTableButton, 'forward')}><ArrowRight fontSize='small' /></IconButton>
+                                                    </TableCell>
+                                                </>
+                                            }
+                                        </TableRow>
+                                    </TableFooter>
+                                </Table>
+                            </TableContainer>
+
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => toggleQuizProgressDialog(false)}>Close</Button>
+                        </DialogActions>
+                    </Dialog>}
+
                 <Card sx={{ mt: 3, mb: 6 }}>
 
                     {/* for controls */}
@@ -539,7 +724,7 @@ const NewQuizMaster = () => {
                                     {(quizOn) &&
                                         <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
 
-                                            <Button size='small' disableRipple disableFocusRipple startIcon={<Quiz />} variant="outlined" color="info">
+                                            <Button onClick={() => toggleQuizProgressDialog(true)} size='small' startIcon={<Quiz />} variant="outlined" color="info">
                                                 <Typography variant="body1">{`${cardNumber + 1} / ${quizData.length}`}</Typography>
                                             </Button>
 
