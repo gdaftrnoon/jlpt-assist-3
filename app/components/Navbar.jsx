@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useContext } from 'react'
+import React, { useState, useContext, useEffect } from 'react'
 import { AppBar, IconButton, Toolbar, Typography, Button, Box, Popper, Paper, MenuList, MenuItem, ClickAwayListener, Zoom, Container, Avatar, CircularProgress } from '@mui/material'
 import Link from 'next/link'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
@@ -27,6 +27,12 @@ const Navbar = () => {
     async function signOutHelper() {
         await signOut({ redirectTo: '/' })
     }
+
+    useEffect(() => {
+        if (!localStorage.getItem("pullFromDb")) {
+            localStorage.setItem('pullFromDb', 'false')
+        }
+    }, [])
 
     /* --- Desktop Navbar (>= md) ---------------------------------- */
     const Desktopnav = () => (
@@ -143,32 +149,32 @@ const Navbar = () => {
                                     JLPT ASSIST
                                 </Typography>
                             </Box>
-                            <Box sx={{ display:'flex', minWidth:64, minHeight:37, justifyContent:'right'}}>
+                            <Box sx={{ display: 'flex', minWidth: 64, minHeight: 37, justifyContent: 'right' }}>
                                 {(status) === 'loading' ? null :
-                                (status === 'authenticated' && (username)) ?
-                                    <>
-                                        <Avatar
-                                            disableFocusRipple
-                                            disableRipple
-                                            component={IconButton}
-                                            onClick={(event) => {setAvatarAnchorEl(event.currentTarget)}}
-                                            sx={{ bgcolor: 'white', color: 'red' }}
+                                    (status === 'authenticated' && (username)) ?
+                                        <>
+                                            <Avatar
+                                                disableFocusRipple
+                                                disableRipple
+                                                component={IconButton}
+                                                onClick={(event) => { setAvatarAnchorEl(event.currentTarget) }}
+                                                sx={{ bgcolor: 'white', color: 'red' }}
+                                            >
+                                                {username[0].toUpperCase()}
+                                            </Avatar>
+                                            <Menu anchorEl={avatarAnchorEl} open={Boolean(avatarAnchorEl)} onClose={() => setAvatarAnchorEl(null)}>
+                                                <MenuItem onClick={() => signOut()}>Logout</MenuItem>
+                                                <MenuItem>Settings</MenuItem>
+                                            </Menu>
+                                        </>
+                                        :
+                                        <Button
+                                            component={Link}
+                                            sx={{ color: 'white' }}
+                                            href='/login'
                                         >
-                                            {username[0].toUpperCase()}
-                                        </Avatar>
-                                        <Menu anchorEl={avatarAnchorEl} open={Boolean(avatarAnchorEl)} onClose={() => setAvatarAnchorEl(null)}>
-                                            <MenuItem onClick={() => signOut()}>Logout</MenuItem>
-                                            <MenuItem>Settings</MenuItem>
-                                        </Menu>
-                                    </>
-                                    :
-                                    <Button
-                                        component={Link}
-                                        sx={{ color: 'white' }}
-                                        href='/login'
-                                    >
-                                        Login
-                                    </Button>
+                                            Login
+                                        </Button>
                                 }
                                 <Menu
                                     color='black'

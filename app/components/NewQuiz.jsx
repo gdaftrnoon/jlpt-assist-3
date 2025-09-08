@@ -307,6 +307,7 @@ const NewQuizMaster = () => {
                     const knownWordIds = data.message.map(a => Number(a.word_id))
                     setUserKnownWordIds(knownWordIds)
                     console.log('user word ids', knownWordIds)
+                    console.log('userdata pulled', knownWordIds)
                 }
             }
         }
@@ -346,29 +347,55 @@ const NewQuizMaster = () => {
         // saving quiz results + new vocab data to db
         const updateDb = async () => {
             if (saveToVT) {
-                const initialToBeCorrect = {}
-                orgProgData['toBeChecked'].forEach(x => initialToBeCorrect[x.slug] = false)
-                const changeToBeCorrect = {}
-                orgProgData['toBeChecked'].forEach(x => changeToBeCorrect[x.slug] = true)
+
+                const initial = {}
+
+                orgProgData['toBeChecked'].forEach(x => initial[x.slug] = false)
+                orgProgData['toBeUnchecked'].forEach(x => initial[x.slug] = true)
+
+                const change = {}
+
+                orgProgData['toBeChecked'].forEach(x => change[x.slug] = true)
+                orgProgData['toBeUnchecked'].forEach(x => change[x.slug] = false)
+
                 const toBeCorrectWordIds = orgProgData['toBeChecked'].map(x => x.id)
+                const toBeIncorrectWordIds = orgProgData['toBeUnchecked'].map(x => x.id)
+                const wordIds = toBeCorrectWordIds.concat(toBeIncorrectWordIds)
 
                 const resp = await fetch('/api/SubmitVocabData',
                     {
                         method: 'POST',
-                        body: JSON.stringify({ initial: initialToBeCorrect, changes: changeToBeCorrect, ids: toBeCorrectWordIds, overrideLengthBar: true })
-
+                        body: JSON.stringify({ initial: initial, changes: change, ids: wordIds, overrideLengthBar: true })
                     })
                 const result = await resp.json()
                 console.log(result.message)
                 if (result.message === 'No errors') {
+                    console.log('setting ls pullfromdb to true...')
                     localStorage.setItem('pullFromDb', "true")
+                    const updatedUKWI = userKnownWordIds.filter(x => !toBeIncorrectWordIds.includes(x)).concat(toBeCorrectWordIds)
+                    console.log('updatedUKWI', updatedUKWI)
+                    setUserKnownWordIds(updatedUKWI)
                 }
             }
+
+            if (saveToDB) {}
         }
 
 
         ///////////////////////////////////////// EFFECTS ///////////////////////////////////////////////
 
+
+        useEffect(() => {
+
+            const handler = async (event) => {
+                if (event.key === 'pullFromDb' && event.newValue === 'true') {
+                    await getUserVocab()
+                    localStorage.setItem('pullFromDb', "false")
+                }
+            }
+            window.addEventListener("storage", handler)
+            return () => window.removeEventListener("storage", handler)
+        }, [])
 
         // use effect for testing
         useEffect(() => {

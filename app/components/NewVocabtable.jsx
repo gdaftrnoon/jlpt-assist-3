@@ -173,6 +173,7 @@ const NewVocabTable = () => {
                 if (response.ok && data) {
                     const knownWordIds = data.message.map(a => Number(a.word_id))
                     setUserKnownWordIds(knownWordIds)
+                    console.log('userdata pulled', knownWordIds)
                 }
             }
         }
@@ -345,11 +346,13 @@ const NewVocabTable = () => {
 
                 console.log(result.message)
 
-                setUserKnownWordIds(prev => prev.filter(x => !vocabTableIds.includes(x)))
+                if (result.message === 'No errors') {
 
-                // no longer hitting the db after every change, we update the state instead
-                // getUserVocab().finally(
-                //     () => fetchAllData(nLevel, page, itemsPerPage))
+                    setUserKnownWordIds(prev => prev.filter(x => !vocabTableIds.includes(x)))
+
+                    localStorage.setItem('pullFromDb', "true")
+
+                }
 
             }
 
@@ -377,22 +380,25 @@ const NewVocabTable = () => {
 
                 console.log(result.message)
 
-                // update user known word ids
-                Object.keys(slugChanges).forEach(x => {
-                    const result = slugChanges[x] // true or false
-                    const slugId = (vocabularyData.find(vocabObject => vocabObject.slug === x)).id
-                    if (result === true && !userKnownWordIds.includes(slugId)) {
-                        setUserKnownWordIds(prev => [...prev, slugId])
-                    }
-                    else if (result === false && userKnownWordIds.includes(slugId)) {
-                        setUserKnownWordIds(prev => prev.filter(x => x != slugId))
-                    }
-                })
+                if (result.message === 'No errors') {
 
-                setSubmitChangesLoading(false)
+                    // update user known word ids
+                    Object.keys(slugChanges).forEach(x => {
+                        const result = slugChanges[x] // true or false
+                        const slugId = (vocabularyData.find(vocabObject => vocabObject.slug === x)).id
+                        if (result === true && !userKnownWordIds.includes(slugId)) {
+                            setUserKnownWordIds(prev => [...prev, slugId])
+                        }
+                        else if (result === false && userKnownWordIds.includes(slugId)) {
+                            setUserKnownWordIds(prev => prev.filter(x => x != slugId))
+                        }
+                    })
 
-                // no longer hitting the db after every change, we update the state instead
-                // getUserVocab().finally(() => setSubmitChangesLoading(false))
+                    // so any other open tabs pull data from db to sync with change in this window
+                    localStorage.setItem('pullFromDb', "true")
+
+                    setSubmitChangesLoading(false)
+                }
 
             }
         }
@@ -423,10 +429,10 @@ const NewVocabTable = () => {
         ///////////////////////////////////////// EFFECTS ///////////////////////////////////////////////
 
         useEffect(() => {
-            const handler = (event) => {
+            const handler = async (event) => {
                 if (event.key === 'pullFromDb') {
                     if (event.newValue === "true") {
-                        getUserVocab()
+                        await getUserVocab()
                         localStorage.setItem('pullFromDb', "false")
                     }
                 }
@@ -895,10 +901,6 @@ const NewVocabTable = () => {
             </Container>
         )
     }
-
-    localStorage.setItem('pullFromDb', 'false')
-
-
 
     return (
         <MobileLayout />
