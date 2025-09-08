@@ -298,13 +298,15 @@ const NewVocabTable = () => {
 
             const knownSlugsSet = new Set(knownSlugs)
             const knownSlugsOnLevel = allSlugs.filter(x => knownSlugsSet.has(x))
-            console.log(knownSlugsOnLevel)
+            console.log('known slugs on level', knownSlugsOnLevel)
 
-            if (knownSlugsOnLevel != []) {
+            if (knownSlugsOnLevel.length != 0) {
 
                 const knownSlugsOnLevelSet = new Set(knownSlugsOnLevel)
 
                 const knownObjectsOnLevel = (tableData.filter(x => knownSlugsOnLevelSet.has(x.slug)))
+
+                console.log('known objects on level', knownObjectsOnLevel)
 
                 const allFalseSlugChanges = {}
 
@@ -318,12 +320,19 @@ const NewVocabTable = () => {
                     allTrueSlugs[slug] = true
                 )
 
+                console.log('allfalseslugchanges', allFalseSlugChanges)
+                console.log('alltrueslugs', allTrueSlugs)
+
                 setInitialPackage(allTrueSlugs)
                 setSlugChanges(allFalseSlugChanges)
 
                 const vocabTableIds = knownObjectsOnLevel.map(x => x.id)
 
-                const toSend = { usersid: userid, initial: allTrueSlugs, changes: allFalseSlugChanges, ids: vocabTableIds }
+                console.log('wordids', vocabTableIds)
+
+                const toSend = { initial: allTrueSlugs, changes: allFalseSlugChanges, ids: vocabTableIds, overrideLengthBar: true }
+
+                console.log('tosend', toSend)
 
                 const resp = await fetch('/api/SubmitVocabData',
                     {
@@ -333,6 +342,8 @@ const NewVocabTable = () => {
                 )
 
                 const result = await resp.json()
+
+                console.log(result.message)
 
                 setUserKnownWordIds(prev => prev.filter(x => !vocabTableIds.includes(x)))
 
@@ -351,7 +362,9 @@ const NewVocabTable = () => {
 
                 const vocabTableIds = vocabularyData.map(x => x.id)
 
-                const toSend = { initial: initialPackage, changes: slugChanges, ids: vocabTableIds }
+                const toSend = { initial: initialPackage, changes: slugChanges, ids: vocabTableIds, overrideLengthBar: false }
+
+                console.log(toSend)
 
                 const resp = await fetch('/api/SubmitVocabData',
                     {
@@ -409,6 +422,19 @@ const NewVocabTable = () => {
 
         ///////////////////////////////////////// EFFECTS ///////////////////////////////////////////////
 
+        useEffect(() => {
+            const handler = (event) => {
+                if (event.key === 'pullFromDb') {
+                    if (event.newValue === "true") {
+                        getUserVocab()
+                        localStorage.setItem('pullFromDb', "false")
+                    }
+                }
+            }
+            window.addEventListener("storage", handler)
+            return () => window.removeEventListener("storage", handler)
+        }, [])
+
         // UEA gets user vocab and fetches default table data, TRIGGERS UEB
         useEffect(() => {
 
@@ -419,13 +445,14 @@ const NewVocabTable = () => {
                 console.log('status', status)
             }
 
-            if (status === 'authenticated')
+            if (status === 'authenticated') {
 
                 getUserVocab().finally(
                     () => {
                         fetchAllData(nLevel, page, itemsPerPage).finally(() =>
                             setTableLoading(false))
                     })
+            }
 
         }, [status])
 
@@ -655,27 +682,27 @@ const NewVocabTable = () => {
                                 </Card>
                             </Box>
 
-                            <TableContainer sx={{ pb: 1.5, mt:1 }}>
+                            <TableContainer sx={{ pb: 1.5, mt: 1 }}>
                                 <Table>
                                     <TableHead>
                                         <TableRow>
-                                            <TableCell sx={{ textAlign: 'center', py:1 }}><StairsIcon fontSize='small' /></TableCell>
-                                            <TableCell sx={{ textAlign: 'center', py:1 }}><Check fontSize='small' /></TableCell>
-                                            <TableCell sx={{ textAlign: 'center', py:1 }}><QuizIcon fontSize='small' /></TableCell>
-                                            <TableCell sx={{ textAlign: 'center', py:1 }}><PercentIcon fontSize='small' /></TableCell>
+                                            <TableCell sx={{ textAlign: 'center', py: 1 }}><StairsIcon fontSize='small' /></TableCell>
+                                            <TableCell sx={{ textAlign: 'center', py: 1 }}><Check fontSize='small' /></TableCell>
+                                            <TableCell sx={{ textAlign: 'center', py: 1 }}><QuizIcon fontSize='small' /></TableCell>
+                                            <TableCell sx={{ textAlign: 'center', py: 1 }}><PercentIcon fontSize='small' /></TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
                                         <TableRow>
-                                            <TableCell sx={{ textAlign: 'center', py:1 }}>{nLevel.toUpperCase()}</TableCell>
-                                            <TableCell sx={{ textAlign: 'center', py:1 }}>
+                                            <TableCell sx={{ textAlign: 'center', py: 1 }}>{nLevel.toUpperCase()}</TableCell>
+                                            <TableCell sx={{ textAlign: 'center', py: 1 }}>
                                                 {(session) && (knownSlugs.length > 0) ? knownSlugs.length : `...`}
                                             </TableCell>
-                                            <TableCell sx={{ textAlign: 'center', py:1 }}>
+                                            <TableCell sx={{ textAlign: 'center', py: 1 }}>
                                                 {(tableData.length) === 0 ? `...` : tableData.length}
                                             </TableCell>
-                                            <TableCell sx={{ textAlign: 'center', py:1 }}>
-                                                {(knownSlugs.length) === 0 ? `...` : ((knownSlugs.length / tableData.length)*100).toFixed(2)}
+                                            <TableCell sx={{ textAlign: 'center', py: 1 }}>
+                                                {(knownSlugs.length) === 0 ? `...` : ((knownSlugs.length / tableData.length) * 100).toFixed(2)}
                                             </TableCell>
                                         </TableRow>
                                     </TableBody>
@@ -868,6 +895,10 @@ const NewVocabTable = () => {
             </Container>
         )
     }
+
+    localStorage.setItem('pullFromDb', 'false')
+
+
 
     return (
         <MobileLayout />

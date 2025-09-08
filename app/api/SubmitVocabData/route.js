@@ -8,7 +8,7 @@ const redis = Redis.fromEnv()
 
 const ratelimit = new Ratelimit({
     redis: redis,
-    limiter: Ratelimit.slidingWindow(5, "10 s"),
+    limiter: Ratelimit.slidingWindow(300, "10 s"),
     timeout: 10000,
     analytics: true
 });
@@ -40,14 +40,20 @@ export async function POST(request) {
     // PROCESSING RESPONSE
     const resp = await request.json()
 
+    console.log('recieved req', resp)
+
     const initial = Object.values(resp.initial)
     const changes = Object.values(resp.changes)
 
-    // preventing api misuse
-    if (initial.length > 25 || changes.length > 25) {
-        return NextResponse.json({ message: 'Error - Batch contains invalid number of word IDs' })
-    }
+    console.log('initial', initial)
+    console.log('changes', changes)
 
+    // preventing api misuse
+    if (resp.overrideLengthBar === false) {
+        if (initial.length > 25 || changes.length > 25) {
+            return NextResponse.json({ message: 'Error - Batch contains invalid number of word IDs' })
+        }
+    }
     const wordIds = resp.ids
 
     // preventing api misuse
@@ -66,6 +72,8 @@ export async function POST(request) {
             toAppend.push(wordIds[index])
         }
     })
+
+    console.log('toappend', toAppend)
 
     const toInsert = toAppend.map(x => (
         { user_id: uid, word_id: x }

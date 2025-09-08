@@ -1,14 +1,18 @@
 "use client"
-import { Alert, Box, Button, Card, CardContent, Checkbox, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, FormGroup, IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Slide, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TablePagination, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
-import React, { createContext, useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, Cancel, CancelOutlined, Check, Clear, DoneOutline, Info, InfoOutline, Looks3, Looks4, Looks5, LooksOne, LooksTwo, PersonAddAlt1, Quiz, Visibility } from '@mui/icons-material';
+import { Alert, Box, Button, Card, CardContent, CardHeader, Checkbox, Chip, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import React, { useEffect, useState } from 'react'
+import { ArrowLeft, ArrowRight, Cancel, CancelOutlined, Check, Clear, DoneOutline, InfoOutline, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Quiz, Visibility } from '@mui/icons-material';
 import Collapse from '@mui/material/Collapse';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import PauseIcon from '@mui/icons-material/Pause';
 import { useSession } from 'next-auth/react';
-import { useStorageState } from '@toolpad/core/persistence';
+import { v4 as uuidv4 } from 'uuid';
+import Link from '@mui/material/Link';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
+import SportsScoreIcon from '@mui/icons-material/SportsScore';
 
 const NewQuizMaster = () => {
 
@@ -36,12 +40,14 @@ const NewQuizMaster = () => {
 
         const nLevelArray = ['n1', 'n2', 'n3', 'n4', 'n5']
 
+        const quizMin = 10
+
         ///////////////////////////////////////// STATES ///////////////////////////////////////////////
 
         const [nLevel, setNLevel] = useState('n5')
         const [quizType, setQuizType] = useState('all')
         const [randomQuiz, setRandomQuiz] = useState(false)
-        const [customCardCount, setCustomCardCount] = useState('')
+        const [customCardCount, setCustomCardCount] = useState('10')
 
         // state to toggle quiz toolbar on/off
         const [cardToolbar, toggleCardToolbar] = useState(false)
@@ -59,6 +65,7 @@ const NewQuizMaster = () => {
         const [introDialog, toggleIntroDialog] = useState(false)
         const [settingsDialog, toggleSettingsDialog] = useState(false)
         const [quizProgressDialog, toggleQuizProgressDialog] = useState(false)
+        const [quizEndDialog, toggleQuizEndDialog] = useState(false)
 
         // states to control card, custom field collapse
         const [showCard, toggleShowCard] = useState(false)
@@ -78,7 +85,7 @@ const NewQuizMaster = () => {
         // true if the custom input is an error
         const inputError = (
             isNaN(Number(customCardCount)) ||
-            (customCardCount != '' && Number(customCardCount) < 30)
+            (customCardCount != '' && Number(customCardCount) < quizMin)
             || (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel])) ||
             customCardCount.length > 0 && customCardCount.trim() === ''
         )
@@ -87,14 +94,18 @@ const NewQuizMaster = () => {
         const [orgProgData, setOrgProgData] = useState({
             blank: [],
             correct: [],
-            incorrect: []
+            incorrect: [],
+            toBeChecked: [],
+            toBeUnchecked: []
         })
 
         // post slice
         const [progData, setProgData] = useState({
             blank: [],
             correct: [],
-            incorrect: []
+            incorrect: [],
+            toBeChecked: [],
+            toBeUnchecked: []
         })
 
         // page control for progress table
@@ -105,6 +116,13 @@ const NewQuizMaster = () => {
 
         // just an array holding each slug in the quiz
         const [slugArray, setSlugArray] = useState([])
+
+        // state to hold the quiz unique id
+        const [quizID, setQuizID] = useState('')
+
+        // states for post quiz options
+        const [saveToVT, toggleSaveToVT] = useState()
+        const [saveToDB, toggleSaveToDB] = useState()
 
 
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
@@ -128,6 +146,8 @@ const NewQuizMaster = () => {
 
         // function to fetch and return ALL cards for a selected N level, and set quiz data
         const runQuiz = async (nLevel, quizType, randomQuiz, customCardCount) => {
+
+            setProgTableButton('blank')
 
             const allPages = []
 
@@ -160,6 +180,7 @@ const NewQuizMaster = () => {
                 catch (err) { console.log(err) }
 
                 finally {
+                    setQuizID(uuidv4())
                     setLoading(false)
                     toggleQuizOn(true)
                 }
@@ -171,9 +192,9 @@ const NewQuizMaster = () => {
                     const unknownQuizData = flatPages.filter(x => !userKnownWordIds.includes(x.id))
 
                     // if unknown is less than min and custom field blank, get enough filler cards to reach 30
-                    if (unknownQuizData.length < 30) {
+                    if (unknownQuizData.length < quizMin) {
                         if (customCardCount === '') {
-                            const fillerCardCount = 30 - unknownQuizData.length
+                            const fillerCardCount = quizMin - unknownQuizData.length
                             shuffle(flatPages) // shuffle the cards
                             const unknownSlugs = unknownQuizData.map(x => x.slug)
                             const fillerCards = flatPages.filter(x => !unknownSlugs.includes(x.slug)).slice(0, fillerCardCount)
@@ -196,14 +217,14 @@ const NewQuizMaster = () => {
                     }
 
                     // if unknown is more than min and custom field exists, simply slice
-                    else if (unknownQuizData.length >= 30 && customCardCount != '') {
+                    else if (unknownQuizData.length >= quizMin && customCardCount != '') {
                         const slicedUnknownQuizData = unknownQuizData.slice(0, customCardCount)
                         setQuizData(slicedUnknownQuizData)
                         setSlugArray(slicedUnknownQuizData.map(x => x.slug))
                     }
 
                     // if unknown is more than min and custom field is blank, just give all unknown
-                    else if (unknownQuizData.length >= 30 && customCardCount === '') {
+                    else if (unknownQuizData.length >= quizMin && customCardCount === '') {
                         setQuizData(unknownQuizData)
                         setSlugArray(unknownQuizData.map(x => x.slug))
                     }
@@ -212,6 +233,7 @@ const NewQuizMaster = () => {
 
                 catch (err) { console.log(err) }
                 finally {
+                    setQuizID(uuidv4())
                     setLoading(false)
                     toggleQuizOn(true)
                 }
@@ -292,7 +314,6 @@ const NewQuizMaster = () => {
         // change prog table page function
         const changePage = (progTableButton, direction) => {
             const maxPages = Math.ceil(orgProgData[progTableButton].length / 5)
-            console.log('maxpages', maxPages)
 
             if (direction === 'back') {
                 if (page > 0) {
@@ -314,13 +335,44 @@ const NewQuizMaster = () => {
             }
         }
 
+        // clicking a link in the post quiz table
+        const handleLinkClick = (button) => {
+            toggleQuizEndDialog(false)
+            setPage(0)
+            setProgTableButton(button)
+            toggleQuizProgressDialog(true)
+        }
+
+        // saving quiz results + new vocab data to db
+        const updateDb = async () => {
+            if (saveToVT) {
+                const initialToBeCorrect = {}
+                orgProgData['toBeChecked'].forEach(x => initialToBeCorrect[x.slug] = false)
+                const changeToBeCorrect = {}
+                orgProgData['toBeChecked'].forEach(x => changeToBeCorrect[x.slug] = true)
+                const toBeCorrectWordIds = orgProgData['toBeChecked'].map(x => x.id)
+
+                const resp = await fetch('/api/SubmitVocabData',
+                    {
+                        method: 'POST',
+                        body: JSON.stringify({ initial: initialToBeCorrect, changes: changeToBeCorrect, ids: toBeCorrectWordIds, overrideLengthBar: true })
+
+                    })
+                const result = await resp.json()
+                console.log(result.message)
+                if (result.message === 'No errors') {
+                    localStorage.setItem('pullFromDb', "true")
+                }
+            }
+        }
+
+
         ///////////////////////////////////////// EFFECTS ///////////////////////////////////////////////
 
 
         // use effect for testing
         useEffect(() => {
-            console.log('flat quiz data', quizData)
-        }, [quizData])
+        }, [quizData, cardNumber])
 
         // for don't show again
         useEffect(() => {
@@ -349,22 +401,41 @@ const NewQuizMaster = () => {
             const incorrectCards = quizData.filter(x => x.result === false)
             const blankCards = quizData.filter(x => x.result === null)
 
+            const toBeChecked = correctCards.filter(x => !userKnownWordIds.includes(x.id))
+            const toBeUnchecked = incorrectCards.filter(x => userKnownWordIds.includes(x.id))
+
             setOrgProgData({
                 blank: blankCards,
                 correct: correctCards,
                 incorrect: incorrectCards,
+                toBeChecked: toBeChecked,
+                toBeUnchecked, toBeUnchecked
             })
 
             const blankSliced = blankCards.slice(page * 5, 5 + (page * 5))
             const correctSliced = correctCards.slice(page * 5, 5 + (page * 5))
             const incorrectSliced = incorrectCards.slice(page * 5, 5 + (page * 5))
 
+            const toBeCheckedSliced = correctCards.filter(x => !userKnownWordIds.includes(x.id)).slice(page * 5, 5 + (page * 5))
+            const toBeUncheckedSliced = incorrectCards.filter(x => userKnownWordIds.includes(x.id)).slice(page * 5, 5 + (page * 5))
+
             setProgData({
                 blank: blankSliced,
                 correct: correctSliced,
                 incorrect: incorrectSliced,
+                toBeChecked: toBeCheckedSliced,
+                toBeUnchecked: toBeUncheckedSliced
             })
+
         }, [quizData, page])
+
+        // waiting for when quiz is complete, 
+        useEffect(() => {
+            const results = quizData.map(x => x.result)
+            if (!results.some(x => x === null) && quizOn) {
+                toggleQuizEndDialog(true)
+            }
+        }, [quizData])
 
 
         ///////////////////////////////////////// DIALOGS ///////////////////////////////////////////////
@@ -433,7 +504,7 @@ const NewQuizMaster = () => {
 
         return (
 
-            <Container>
+            <Container maxWidth='xl' sx={{ minHeight: 'calc(100vh - 56px)' }}>
 
                 <NLevelDialog />
                 <PauseDialog />
@@ -470,7 +541,7 @@ const NewQuizMaster = () => {
                                     <TextField
                                         sx={{ minWidth: '100%' }}
                                         autoFocus
-                                        error={isNaN(Number(customCardCount)) || (customCardCount != '' && Number(customCardCount) < 30) || (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel]))}
+                                        error={isNaN(Number(customCardCount)) || (customCardCount != '' && Number(customCardCount) < quizMin) || (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel]))}
                                         label="Number of Cards"
                                         disabled={quizOn}
                                         size="small"
@@ -480,14 +551,14 @@ const NewQuizMaster = () => {
                                         helperText={
                                             isNaN(Number(customCardCount)) ? "Please enter a valid number." :
                                                 customCardCount.length > 0 && customCardCount.trim() === '' ? "Please enter a valid number." :
-                                                    (customCardCount.trim() != '' && Number(customCardCount) < 30) ? "A quiz must hold at least 30 cards." :
+                                                    (customCardCount.trim() != '' && Number(customCardCount) < quizMin) ? "A quiz must hold at least 30 cards." :
                                                         (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel])) ? `Exceeds ${nLevel.toUpperCase()} max card count (${slugCount[nLevel]}).` :
                                                             null
                                         }
                                     />
                                 </Box>
 
-                                <Alert color='error' icon={false} sx={{ mt: 2, textAlign: 'center', fontSize: '0.85rem' }} severity='info'>30 card minimum. If left blank, all available cards will be tested.</Alert>
+                                <Alert color='error' icon={false} sx={{ mt: 2, textAlign: 'center', fontSize: '0.85rem' }} severity='info'>{quizMin} card minimum. If left blank, all available cards will be tested.</Alert>
 
                                 {
                                     (quizType) === 'all' && (randomQuiz) ?
@@ -599,7 +670,15 @@ const NewQuizMaster = () => {
                 {(quizOn) &&
                     <Dialog sx={{}} open={quizProgressDialog}>
                         <DialogTitle sx={{ textAlign: 'center' }}>
-                            Quiz Progress
+                            {
+                                (progTableButton === 'blank' ? 'Remaining Cards' :
+                                    progTableButton === 'correct' ? 'Correct Cards' :
+                                        progTableButton === 'incorrect' ? 'Incorrect Cards' :
+                                            progTableButton === 'toBeChecked' ? 'Correct Unknown Cards' :
+                                                progTableButton === 'toBeUnchecked' ? 'Incorrect Known Cards' :
+                                                    null
+                                )
+                            }
                         </DialogTitle>
                         <DialogContent sx={{ minWidth: 300, minHeight: 440 }}>
 
@@ -608,54 +687,122 @@ const NewQuizMaster = () => {
                                     <ToggleButton value='blank'><Quiz /></ToggleButton>
                                     <ToggleButton value='correct'><Check /></ToggleButton>
                                     <ToggleButton value='incorrect'><Cancel /></ToggleButton>
+                                    <ToggleButton value='toBeChecked'><AddIcon /></ToggleButton>
+                                    <ToggleButton value='toBeUnchecked'><RemoveIcon /></ToggleButton>
                                 </ToggleButtonGroup>
                             </Box>
-
-                            <TableContainer sx={{}}>
-                                <Table sx={{}}>
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell sx={{ width: '50%', textAlign: 'center' }}>Card Number</TableCell>
-                                            <TableCell sx={{ width: '50%', textAlign: 'center' }}>Word</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {progData[progTableButton]
-                                            .map((x, index) => (
-                                                <TableRow sx={{}} key={index}>
-                                                    <TableCell sx={{ textAlign: 'center', py: 1.3 }}>
-                                                        <Button disableRipple onClick={() => {
-                                                            setCardNumber(slugArray.indexOf(x.slug) )
-                                                            toggleQuizProgressDialog(false)
-                                                        }}
-                                                            size='small'>
-                                                            {slugArray.indexOf(x.slug) + 1}
-                                                        </Button>
-                                                    </TableCell>
-                                                    <TableCell sx={{ textAlign: 'center', py: 1.3 }}>{x.slug}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                    </TableBody>
-                                    <TableFooter sx={{ padding: 0 }}>
-                                        <TableRow sx={{ padding: 0 }}>
-                                            {progData[progTableButton].length < 1 ? null :
-                                                <>
-                                                    <TableCell sx={{ padding: 0, textAlign: 'center' }}>
-                                                        {`Page ${page + 1}`}
-                                                    </TableCell><TableCell sx={{ padding: 0, textAlign: 'center' }}>
-                                                        <IconButton onClick={() => changePage(progTableButton, 'back')}><ArrowLeft fontSize='small' /></IconButton>
-                                                        <IconButton onClick={() => changePage(progTableButton, 'forward')}><ArrowRight fontSize='small' /></IconButton>
-                                                    </TableCell>
-                                                </>
-                                            }
-                                        </TableRow>
-                                    </TableFooter>
-                                </Table>
-                            </TableContainer>
-
+                            {progData[progTableButton].length === 0 ? <Typography sx={{ textAlign: 'center', mt: 2 }}>No data available</Typography> :
+                                <TableContainer sx={{}}>
+                                    <Table sx={{}}>
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell sx={{ width: '50%', textAlign: 'center' }}>Card Number</TableCell>
+                                                <TableCell sx={{ width: '50%', textAlign: 'center' }}>Word</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {progData[progTableButton]
+                                                .map((x, index) => (
+                                                    <TableRow sx={{}} key={index}>
+                                                        <TableCell sx={{ textAlign: 'center', py: 1.3 }}>
+                                                            <Button disableRipple onClick={() => {
+                                                                setCardNumber(slugArray.indexOf(x.slug))
+                                                                toggleQuizProgressDialog(false)
+                                                            }}
+                                                                size='small'>
+                                                                {slugArray.indexOf(x.slug) + 1}
+                                                            </Button>
+                                                        </TableCell>
+                                                        <TableCell sx={{ textAlign: 'center', py: 1.3 }}>{x.slug}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                        </TableBody>
+                                        <TableFooter sx={{ padding: 0 }}>
+                                            <TableRow sx={{ padding: 0 }}>
+                                                {progData[progTableButton].length < 1 ? null :
+                                                    <>
+                                                        <TableCell sx={{ padding: 0, textAlign: 'center' }}>
+                                                            {`Page ${page + 1}`}
+                                                        </TableCell><TableCell sx={{ padding: 0, textAlign: 'center' }}>
+                                                            <IconButton onClick={() => changePage(progTableButton, 'back')}><ArrowLeft fontSize='small' /></IconButton>
+                                                            <IconButton onClick={() => changePage(progTableButton, 'forward')}><ArrowRight fontSize='small' /></IconButton>
+                                                        </TableCell>
+                                                    </>
+                                                }
+                                            </TableRow>
+                                        </TableFooter>
+                                    </Table>
+                                </TableContainer>
+                            }
                         </DialogContent>
                         <DialogActions>
                             <Button onClick={() => toggleQuizProgressDialog(false)}>Close</Button>
+                        </DialogActions>
+                    </Dialog>}
+
+                {(quizOn) &&
+                    <Dialog open={quizEndDialog}>
+                        <DialogTitle sx={{ textAlign: 'center' }}>
+                            Quiz Complete
+                        </DialogTitle>
+                        <DialogContent sx={{ minWidth: 300 }}>
+                            <Card>
+                                <CardContent>
+                                    {(progData.toBeChecked.length === 1) &&
+                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
+                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeChecked')}>
+                                                {progData.toBeChecked.length} card
+                                            </Link>
+                                            {''} was marked as correct, but not marked as known within your vocabulary table.
+                                        </Typography>}
+                                    {(progData.toBeChecked.length > 1) &&
+                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
+                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeChecked')}>
+                                                {progData.toBeChecked.length} cards
+                                            </Link>
+                                            {''} were marked as correct, but not marked as known within your vocabulary table.
+                                        </Typography>}
+
+                                    {(progData.toBeUnchecked.length === 1) &&
+                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
+                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeUnchecked')}>
+                                                {progData.toBeUnchecked.length} card
+                                            </Link>
+                                            {''} was marked as incorrect, yet marked as known within your vocabulary table.
+                                        </Typography>}
+                                    {(progData.toBeUnchecked.length > 1) &&
+                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
+                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeUnchecked')}>{progData.toBeUnchecked.length} cards</Link>
+                                            {''} were marked as incorrect, yet marked as known within your vocabulary table.
+                                        </Typography>}
+
+                                    {(progData.toBeChecked.length != 0 || progData.toBeUnchecked.length != 0) &&
+                                        <React.Fragment>
+                                            <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }}>
+                                                Would you like the quiz results to be reflected in your vocabulary table?
+                                            </Typography>
+                                            <Stack direction="row" spacing={1} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', mt: 1.5 }}>
+                                                <Chip size='small' component={Button} label="Yes" color="success" onClick={() => toggleSaveToVT(true)} variant={saveToVT === true ? 'filled' : 'outlined'} />
+                                                <Chip size='small' component={Button} label="No" color="error" onClick={() => toggleSaveToVT(false)} variant={saveToVT === false ? 'filled' : 'outlined'} />
+                                            </Stack>
+                                        </React.Fragment>
+                                    }
+                                    <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', mt: 2 }}>
+                                        Would you like to save your quiz result?
+                                    </Typography>
+                                    <Stack direction="row" spacing={1} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', mt: 1.5 }}>
+                                        <Chip size='small' component={Button} label="Yes" color="success" onClick={() => toggleSaveToDB(true)} variant={saveToDB === true ? 'filled' : 'outlined'} />
+                                        <Chip size='small' component={Button} label="No" color="error" onClick={() => toggleSaveToDB(false)} variant={saveToDB === false ? 'filled' : 'outlined'} />
+                                    </Stack>
+                                </CardContent>
+                            </Card>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => toggleQuizEndDialog(false)}>Close</Button>
+                            <Button onClick={() => {
+                                toggleQuizEndDialog(false)
+                                updateDb()
+                            }}>Confirm</Button>
                         </DialogActions>
                     </Dialog>}
 
@@ -707,6 +854,13 @@ const NewQuizMaster = () => {
                                 <ToggleButton onClick={(quizOn) ? () => openStopSelect(true) : null} variant='contained' size='small' sx={{ borderColor: '#d32f2f' }}>
                                     <StopIcon color={(quizOn) ? 'error' : ''} />
                                 </ToggleButton>
+
+                                {progData['blank'].length === 0 && quizOn ?
+                                    <ToggleButton onClick={() => toggleQuizEndDialog(true)} variant='contained' size='small' sx={{ borderColor: '#d32f2f' }}>
+                                        <SportsScoreIcon color='error' />
+                                    </ToggleButton>
+                                    : null
+                                }
 
                             </ToggleButtonGroup>
                         </Box>
