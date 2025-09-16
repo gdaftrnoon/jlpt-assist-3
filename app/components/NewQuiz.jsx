@@ -1,7 +1,7 @@
 "use client"
 import { Alert, Box, Button, Card, CardContent, CardHeader, Checkbox, Chip, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import React, { useEffect, useState } from 'react'
-import { ArrowLeft, ArrowRight, Cancel, CancelOutlined, Check, Clear, DoneOutline, InfoOutline, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Quiz, Visibility } from '@mui/icons-material';
+import { ArrowLeft, ArrowRight, Cancel, CancelOutlined, Check, CheckCircle, CheckCircleOutline, Clear, Done, DoneOutline, InfoOutline, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Quiz, Visibility } from '@mui/icons-material';
 import Collapse from '@mui/material/Collapse';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -13,6 +13,7 @@ import Link from '@mui/material/Link';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import SportsScoreIcon from '@mui/icons-material/SportsScore';
+import { redirect } from 'next/navigation'
 
 const NewQuizMaster = () => {
 
@@ -49,14 +50,13 @@ const NewQuizMaster = () => {
         const [randomQuiz, setRandomQuiz] = useState(false)
         const [customCardCount, setCustomCardCount] = useState('10')
 
-        // state to toggle quiz toolbar on/off
-        const [cardToolbar, toggleCardToolbar] = useState(false)
-
         // state to toggle quiz on/off
         const [quizOn, toggleQuizOn] = useState(false)
 
         // state for loading
         const [loading, setLoading] = useState(false)
+        const [saveLoading, setSaveLoading] = useState(false)
+        const [saveComplete, setSaveComplete] = useState(false)
 
         // states for dialogs
         const [nLevelSelect, openNLevelSelect] = useState(false)
@@ -121,8 +121,11 @@ const NewQuizMaster = () => {
         const [quizID, setQuizID] = useState('')
 
         // states for post quiz options
-        const [saveToVT, toggleSaveToVT] = useState()
-        const [saveToDB, toggleSaveToDB] = useState()
+        const [saveToVT, toggleSaveToVT] = useState(true)
+        const [saveToDB, toggleSaveToDB] = useState(true)
+
+        // flagging end of quiz
+        const [quizOver, setQuizOver] = useState(false)
 
 
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
@@ -181,6 +184,7 @@ const NewQuizMaster = () => {
 
                 finally {
                     setQuizID(uuidv4())
+                    console.log('uuid set!')
                     setLoading(false)
                     toggleQuizOn(true)
                 }
@@ -234,6 +238,7 @@ const NewQuizMaster = () => {
                 catch (err) { console.log(err) }
                 finally {
                     setQuizID(uuidv4())
+                    console.log('uuid set!')
                     setLoading(false)
                     toggleQuizOn(true)
                 }
@@ -258,11 +263,15 @@ const NewQuizMaster = () => {
 
         // function to end quiz, resetting quiz states
         const endQuiz = () => {
+            toggleSaveToDB(true)
+            toggleSaveToVT(true)
             setCardNumber(0)
             toggleQuizOn(false)
-            toggleCardToolbar(false)
             openStopSelect(false)
             toggleShowCard(false)
+            setSaveLoading(false)
+            setSaveComplete(false)
+            setQuizOver(false)
         }
 
         const detCardResult = (cardNumber, outcome) => {
@@ -346,39 +355,97 @@ const NewQuizMaster = () => {
 
         // saving quiz results + new vocab data to db
         const updateDb = async () => {
-            if (saveToVT) {
 
-                const initial = {}
+            if (saveToVT || saveToDB) {
+                setSaveLoading(true)
 
-                orgProgData['toBeChecked'].forEach(x => initial[x.slug] = false)
-                orgProgData['toBeUnchecked'].forEach(x => initial[x.slug] = true)
 
-                const change = {}
+                try {
 
-                orgProgData['toBeChecked'].forEach(x => change[x.slug] = true)
-                orgProgData['toBeUnchecked'].forEach(x => change[x.slug] = false)
+                    if (saveToVT) {
 
-                const toBeCorrectWordIds = orgProgData['toBeChecked'].map(x => x.id)
-                const toBeIncorrectWordIds = orgProgData['toBeUnchecked'].map(x => x.id)
-                const wordIds = toBeCorrectWordIds.concat(toBeIncorrectWordIds)
+                        const initial = {}
 
-                const resp = await fetch('/api/SubmitVocabData',
-                    {
-                        method: 'POST',
-                        body: JSON.stringify({ initial: initial, changes: change, ids: wordIds, overrideLengthBar: true })
-                    })
-                const result = await resp.json()
-                console.log(result.message)
-                if (result.message === 'No errors') {
-                    console.log('setting ls pullfromdb to true...')
-                    localStorage.setItem('pullFromDb', "true")
-                    const updatedUKWI = userKnownWordIds.filter(x => !toBeIncorrectWordIds.includes(x)).concat(toBeCorrectWordIds)
-                    console.log('updatedUKWI', updatedUKWI)
-                    setUserKnownWordIds(updatedUKWI)
+                        orgProgData['toBeChecked'].forEach(x => initial[x.slug] = false)
+                        orgProgData['toBeUnchecked'].forEach(x => initial[x.slug] = true)
+
+                        const change = {}
+
+                        orgProgData['toBeChecked'].forEach(x => change[x.slug] = true)
+                        orgProgData['toBeUnchecked'].forEach(x => change[x.slug] = false)
+
+                        const toBeCorrectWordIds = orgProgData['toBeChecked'].map(x => x.id)
+                        const toBeIncorrectWordIds = orgProgData['toBeUnchecked'].map(x => x.id)
+                        const wordIds = toBeCorrectWordIds.concat(toBeIncorrectWordIds)
+
+                        const resp = await fetch('/api/SubmitVocabData',
+                            {
+                                method: 'POST',
+                                body: JSON.stringify({ initial: initial, changes: change, ids: wordIds, overrideLengthBar: true })
+                            })
+                        const result = await resp.json()
+                        console.log(result.message)
+                        if (result.message === 'No errors') {
+                            console.log('setting ls pullfromdb to true...')
+                            localStorage.setItem('pullFromDb', "true")
+                            const updatedUKWI = userKnownWordIds.filter(x => !toBeIncorrectWordIds.includes(x)).concat(toBeCorrectWordIds)
+                            console.log('updatedUKWI', updatedUKWI)
+                            setUserKnownWordIds(updatedUKWI)
+                        }
+                    }
+
+                    if (saveToDB) {
+
+                        const correctCount = orgProgData['correct'].length
+                        const incorrectCount = orgProgData['incorrect'].length
+
+                        const quizSession = {
+                            quizID: quizID,
+                            nLevel: nLevel,
+                            quizType: quizType,
+                            random: randomQuiz,
+                            correct: correctCount,
+                            incorrect: incorrectCount
+                        }
+
+                        const apiResponse = await fetch('/api/SubmitQuizSession',
+                            {
+                                method: 'POST',
+                                body: JSON.stringify(quizSession)
+                            })
+
+                        const apiResult = await apiResponse.json()
+                        console.log(apiResult.message)
+
+                        const results = quizData.map(x => (
+                            { quizID: quizID, wordID: x.id, result: x.result }
+                        ))
+
+                        const quizResult = {
+                            quizResults: results
+                        }
+
+                        const submitQuizResultResponse = await fetch('/api/SubmitQuizResult',
+                            {
+                                method: 'POST',
+                                body: JSON.stringify(quizResult)
+                            })
+
+                        const submitQuizResultResult = await submitQuizResultResponse.json()
+                        console.log(submitQuizResultResult.message)
+
+                    }
+                }
+
+                catch (error) {
+                    console.log(error)
+                }
+
+                finally {
+                    setSaveLoading(false)
+                    setSaveComplete(true)
                 }
             }
-
-            if (saveToDB) {}
         }
 
 
@@ -399,6 +466,7 @@ const NewQuizMaster = () => {
 
         // use effect for testing
         useEffect(() => {
+            console.log('quizid', quizID)
         }, [quizData, cardNumber])
 
         // for don't show again
@@ -461,6 +529,7 @@ const NewQuizMaster = () => {
             const results = quizData.map(x => x.result)
             if (!results.some(x => x === null) && quizOn) {
                 toggleQuizEndDialog(true)
+                setQuizOver(true)
             }
         }, [quizData])
 
@@ -768,68 +837,105 @@ const NewQuizMaster = () => {
                     </Dialog>}
 
                 {(quizOn) &&
-                    <Dialog open={quizEndDialog}>
-                        <DialogTitle sx={{ textAlign: 'center' }}>
-                            Quiz Complete
-                        </DialogTitle>
-                        <DialogContent sx={{ minWidth: 300 }}>
+                    <Dialog open={quizEndDialog} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <DialogContent sx={{ minWidth: 300, pb: 0.3 }}>
                             <Card>
-                                <CardContent>
-                                    {(progData.toBeChecked.length === 1) &&
-                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
-                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeChecked')}>
-                                                {progData.toBeChecked.length} card
-                                            </Link>
-                                            {''} was marked as correct, but not marked as known within your vocabulary table.
-                                        </Typography>}
-                                    {(progData.toBeChecked.length > 1) &&
-                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
-                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeChecked')}>
-                                                {progData.toBeChecked.length} cards
-                                            </Link>
-                                            {''} were marked as correct, but not marked as known within your vocabulary table.
-                                        </Typography>}
+                                <Typography variant='h6' sx={{ textAlign: 'center', mt: 1.5 }}>
+                                    Quiz Complete
+                                </Typography>
+                                {
+                                    (saveLoading) ?
+                                        <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+                                            <CircularProgress size="30px" sx={{ mb: 1.5 }} />
+                                            {(saveToVT) && <Typography variant='subtitle1'>Saving changes</Typography>}
+                                            {(saveToDB) && <Typography variant='subtitle1'>Saving results</Typography>}
+                                        </CardContent>
+                                        :
+                                        (saveComplete) ?
+                                            <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+                                                {(saveToVT) && <Typography gutterBottom sx={{ textAlign: 'center', ml: 2 }} variant='subtitle1'>
+                                                    Changes saved <Done color='success' sx={{ mb: 1 }} />
+                                                </Typography>}
+                                                {(saveToDB) &&
+                                                    <React.Fragment>
+                                                        <Typography gutterBottom sx={{ textAlign: 'center', ml: 2 }} variant='subtitle1'>
+                                                            Results saved <Done color='success' sx={{ mb: 1 }} />
+                                                        </Typography>
+                                                        <Typography sx={{ textAlign: 'center' }} variant='subtitle1'>
+                                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => redirect('/')}>
+                                                                Click here to view your results
+                                                            </Link>
+                                                        </Typography>
+                                                    </React.Fragment>
+                                                }
+                                            </CardContent>
+                                            :
+                                            <CardContent>
+                                                {(progData.toBeChecked.length === 1) &&
+                                                    <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
+                                                        <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeChecked')}>
+                                                            {progData.toBeChecked.length} card
+                                                        </Link>
+                                                        {''} was marked as correct, but not marked as known within your vocabulary table.
+                                                    </Typography>}
+                                                {(progData.toBeChecked.length > 1) &&
+                                                    <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
+                                                        <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeChecked')}>
+                                                            {progData.toBeChecked.length} cards
+                                                        </Link>
+                                                        {''} were marked as correct, but not marked as known within your vocabulary table.
+                                                    </Typography>}
 
-                                    {(progData.toBeUnchecked.length === 1) &&
-                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
-                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeUnchecked')}>
-                                                {progData.toBeUnchecked.length} card
-                                            </Link>
-                                            {''} was marked as incorrect, yet marked as known within your vocabulary table.
-                                        </Typography>}
-                                    {(progData.toBeUnchecked.length > 1) &&
-                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
-                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeUnchecked')}>{progData.toBeUnchecked.length} cards</Link>
-                                            {''} were marked as incorrect, yet marked as known within your vocabulary table.
-                                        </Typography>}
+                                                {(progData.toBeUnchecked.length === 1) &&
+                                                    <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
+                                                        <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeUnchecked')}>
+                                                            {progData.toBeUnchecked.length} card
+                                                        </Link>
+                                                        {''} was marked as incorrect, yet marked as known within your vocabulary table.
+                                                    </Typography>}
+                                                {(progData.toBeUnchecked.length > 1) &&
+                                                    <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
+                                                        <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeUnchecked')}>{progData.toBeUnchecked.length} cards</Link>
+                                                        {''} were marked as incorrect, yet marked as known within your vocabulary table.
+                                                    </Typography>}
 
-                                    {(progData.toBeChecked.length != 0 || progData.toBeUnchecked.length != 0) &&
-                                        <React.Fragment>
-                                            <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }}>
-                                                Would you like the quiz results to be reflected in your vocabulary table?
-                                            </Typography>
-                                            <Stack direction="row" spacing={1} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', mt: 1.5 }}>
-                                                <Chip size='small' component={Button} label="Yes" color="success" onClick={() => toggleSaveToVT(true)} variant={saveToVT === true ? 'filled' : 'outlined'} />
-                                                <Chip size='small' component={Button} label="No" color="error" onClick={() => toggleSaveToVT(false)} variant={saveToVT === false ? 'filled' : 'outlined'} />
-                                            </Stack>
-                                        </React.Fragment>
-                                    }
-                                    <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', mt: 2 }}>
-                                        Would you like to save your quiz result?
-                                    </Typography>
-                                    <Stack direction="row" spacing={1} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', mt: 1.5 }}>
-                                        <Chip size='small' component={Button} label="Yes" color="success" onClick={() => toggleSaveToDB(true)} variant={saveToDB === true ? 'filled' : 'outlined'} />
-                                        <Chip size='small' component={Button} label="No" color="error" onClick={() => toggleSaveToDB(false)} variant={saveToDB === false ? 'filled' : 'outlined'} />
-                                    </Stack>
-                                </CardContent>
+                                                {(progData.toBeChecked.length != 0 || progData.toBeUnchecked.length != 0) &&
+                                                    <React.Fragment>
+                                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }}>
+                                                            Would you like the quiz results to be reflected in your vocabulary table?
+                                                        </Typography>
+                                                        <Stack direction="row" spacing={1} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', mt: 1.5 }}>
+                                                            <Chip size='small' component={Button} label="Yes" color="success" onClick={() => toggleSaveToVT(true)} variant={saveToVT === true ? 'filled' : 'outlined'} />
+                                                            <Chip size='small' component={Button} label="No" color="error" onClick={() => toggleSaveToVT(false)} variant={saveToVT === false ? 'filled' : 'outlined'} />
+                                                        </Stack>
+                                                    </React.Fragment>
+                                                }
+                                                <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', mt: 2 }}>
+                                                    Would you like to save your quiz result?
+                                                </Typography>
+                                                <Stack direction="row" spacing={1} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', mt: 1.5 }}>
+                                                    <Chip size='small' component={Button} label="Yes" color="success" onClick={() => toggleSaveToDB(true)} variant={saveToDB === true ? 'filled' : 'outlined'} />
+                                                    <Chip size='small' component={Button} label="No" color="error" onClick={() => toggleSaveToDB(false)} variant={saveToDB === false ? 'filled' : 'outlined'} />
+                                                </Stack>
+                                            </CardContent>}
                             </Card>
                         </DialogContent>
                         <DialogActions>
-                            <Button onClick={() => toggleQuizEndDialog(false)}>Close</Button>
-                            <Button onClick={() => {
-                                toggleQuizEndDialog(false)
-                                updateDb()
-                            }}>Confirm</Button>
+                            <Button
+                                disabled={saveLoading}
+                                onClick={() => {
+                                    toggleQuizEndDialog(false);
+                                    if (saveComplete) endQuiz();
+                                }}>
+                                {(saveComplete) ? 'Close & End Quiz' : 'Close'}
+                            </Button>
+                            <Button
+                                disabled={saveLoading || saveComplete}
+                                onClick={() => {
+                                    updateDb()
+                                }}>
+                                Confirm
+                            </Button>
                         </DialogActions>
                     </Dialog>}
 
@@ -864,18 +970,20 @@ const NewQuizMaster = () => {
 
 
                                 <ToggleButton onClick={() => {
-                                    if (quizOn) {
+                                    if (quizOver) {
+                                        null
+                                    }
+                                    if (quizOn && !quizOver) {
                                         openPauseSelect(true)
                                     } else {
-                                        if (!inputError) {
-                                            toggleCardToolbar(true)
+                                        if (!inputError && !quizOn) {
                                             setLoading(true)
                                             runQuiz(nLevel, quizType, randomQuiz, customCardCount)
                                         }
 
                                     }
                                 }} variant='contained' size='small' sx={{ borderColor: '#d32f2f' }}>
-                                    {(quizOn) ? <PauseIcon color='error' /> : <PlayArrowIcon color='error' />}
+                                    {(quizOn) ? <PauseIcon color={(quizOver) ? '' :'error'} /> : <PlayArrowIcon color={(quizOver) ? '' :'error'} />}
                                 </ToggleButton>
 
                                 <ToggleButton onClick={(quizOn) ? () => openStopSelect(true) : null} variant='contained' size='small' sx={{ borderColor: '#d32f2f' }}>
@@ -892,96 +1000,87 @@ const NewQuizMaster = () => {
                             </ToggleButtonGroup>
                         </Box>
 
-                        <Collapse sx={{ mt: 2 }} in={inputError}>
+                        <Collapse sx={{ mt: (inputError) ? 2 : 0 }} in={inputError}>
                             <Alert severity='error'>Error in quiz settings</Alert>
                         </Collapse>
 
-                        <Collapse in={cardToolbar} orientation='vertical'>
+                        <Collapse in={quizOn}>
+                            {(quizOn) &&
+                                <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1.5, pt: 1.5 }}>
 
-
-                            <Stack sx={{ mt: (quizOn) ? 2 : 0 }} spacing={2}>
-
-                                <Collapse in={quizOn}>
-                                    {(quizOn) &&
-                                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-
-                                            <Button onClick={() => toggleQuizProgressDialog(true)} size='small' startIcon={<Quiz />} variant="outlined" color="info">
-                                                <Typography variant="body1">{`${cardNumber + 1} / ${quizData.length}`}</Typography>
-                                            </Button>
-
-                                            <Button size='small' startIcon={<DoneOutline />} disableRipple disableFocusRipple variant={quizData[cardNumber].result === true ? 'contained' : 'outlined'} color="success">
-                                                <Typography variant="body1">{quizData.filter(x => x.result === true).length}</Typography>
-                                            </Button>
-
-                                            <Button size='small' startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant={quizData[cardNumber].result === false ? 'contained' : 'outlined'} color="error">
-                                                <Typography variant="body1">{quizData.filter(x => x.result === false).length}</Typography>
-                                            </Button>
-                                        </Box>}
-                                </Collapse>
-
-
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-
-                                    <Button
-                                        size='small'
-                                        variant="outlined"
-                                        color="primary"
-                                        startIcon={<ArrowLeft />}
-                                        onClick={() => changeCard('back')}
-
-                                    >
-                                        前
+                                    <Button onClick={() => toggleQuizProgressDialog(true)} size='small' startIcon={<Quiz />} variant="outlined" color="info">
+                                        <Typography variant="body1">{`${cardNumber + 1} / ${quizData.length}`}</Typography>
                                     </Button>
 
-                                    <Button disabled={showCard} size='small' onClick={() => toggleShowCard(true)} variant="contained" color="primary">
-                                        <Typography><Visibility /> 表示</Typography>
+                                    <Button size='small' startIcon={<DoneOutline />} disableRipple disableFocusRipple variant={quizData[cardNumber].result === true ? 'contained' : 'outlined'} color="success">
+                                        <Typography variant="body1">{quizData.filter(x => x.result === true).length}</Typography>
                                     </Button>
 
-                                    <Button
-                                        size='small'
-                                        variant="outlined"
-                                        color="primary"
-                                        endIcon={<ArrowRight />}
-                                        onClick={() => changeCard('forward')}
-
-                                    >
-                                        次
+                                    <Button size='small' startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant={quizData[cardNumber].result === false ? 'contained' : 'outlined'} color="error">
+                                        <Typography variant="body1">{quizData.filter(x => x.result === false).length}</Typography>
                                     </Button>
                                 </Box>
-
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                                    <Button
-                                        onClick={() => detCardResult(cardNumber, true)}
-                                        disabled={!showCard}
-                                        size='small'
-                                        variant="contained"
-                                        color="success"
-                                        startIcon={<Check />}
-                                    >
-                                        正解
-                                    </Button>
-                                    <Button
-                                        onClick={() => detCardResult(cardNumber, false)}
-                                        disabled={!showCard}
-                                        size='small'
-                                        variant="contained"
-                                        color="error"
-                                        startIcon={<Clear />}
-                                    >
-                                        不正解
-                                    </Button>
-                                </Box>
-
-                            </Stack>
-
-                            {(loading) ?
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', pt: 3 }}>
-                                    <CircularProgress />
-                                </Box> : null}
+                            }
 
 
 
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1.5 }}>
+
+                                <Button
+                                    size='small'
+                                    variant="outlined"
+                                    color="primary"
+                                    startIcon={<ArrowLeft />}
+                                    onClick={() => changeCard('back')}
+
+                                >
+                                    前
+                                </Button>
+
+                                <Button disabled={showCard} size='small' onClick={() => toggleShowCard(true)} variant="contained" color="primary">
+                                    <Typography><Visibility /> 表示</Typography>
+                                </Button>
+
+                                <Button
+                                    size='small'
+                                    variant="outlined"
+                                    color="primary"
+                                    endIcon={<ArrowRight />}
+                                    onClick={() => changeCard('forward')}
+
+                                >
+                                    次
+                                </Button>
+                            </Box>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                                <Button
+                                    onClick={() => detCardResult(cardNumber, true)}
+                                    disabled={!showCard}
+                                    size='small'
+                                    variant="contained"
+                                    color="success"
+                                    startIcon={<Check />}
+                                >
+                                    正解
+                                </Button>
+                                <Button
+                                    onClick={() => detCardResult(cardNumber, false)}
+                                    disabled={!showCard}
+                                    size='small'
+                                    variant="contained"
+                                    color="error"
+                                    startIcon={<Clear />}
+                                >
+                                    不正解
+                                </Button>
+                            </Box>
                         </Collapse>
+
+                        {(loading) ?
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', pt: 2.5 }}>
+                                <CircularProgress />
+                            </Box> : null}
 
                     </CardContent>
 
@@ -1041,7 +1140,7 @@ const NewQuizMaster = () => {
                         </CardContent>
                     }
                 </Card>
-            </Container>
+            </Container >
         )
     }
 
