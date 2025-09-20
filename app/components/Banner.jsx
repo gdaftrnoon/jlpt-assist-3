@@ -1,418 +1,553 @@
 "use client"
-import { Alert, Badge, Box, Button, Card, CardActionArea, CardContent, CardMedia, Container, Fade, FormControlLabel, FormGroup, IconButton, Paper, Slide, Stack, Switch, Table, TableBody, TableCell, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography, Zoom } from '@mui/material'
-import React, { act, useEffect, useState } from 'react'
+import { Box, Button, Card, CardContent, Container, Divider, Grid, IconButton, Paper, Table, TableBody, TableCell, TableRow, Typography } from '@mui/material'
+import React, { useEffect, useState } from 'react'
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
-import QuizIcon from '@mui/icons-material/Quiz';
-import { ArrowLeft, ArrowRight, CancelOutlined, Check, Clear, DoneOutline, Info, KeyboardArrowUp, PersonAddAlt1, Quiz, Visibility } from '@mui/icons-material';
-import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
+import { ArrowLeft, ArrowRight, CancelOutlined, Check, Clear, CloudUploadOutlined, DoneOutline, InfoOutlineSharp, InsertChartOutlinedOutlined, KeyboardArrowUp, MyLocationOutlined, PersonAddAlt1, Quiz, QuizOutlined, Visibility } from '@mui/icons-material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import Collapse from '@mui/material/Collapse';
-import Link from 'next/link';
-import LaunchIcon from '@mui/icons-material/Launch';
-import { styled } from '@mui/material/styles';
-import Tooltip, { tooltipClasses } from '@mui/material/Tooltip';
-import Checkbox, { checkboxClasses } from "@mui/material/Checkbox";
-import { red } from '@mui/material/colors';
+import Checkbox from "@mui/material/Checkbox";
+import { redirect } from 'next/navigation';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 
 const Banner = () => {
 
-
-    // list containing the example words we use on the homepage
-    const [exampleWords, setExampleWords] = useState([
-        {
-            slug: '美味しい',
-            reading: ['おいしい'],
-            definitions: [
-                {
-                    type: 'I-adjective (keiyoushi)',
-                    meaning: 'good (tasting), nice, delicious, tasty'
-                },
-                {
-                    type: 'I-adjective (keiyoushi)',
-                    meaning: 'attractive (offer, opportunity, etc.), appealing, convenient, favorable, desirable, profitable'
-                }
-            ],
-            result: null
-        },
-        {
-            slug: '趣味',
-            reading: ['しゅみ'],
-            definitions: [
-                {
-                    type: 'Noun',
-                    meaning: 'hobby, pastime'
-                },
-                {
-                    type: 'Noun',
-                    meaning: 'tastes, preference, liking'
-                }
-            ],
-            result: null
-        },
-        {
-            slug: '夢',
-            reading: ['ゆめ'],
-            definitions: [
-                {
-                    type: 'Noun',
-                    meaning: 'dream'
-                }
-            ],
-            result: null
-        },
-        {
-            slug: '気分',
-            reading: ['きぶん'],
-            definitions: [
-                {
-                    type: 'Noun',
-                    meaning: 'feeling, mood'
-                }
-            ],
-            result: null
-        },
-        {
-            slug: '歴史',
-            reading: ['れきし'],
-            definitions: [
-                {
-                    type: 'Noun',
-                    meaning: 'history'
-                }
-            ],
-            result: null
-        },
-
-    ])
-
-    // state to manage which example is shown on the homepage (quiz/vocabtable)
-    const [activeExample, setActiveExample] = useState('vocabtable')
-
-    // table state management
-    const [tableExpand, toggleTableExpand] = useState(true)
-    const [tableExpand2, toggleTableExpand2] = useState(false)
-
-    // quiz type state management
-    const [quizType, setQuizType] = useState('all')
-
-    // card state management
-    const [cardNumber, setCardNumber] = useState(0)
-    const [cardCollapse, toggleCardCollapse] = useState(false)
-
-    // card correct incorrect counter state management
-    const [correctCount, setCorrectCount] = useState(0)
-    const [incorrectCount, setIncorrectCount] = useState(0)
-
-    // card switch function
-    const changeCard = (direction) => {
-        if (direction === 'back') {
-            if (cardNumber > 0) {
-                setCardNumber(prev => prev - 1)
-                toggleCardCollapse(false)
+    const theme = createTheme({
+        typography: {
+            fontFamily: [
+                "Quicksand"
+            ].join(','),
+            button: {
+                textTransform: 'none'
             }
         }
-        if (direction === 'forward') {
-            if (cardNumber < exampleWords.length - 1) {
-                setCardNumber(prev => prev + 1)
-                toggleCardCollapse(false)
+    })
+
+    const MobileHomepage = () => {
+
+        // list containing the example words we use on the homepage
+        const [exampleWords, setExampleWords] = useState([
+            {
+                slug: '美味しい',
+                reading: ['おいしい'],
+                definitions: [
+                    {
+                        type: 'I-adjective (keiyoushi)',
+                        meaning: 'good (tasting), nice, delicious, tasty'
+                    },
+                    {
+                        type: 'I-adjective (keiyoushi)',
+                        meaning: 'attractive (offer, opportunity, etc.), appealing, convenient, favorable, desirable, profitable'
+                    }
+                ],
+                result: null
+            },
+            {
+                slug: '趣味',
+                reading: ['しゅみ'],
+                definitions: [
+                    {
+                        type: 'Noun',
+                        meaning: 'hobby, pastime'
+                    },
+                    {
+                        type: 'Noun',
+                        meaning: 'tastes, preference, liking'
+                    }
+                ],
+                result: null
+            },
+            {
+                slug: '夢',
+                reading: ['ゆめ'],
+                definitions: [
+                    {
+                        type: 'Noun',
+                        meaning: 'dream'
+                    }
+                ],
+                result: null
+            },
+            {
+                slug: '気分',
+                reading: ['きぶん'],
+                definitions: [
+                    {
+                        type: 'Noun',
+                        meaning: 'feeling, mood'
+                    }
+                ],
+                result: null
+            },
+            {
+                slug: '歴史',
+                reading: ['れきし'],
+                definitions: [
+                    {
+                        type: 'Noun',
+                        meaning: 'history'
+                    }
+                ],
+                result: null
+            },
+
+        ])
+
+        // state to manage which example is shown on the homepage (quiz/vocabtable)
+        const [activeExample, setActiveExample] = useState('vocabtable')
+
+        // table state management
+        const [tableExpand, toggleTableExpand] = useState(true)
+        const [tableExpand2, toggleTableExpand2] = useState(true)
+
+        // quiz type state management
+        const [quizType, setQuizType] = useState('all')
+
+        // card state management
+        const [cardNumber, setCardNumber] = useState(0)
+        const [cardCollapse, toggleCardCollapse] = useState(false)
+
+        // card correct incorrect counter state management
+        const [correctCount, setCorrectCount] = useState(0)
+        const [incorrectCount, setIncorrectCount] = useState(0)
+
+        // card switch function
+        const changeCard = (direction) => {
+            if (direction === 'back') {
+                if (cardNumber > 0) {
+                    setCardNumber(prev => prev - 1)
+                    toggleCardCollapse(false)
+                }
+            }
+            if (direction === 'forward') {
+                if (cardNumber < exampleWords.length - 1) {
+                    setCardNumber(prev => prev + 1)
+                    toggleCardCollapse(false)
+                }
             }
         }
-    }
 
-    // card correct/incorrect function
-    const evaluateCard = (result) => {
+        // card correct/incorrect function
+        const evaluateCard = (result) => {
 
-        if (result === 'correct') {
-            setExampleWords(prev => prev.map((x, index) => (
-                (cardNumber === index) ? { ...x, result: true } : x
-            )))
-            changeCard('forward')
+            if (result === 'correct') {
+                setExampleWords(prev => prev.map((x, index) => (
+                    (cardNumber === index) ? { ...x, result: true } : x
+                )))
+                changeCard('forward')
+            }
+
+            if (result === 'incorrect') {
+                setExampleWords(prev => prev.map((x, index) => (
+                    (cardNumber === index) ? { ...x, result: false } : x
+                )))
+                changeCard('forward')
+            }
         }
 
-        if (result === 'incorrect') {
-            setExampleWords(prev => prev.map((x, index) => (
-                (cardNumber === index) ? { ...x, result: false } : x
-            )))
-            changeCard('forward')
-        }
-    }
+        // card updating incorrect correct counts
+        useEffect(() => {
 
-    // card updating incorrect correct counts
-    useEffect(() => {
+            const correct = exampleWords.filter(x => x.result === true).length
+            const incorrect = exampleWords.filter(x => x.result === false).length
 
-        const correct = exampleWords.filter(x => x.result === true).length
-        const incorrect = exampleWords.filter(x => x.result === false).length
+            setCorrectCount(correct)
+            setIncorrectCount(incorrect)
 
-        setCorrectCount(correct)
-        setIncorrectCount(incorrect)
+        }, [exampleWords])
 
-    }, [exampleWords])
 
-    const MobileHomepage = () => (
-        <Container maxWidth='xl' sx={{ minHeight: 'calc(100vh - 56px)', backgroundColor: 'white' }}>
-            <Box>
+        return (
 
-                <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', pt: 5 }}>
-                    <Typography gutterBottom sx={{ fontSize: '1.5rem', fontWeight: 'bold', textAlign: 'center', lineHeight: 1.3 }}>
-                        「日本語能力試験アシスト」
-                    </Typography>
+            <>
+                <Container
+                    sx={{
+                        display: { md: 'flex' },
+                        flexDirection: { md: 'column' },
+                        alignItems: { md: 'center' },
+                        justifyContent: { md: 'flex-start' }
+                    }}>
 
-                    <Typography sx={{ mb: 1.5, fontSize: '1.25rem', textAlign: 'center', color: 'grey.800', lineHeight: 1.4 }}>
-                        JLPT合格のための基礎固め
-                    </Typography>
+                    <Box sx={{
+                        width: { xs: '100%', md: '50%' }
+                    }}>
 
-                    <Typography sx={{ color: 'grey.600', fontSize: '1rem', textAlign: 'center', lineHeight: 1.4 }}>
-                        語彙表の確認、知らない単語の記録
-                    </Typography>
-                    <Typography sx={{ color: 'grey.600', fontSize: '1rem', textAlign: 'center', lineHeight: 1.4, mb: 2 }}>
-                        カスタムクイズで復習しよう
-                    </Typography>
-                </Box>
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            mt: 6,
+                            mb: 3
+                        }}>
 
-                {/* card explaining the vocab table */}
-                <Card sx={{ display: 'flex', flexDirection: 'column', mt: 6, borderRadius: '16px' }}>
+                            <Typography gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, minWidth: { md: 416 } }}>
+                                「日本語能力試験アシスト」
+                            </Typography>
 
-                    <CardContent sx={{ paddingBottom: 0 }}>
-                        <Button
-                            variant="contained"
-                            color="error"
-                            size="small"
-                            startIcon={<AutoStoriesIcon />}
-                            sx={{
-                                fontWeight: 'bold',
-                                fontSize: '0.95rem',
-                                borderRadius: '12px',
-                                px: 2,
-                                py: 1
-                            }}
-                        >
-                            語彙管理
-                        </Button>
-                    </CardContent>
+                            <Typography sx={{ textAlign: 'center' }}>
+                                Master Japanese vocabulary through targeted practice and spaced repetition.
+                            </Typography>
+                        </Box>
 
-                    <CardContent sx={{ paddingBottom: 0 }}>
-                        <Typography sx={{ fontSize: '0.85rem', color: 'grey.600' }}>N1〜N5のレベルから選んで、知っている単語・知らない単語を簡単にチェックする</Typography>
-                    </CardContent>
+                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 6 }}>
+                            <Button
+                                onClick={() => redirect('/login')}
+                                variant="contained"
+                                size="small"
+                                startIcon={<PersonAddAlt1 />}
+                                color='error'
+                                sx={{
+                                    fontSize: '0.95rem',
+                                    borderRadius: '12px',
+                                    px: 2,
+                                    py: 1
+                                }}
+                            >
+                                Register
+                            </Button>
+                            <Button
+                                onClick={() => redirect('/login')}
+                                variant="outlined"
+                                size="small"
+                                startIcon={<InfoOutlineSharp />}
+                                color='error'
+                                sx={{
+                                    fontSize: '0.95rem',
+                                    borderRadius: '12px',
+                                    px: 2,
+                                    py: 1
+                                }}
+                            >
+                                Learn More
+                            </Button>
 
-                </Card>
+                        </Box>
 
-                {/* card for vocab table */}
-                <Card raised sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 3, borderRadius: '16px' }}>
-                    <Table>
-                        <TableBody>
-                            <TableRow>
 
-                                <TableCell sx={{ width: '1%', paddingY: 0, paddingRight: 0, paddingLeft: 1 }}>
-                                    <IconButton onClick={() => toggleTableExpand(prev => !prev)}>
-                                        {tableExpand ?
-                                            <KeyboardArrowUp /> :
-                                            <KeyboardArrowDownIcon />
-                                        }
-                                    </IconButton>
-                                </TableCell>
+                        {/* card explaining the vocab table */}
+                        <Card sx={{ display: 'flex', flexDirection: 'column', borderRadius: '16px' }}>
 
-                                <TableCell sx={{ width: '1%', padding: 0 }}>
-                                    <Checkbox
-                                        checked
+                            <CardContent sx={{ paddingBottom: 0 }}>
+                                <Button
+                                    onClick={() => redirect('/vocab')}
+                                    variant="contained"
+                                    color="error"
+                                    size="small"
+                                    startIcon={<AutoStoriesIcon />}
+                                    sx={{
+                                        fontWeight: 'bold',
+                                        fontSize: '0.95rem',
+                                        borderRadius: '12px',
+                                        px: 2,
+                                        py: 1
+                                    }}
+                                >
+                                    Vocabulary Tables
+                                </Button>
+                            </CardContent>
+
+                            <CardContent sx={{ paddingBottom: 2 }}>
+                                <Typography sx={{ color: 'grey.600' }}>
+                                    Begin by identifying known vocabulary, split by N-Level.
+                                </Typography>
+                            </CardContent>
+
+                            <Divider />
+
+                            <CardContent>
+                                <Table>
+                                    <TableBody>
+                                        <TableRow>
+                                            <TableCell sx={{ width: '1%', paddingY: 0, paddingRight: 0, paddingLeft: 1 }}>
+                                                <IconButton onClick={() => toggleTableExpand(prev => !prev)}>
+                                                    {tableExpand ?
+                                                        <KeyboardArrowUp /> :
+                                                        <KeyboardArrowDownIcon />}
+                                                </IconButton>
+                                            </TableCell>
+
+                                            <TableCell sx={{ width: '1%', padding: 0 }}>
+                                                <Checkbox defaultChecked />
+                                            </TableCell>
+
+                                            <TableCell sx={{ width: '98%', textAlign: 'center', pr: 9, fontSize: '1rem', fontWeight: 'bold' }}>
+                                                旅行
+                                            </TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={3}>
+                                                <Collapse in={tableExpand}>
+                                                    <Box sx={{ paddingY: 2 }}>
+                                                        <Typography sx={{ fontWeight: 'bold', fontSize: '1rem' }}>旅行</Typography>
+                                                        <Typography sx={{ color: 'orange', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>Reading</Typography>
+                                                        <Typography sx={{ fontWeight: 'bold', fontSize: '1rem' }}>りょこう</Typography>
+                                                        <Typography sx={{ color: 'orange', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>Meaning</Typography>
+                                                        <Typography sx={{ color: 'grey', fontSize: '1rem' }}>Noun, Suru verb, Intransitive verb</Typography>
+                                                        <Typography sx={{ fontSize: '1rem' }}>travel, trip, journey, excursion, tour</Typography>
+                                                    </Box>
+                                                </Collapse>
+                                            </TableCell>
+                                        </TableRow>
+                                        <TableRow>
+
+                                            <TableCell sx={{ width: '1%', paddingY: 0, paddingRight: 0, paddingLeft: 1 }}>
+                                                <IconButton onClick={() => toggleTableExpand2(prev => !prev)}>
+                                                    {tableExpand2 ?
+                                                        <KeyboardArrowUp /> :
+                                                        <KeyboardArrowDownIcon />}
+                                                </IconButton>
+                                            </TableCell>
+
+                                            <TableCell sx={{ width: '1%', padding: 0 }}>
+                                                <Checkbox />
+                                            </TableCell>
+
+                                            <TableCell sx={{ width: '98%', textAlign: 'center', pr: 9, fontSize: '1rem', fontWeight: 'bold' }}>
+                                                英語
+                                            </TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={3}>
+                                                <Collapse in={tableExpand2}>
+                                                    <Box sx={{ paddingY: 2 }}>
+                                                        <Typography sx={{ fontWeight: 'bold', fontSize: '1rem' }}>英語</Typography>
+                                                        <Typography sx={{ color: 'orange', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>Reading</Typography>
+                                                        <Typography sx={{ fontWeight: 'bold', fontSize: '1rem' }}>えいご</Typography>
+                                                        <Typography sx={{ color: 'orange', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>Meaning</Typography>
+                                                        <Typography sx={{ color: 'grey', fontSize: '1rem' }}>Noun</Typography>
+                                                        <Typography sx={{ fontSize: '1rem' }}>English (language)</Typography>
+                                                    </Box>
+                                                </Collapse>
+                                            </TableCell>
+                                        </TableRow>
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+
+                        </Card>
+
+                        {/* card explaining the quiz table */}
+                        <Box sx={{minHeight:{ md: 636, xs:684 }}}>
+                            <Card sx={{ display: 'flex', flexDirection: 'column', mt: 3, borderRadius: '16px' }}>
+
+                                <CardContent sx={{ paddingBottom: 0 }}>
+                                    <Button
+                                        onClick={() => redirect('/quiz')}
+                                        variant="contained"
+                                        color="error"
+                                        size="small"
+                                        startIcon={<Quiz />}
                                         sx={{
-                                            [`&, &.${checkboxClasses.checked}`]: {
-                                                color: '#ef5350',
-                                            },
-                                        }} />
-                                </TableCell>
+                                            fontWeight: 'bold',
+                                            fontSize: '0.95rem',
+                                            borderRadius: '12px',
+                                            px: 2,
+                                            py: 1
+                                        }}
+                                    >
+                                        Flashcards
+                                    </Button>
+                                </CardContent>
 
-                                <TableCell sx={{ width: '98%', textAlign: 'center', pr: 9, fontSize: '1rem', fontWeight: 'bold' }}>
-                                    旅行
-                                </TableCell>
+                                <CardContent sx={{ paddingBottom: 2 }}>
+                                    <Typography sx={{ color: 'grey.600' }}>
+                                        Run flashcard style tests on all, known or unknown vocabulary words.
+                                    </Typography>
+                                </CardContent>
 
-                            </TableRow>
-                            <TableRow>
-                                <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={3}>
-                                    <Collapse in={tableExpand}>
-                                        <Box sx={{ paddingY: 2 }}>
-                                            <Typography sx={{ fontWeight: 'bold', fontSize: '1rem' }}>旅行</Typography>
-                                            <Typography sx={{ color: '#ef5350', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>読み方</Typography>
-                                            <Typography sx={{ fontWeight: 'bold', fontSize: '1rem' }}>りょこう</Typography>
-                                            <Typography sx={{ color: '#ef5350', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>意味</Typography>
-                                            <Typography sx={{ color: 'grey', fontSize: '1rem' }}>Noun, Suru verb, Intransitive verb</Typography>
-                                            <Typography sx={{ fontSize: '1rem' }}>travel, trip, journey, excursion, tour</Typography>
-                                        </Box>
-                                    </Collapse>
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                </Card>
+                                <Divider />
 
-                {/* card explaining the quiz table */}
-                <Card sx={{ display: 'flex', flexDirection: 'column', mt: 6, borderRadius: '16px' }}>
+                                <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', pt: 3 }}>
 
-                    <CardContent sx={{ paddingBottom: 0 }}>
-                        <Button
-                            variant="contained"
-                            color="error"
-                            size="small"
-                            startIcon={<Quiz />}
-                            sx={{
-                                fontWeight: 'bold',
-                                fontSize: '0.95rem',
-                                borderRadius: '12px',
-                                px: 2,
-                                py: 1
-                            }}
-                        >
-                            単語テスト
-                        </Button>
-                    </CardContent>
+                                    {/* card numbers, right and wrong counters */}
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                                        <Button size='small' disableRipple disableFocusRipple startIcon={<Quiz />} variant="outlined" color="info">
+                                            <Typography variant="body1"> Card {cardNumber + 1} / {exampleWords.length} </Typography>
+                                        </Button>
+                                        <Button size='small' startIcon={<DoneOutline />} disableRipple disableFocusRipple variant={(exampleWords[cardNumber].result === true ? 'contained' : 'outlined')} color="success">
+                                            <Typography variant="body1">{correctCount}</Typography>
+                                        </Button>
 
-                    <CardContent sx={{ paddingBottom: 0 }}>
-                        <Typography sx={{ fontSize: '0.85rem', color: 'grey.600' }}>語彙テーブルによって、まだ覚えていない単語やカスタムクイズでテストしよう</Typography>
-                    </CardContent>
-
-                </Card>
-
-                {/* card for quiz */}
-                <Card raised sx={{ display: 'flex', flexDirection: 'column', mt: 3, borderRadius: '16px', flexDirection: 'column' }}>
-
-                    <CardContent sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
-
-                        {/* card numbers, right and wrong counters */}
-                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                            <Button size='small' disableRipple disableFocusRipple startIcon={<Quiz />} variant="outlined" color="info">
-                                <Typography variant="body1"> カード {cardNumber + 1} / {exampleWords.length} </Typography>
-                            </Button>
-                            <Button size='small' startIcon={<DoneOutline />} disableRipple disableFocusRipple variant={(exampleWords[cardNumber].result === true ? 'contained' : 'outlined')} color="success">
-                                <Typography variant="body1">{correctCount}</Typography>
-                            </Button>
-
-                            <Button size='small' startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant={(exampleWords[cardNumber].result === false ? 'contained' : 'outlined')} color="error">
-                                <Typography variant="body1">{incorrectCount}</Typography>
-                            </Button>
-                        </Box>
-
-                        {/* forward, backwards, eye icon */}
-                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, paddingTop: 2 }}>
-
-                            <Button
-                                size='small'
-                                variant="outlined"
-                                color="primary"
-                                startIcon={<ArrowLeft />}
-                                onClick={() => changeCard('back')}
-                            >
-                                前
-                            </Button>
-
-                            <Button disabled={(cardCollapse === true)} onClick={() => toggleCardCollapse(true)} size='small' variant="contained" color="primary">
-                                <Typography><Visibility />表示</Typography>
-                            </Button>
-
-                            <Button
-                                size='small'
-                                variant="outlined"
-                                color="primary"
-                                endIcon={<ArrowRight />}
-                                onClick={() => changeCard('forward')}
-                            >
-                                次
-                            </Button>
-
-                        </Box>
-
-                        {/* correct, incorrect buttons */}
-                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, paddingTop: 2 }}>
-
-                            <Button
-                                disabled={cardCollapse === true ? false : true}
-                                onClick={() => evaluateCard('correct')}
-                                size='small'
-                                variant="contained"
-                                color="success"
-                                startIcon={<Check />}
-                            >
-                                正解
-                            </Button>
-                            <Button
-                                disabled={cardCollapse === true ? false : true}
-                                onClick={() => evaluateCard('incorrect')}
-                                size='small'
-                                variant="contained"
-                                color="error"
-                                startIcon={<Clear />}
-                            >
-                                不正解
-                            </Button>
-
-                        </Box>
-
-                    </CardContent>
-
-                    <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 2 }}>
-                        <Typography sx={{ textAlign: 'center', fontSize: '1.2rem', fontWeight: 'bold' }}>
-                            {exampleWords[cardNumber].slug}
-                        </Typography>
-                    </CardContent>
-
-                    {/* content holder for card details */}
-                    <Collapse in={cardCollapse} timeout={{ enter: 800, exit: 10 }}>
-                        <CardContent>
-                            <Box>
-
-                                <Typography sx={{ color: '#ef5350', fontSize: '1rem', fontWeight: 'bold' }}>読み方</Typography>
-
-                                {exampleWords[cardNumber].reading.map((x, index) => (
-                                    <Typography sx={{ fontWeight: 'bold', fontSize: '1rem' }} key={`reading ${index}`}>{x}</Typography>
-                                ))}
-
-                                <Typography sx={{ color: '#ef5350', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>意味</Typography>
-
-                                {exampleWords[cardNumber].definitions.map((y, index) => (
-                                    <Box sx={{ mb: 1 }} key={`meaning ${index}`}>
-                                        <Typography sx={{ color: 'grey', fontSize: '1rem' }}>{y.type}</Typography>
-                                        <Typography sx={{ fontSize: '1rem' }}>{y.meaning}</Typography>
+                                        <Button size='small' startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant={(exampleWords[cardNumber].result === false ? 'contained' : 'outlined')} color="error">
+                                            <Typography variant="body1">{incorrectCount}</Typography>
+                                        </Button>
                                     </Box>
-                                ))}
-                            </Box>
-                        </CardContent>
-                    </Collapse>
-                </Card >
 
-                {/* card explaining benefits of signing up */}
-                <Card sx={{ display: 'flex', flexDirection: 'column', mt: 6, borderRadius: '16px', mb:6, backgroundColor: '#ef5350' }}>
+                                    {/* forward, backwards, eye icon */}
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, paddingTop: 2 }}>
 
-                    <CardContent sx={{ paddingBottom: 0 }}>
-                        <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<PersonAddAlt1 />}
-                            color='inherit'
-                            sx={{
-                                fontWeight: 'bold',
-                                fontSize: '0.95rem',
-                                borderRadius: '12px',
-                                px: 2,
-                                py: 1,
-                                borderColor: 'white',
-                                color: 'white' 
-                            }}
-                        >
-                            登録
-                        </Button>
-                    </CardContent>
+                                        <Button
+                                            size='small'
+                                            variant="outlined"
+                                            color="primary"
+                                            startIcon={<ArrowLeft />}
+                                            onClick={() => changeCard('back')}
+                                        >
+                                            Prev
+                                        </Button>
 
-                    <CardContent sx={{ paddingBottom: 0 }}>
-                        <Typography sx={{ fontSize: '0.9rem', color: 'grey.600', color:'white' }}>アカウント登録すると、学習データが保存され、クイズ結果も記録されます</Typography>
-                    </CardContent>
+                                        <Button
+                                            startIcon={<Visibility />}
+                                            disabled={(cardCollapse === true)}
+                                            onClick={() => toggleCardCollapse(true)}
+                                            size='small'
+                                            variant="contained"
+                                            color="primary">
+                                            <Typography>Show</Typography>
+                                        </Button>
 
-                </Card>
+                                        <Button
+                                            size='small'
+                                            variant="outlined"
+                                            color="primary"
+                                            endIcon={<ArrowRight />}
+                                            onClick={() => changeCard('forward')}
+                                        >
+                                            Next
+                                        </Button>
 
-            </Box >
+                                    </Box>
 
-        </Container >
-    )
+                                    {/* correct, incorrect buttons */}
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, paddingTop: 2 }}>
+
+                                        <Button
+                                            disabled={cardCollapse === true ? false : true}
+                                            onClick={() => evaluateCard('correct')}
+                                            size='small'
+                                            variant="contained"
+                                            color="success"
+                                            startIcon={<Check />}
+                                        >
+                                            Correct
+                                        </Button>
+                                        <Button
+                                            disabled={cardCollapse === true ? false : true}
+                                            onClick={() => evaluateCard('incorrect')}
+                                            size='small'
+                                            variant="contained"
+                                            color="error"
+                                            startIcon={<Clear />}
+                                        >
+                                            Incorrect
+                                        </Button>
+
+                                    </Box>
+
+                                </CardContent>
+
+                                <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 2 }}>
+                                    <Typography sx={{ textAlign: 'center', fontSize: '1.2rem', fontWeight: 'bold' }}>
+                                        {exampleWords[cardNumber].slug}
+                                    </Typography>
+                                </CardContent>
+
+                                {/* content holder for card details */}
+                                <Collapse in={cardCollapse} timeout={{ enter: 400, exit: 10 }}>
+                                    <CardContent sx={{ pt: 0 }}>
+                                        <Box>
+                                            <Typography sx={{ fontWeight: 'bold', fontSize: '1.2rem' }}> {exampleWords[cardNumber].slug}</Typography>
+
+                                            <Typography sx={{ color: 'orange', mt: 1, fontWeight: 'bold' }}>Reading</Typography>
+
+                                            {exampleWords[cardNumber].reading.map((x, index) => (
+                                                <Typography sx={{ fontWeight: 'bold' }} key={`reading ${index}`}>{x}</Typography>
+                                            ))}
+
+                                            <Typography sx={{ color: 'orange', mt: 1, fontWeight: 'bold' }}>Meaning</Typography>
+
+                                            {exampleWords[cardNumber].definitions.map((y, index) => (
+                                                <Box sx={{ mb: 1 }} key={`meaning ${index}`}>
+                                                    <Typography sx={{ color: 'grey', fontSize: '1rem' }}>{y.type}</Typography>
+                                                    <Typography sx={{ fontSize: '1rem' }}>{y.meaning}</Typography>
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    </CardContent>
+                                </Collapse>
+
+                            </Card>
+                        </Box>
+                    </Box>
+                </Container>
+
+                <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexDirection: 'column',
+                    width: '100%',
+                    backgroundColor: '#ffebee',
+                    mt: 5,
+                    py: 10
+                }}>
+                    <Box sx={{ mb: 5, width: '100%', textAlign: 'center' }}>
+                        <Typography gutterBottom sx={{ fontSize: '2rem' }}>Core Features</Typography>
+                        <Typography gutterBottom sx={{ fontSize: '1.2rem', color: 'grey' }}>Modern features, simple design philosophy</Typography>
+                    </Box>
+
+                    <Box sx={{ width: { xs: '90%', md: '35%' } }}>
+
+                        <Grid container spacing={2} sx={{}}>
+                            <Grid size={{ xs: 12, md: 6 }}>
+                                <Paper sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 1, padding: 1 }}>
+                                        <MyLocationOutlined color='error' fontSize='small' sx={{ border: 1, borderRadius: '16px', px: 0.5, py: 0.2 }} />
+                                        <Typography sx={{ fontWeight: '600' }} variant='subtitle1'>Targeted Study</Typography>
+                                    </Box>
+                                    <Box sx={{ padding: 1 }}>
+                                        <Typography sx={{ color: 'grey' }} variant='subtitle2'>Tailor your learning to specific N-Levels, building a solid foundation for the next exam.</Typography>
+                                    </Box>
+                                </Paper>
+                            </Grid>
+
+                            <Grid size={{ xs: 12, md: 6 }}>
+                                <Paper sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 1, padding: 1 }}>
+                                        <QuizOutlined color='error' fontSize='small' sx={{ border: 1, borderRadius: '16px', px: 0.5, py: 0.2 }} />
+                                        <Typography sx={{ fontWeight: '600' }} variant='subtitle1'>Customisable Tests</Typography>
+                                    </Box>
+                                    <Box sx={{ padding: 1 }}>
+                                        <Typography sx={{ color: 'grey' }} variant='subtitle2'>Quiz yourself on all words, those you know, those you don't, or the ones you keep missing.</Typography>
+                                    </Box>
+                                </Paper>
+                            </Grid>
+
+                            <Grid size={{ xs: 12, md: 6 }}>
+                                <Paper sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 1, padding: 1 }}>
+                                        <CloudUploadOutlined color='error' fontSize='small' sx={{ border: 1, borderRadius: '16px', px: 0.5, py: 0.2 }} />
+                                        <Typography sx={{ fontWeight: '600' }} variant='subtitle1'>Sync Across Devices</Typography>
+                                    </Box>
+                                    <Box sx={{ padding: 1 }}>
+                                        <Typography sx={{ color: 'grey' }} variant='subtitle2'>Quiz sessions can paused and saved securely to the cloud, allowing you to pick up where you left off on any device.</Typography>
+                                    </Box>
+                                </Paper>
+                            </Grid>
+
+                            <Grid size={{ xs: 12, md: 6 }}>
+                                <Paper sx={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: 1, padding: 1 }}>
+                                        <InsertChartOutlinedOutlined color='error' fontSize='small' sx={{ border: 1, borderRadius: '16px', px: 0.5, py: 0.2 }} />
+                                        <Typography sx={{ fontWeight: '600' }} variant='subtitle1'>Results Tracking & Analysis</Typography>
+                                    </Box>
+                                    <Box sx={{ padding: 1 }}>
+                                        <Typography sx={{ color: 'grey' }} variant='subtitle2'>Review quiz results, view progression statistics and pinpoint difficult vocabulary items.</Typography>
+                                    </Box>
+                                </Paper>
+                            </Grid>
+
+                        </Grid>
+                    </Box>
+                </Box>
+            </>
+        )
+    }
 
     return (
-        <MobileHomepage />
+        <ThemeProvider theme={theme}>
+            <MobileHomepage />
+        </ThemeProvider>
     )
 }
 

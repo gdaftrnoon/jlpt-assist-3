@@ -1,31 +1,44 @@
 'use client'
-import { Box, Button, Card, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Table, TableBody, TableCell, TableRow, ToggleButton, ToggleButtonGroup, Typography, CircularProgress, TextField, Container, List, ListItemButton, ListItemText, ListItem, Alert, CardContent, Paper, DialogContentText, Skeleton, LinearProgress, TableContainer, TableHead } from '@mui/material'
+import { Box, Button, Card, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Table, TableBody, TableCell, TableRow, ToggleButton, ToggleButtonGroup, Typography, CircularProgress, TextField, Container, List, ListItemButton, ListItemText, ListItem, Alert, CardContent, DialogContentText, Skeleton, TableContainer, TableHead } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Pagination from '@mui/material/Pagination';
 import Checkbox from '@mui/material/Checkbox';
-import { Check, DeleteForever, DoneAll, Expand, Info, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Stairs, UnfoldLess } from '@mui/icons-material';
+import { Check, DeleteForever, DoneAll, Expand, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Stairs, UnfoldLess } from '@mui/icons-material';
 import ArticleIcon from '@mui/icons-material/Article';
 import { useSession } from 'next-auth/react';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import CheckBoxOutlineBlankRoundedIcon from '@mui/icons-material/CheckBoxOutlineBlankRounded';
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import { redirect } from 'next/navigation'
-import ArrowLeftIcon from '@mui/icons-material/ArrowLeft';
-import ArrowRightIcon from '@mui/icons-material/ArrowRight';
 import StairsIcon from '@mui/icons-material/Stairs';
-import CheckIcon from '@mui/icons-material/Check';
 import QuizIcon from '@mui/icons-material/Quiz';
 import PercentIcon from '@mui/icons-material/Percent';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { ThemeProvider, useTheme } from '@mui/material/styles';
+import { createTheme } from '@mui/material/styles';
 
 const NewVocabTable = () => {
+
+    const theme = createTheme({
+        typography: {
+            fontFamily: [
+                "Quicksand"
+            ].join(','),
+            button: {
+                textTransform: 'none'
+            }
+        }
+    })
 
     const MobileLayout = () => {
 
 
         ///////////////////////////////////////// STATES + CONSTS ///////////////////////////////////////////////
 
+        const thema = useTheme();
+        const matches = useMediaQuery(thema.breakpoints.up('md'));
 
         // state for intro page
         const [introDialog, toggleIntroDialog] = useState(false)
@@ -520,7 +533,7 @@ const NewVocabTable = () => {
         const NLevelDialog = () => (
             <Dialog open={nLevelSelect} onClose={() => openNLevelSelect(false)}>
                 <DialogTitle variant='subtitle1'>
-                    JLPTレベルを選んでください
+                    Please choose an N-Level
                 </DialogTitle>
                 <List sx={{ pt: 0 }}>
                     {nLevelArray.map(x => (
@@ -547,7 +560,7 @@ const NewVocabTable = () => {
         const SliceDialog = () => (
             <Dialog open={sliceSelect} onClose={() => openSliceSelect(false)}>
                 <DialogTitle variant='subtitle1'>
-                    カード何数を表示すればいい？
+                    How many items should be shown per page?
                 </DialogTitle>
                 <List sx={{ pt: 0 }}>
                     {sliceArray.map(x => (
@@ -570,7 +583,7 @@ const NewVocabTable = () => {
 
             <Dialog open={searchSelect} onClose={() => openSearchSelect(false)}>
                 <DialogTitle variant='subtitle1'>
-                    ページ番号や単語を入力してください
+                    Please enter a page number or word
                 </DialogTitle>
                 <DialogContent>
                     <form onSubmit={handleSearchSubmit} id="search-form">
@@ -579,16 +592,16 @@ const NewVocabTable = () => {
                             required
                             margin="dense"
                             name="query"
-                            label="ページ / 単語"
+                            label="Page/Word"
                             fullWidth
                             variant="standard"
                         />
                     </form>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => openSearchSelect(false)}>キャンセル</Button>
+                    <Button onClick={() => openSearchSelect(false)}>Cancel</Button>
                     <Button type="submit" form="search-form">
-                        探索
+                        Search
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -613,7 +626,7 @@ const NewVocabTable = () => {
 
         const TableLoadingSkeleton = () => (
             <>
-                <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 6, borderRadius: '16px', mb: 6, minWidth: 343 }}>
+                <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 6, borderRadius: '16px', mb: 6, width: { xs: '100%', md: '50%' } }}>
                     <Table>
                         <TableBody>
 
@@ -644,45 +657,45 @@ const NewVocabTable = () => {
         )
 
         return (
-            <Container maxWidth='xl' sx={{ minHeight: 'calc(100vh - 56px)', backgroundColor: 'white' }}>
+            <Container maxWidth='xl' sx={{}}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
 
                     <Dialog open={introDialog}>
                         <DialogTitle sx={{ fontSize: '1.25rem', textAlign: 'center', mb: 0 }}>
-                            文字語彙データの使い方
+                            Vocabulary Table
                         </DialogTitle>
                         <DialogContent sx={{ paddingBottom: 0, minHeight: 400 }}>
 
                             <Box>
-                                <Alert icon={false} severity='info' sx={{ mb: 2, textAlign: 'center', padding: 0, fontSize: '0.8rem' }}>
-                                    単語を知るとチェックを入力してください、ロッグインするとデータを保存できます
+                                <Alert icon={false} severity='info' sx={{ mb: 2, textAlign: 'center', fontSize: '0.95rem' }}>
+                                    Tick words you're familiar with, you must be logged in to use the vocabulary table.
                                 </Alert>
 
                                 <Card>
                                     <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <Stairs /><Typography sx={{ fontSize: '0.95rem' }}>Nレベルの選択</Typography>
+                                            <LooksOne /><Typography sx={{ fontSize: '0.95rem' }}>N-Level selection</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <ArticleIcon /><Typography sx={{ fontSize: '0.95rem' }}>表示件数</Typography>
+                                            <ArticleIcon /><Typography sx={{ fontSize: '0.95rem' }}>Vocabulary items per page</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <Expand /><Typography sx={{ fontSize: '0.95rem' }}>詳細を展開</Typography>
+                                            <Expand /><Typography sx={{ fontSize: '0.95rem' }}>Expand all</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <UnfoldLess /><Typography sx={{ fontSize: '0.95rem' }}>詳細を隠す</Typography>
+                                            <UnfoldLess /><Typography sx={{ fontSize: '0.95rem' }}>Collapse all</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <DoneAll /><Typography sx={{ fontSize: '0.95rem' }}>ページ全チェック</Typography>
+                                            <DoneAll /><Typography sx={{ fontSize: '0.95rem' }}>Tick all on page</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <CheckBoxOutlineBlankRoundedIcon /><Typography sx={{ fontSize: '0.95rem' }}>ページ全解除</Typography>
+                                            <CheckBoxOutlineBlankRoundedIcon /><Typography sx={{ fontSize: '0.95rem' }}>Untick all on page</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <ManageSearchIcon /><Typography sx={{ fontSize: '0.95rem' }}>ページや単語を検索</Typography>
+                                            <ManageSearchIcon /><Typography sx={{ fontSize: '0.95rem' }}>Search word/page number</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <DeleteForever /><Typography sx={{ fontSize: '0.95rem' }}>レベル全解除</Typography>
+                                            <DeleteForever /><Typography sx={{ fontSize: '0.95rem' }}>Remove all checks for level</Typography>
                                         </Box>
                                     </CardContent>
                                 </Card>
@@ -719,12 +732,12 @@ const NewVocabTable = () => {
                         <DialogActions sx={{ display: 'flex', justifyContent: 'space-between' }}>
                             <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                                 <Checkbox onClick={() => changeCheckbox(introCheckbox)} checked={introCheckbox} />
-                                <Typography variant='subtitle1'>起動時に表示しない</Typography>
+                                <Typography variant='subtitle1'>Don't show on startup</Typography>
                             </Box>
                             <Button
                                 onClick={() => { toggleIntroDialog(false) }}
                                 sx={{ fontWeight: 'bold' }}>
-                                閉じる
+                                Close
                             </Button>
                         </DialogActions>
                     </Dialog>
@@ -825,20 +838,13 @@ const NewVocabTable = () => {
                             : null
                     }
 
-
-                    {(tableLoading) ?
-                        <Paper sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 3, px: 2, py: 1, borderRadius: '16px' }}>
-                            <Typography>読み込み中...</Typography>
-                        </Paper>
-                        :
-                        <Box sx={{ pt: 3 }}>
-                            <Pagination color="error" siblingCount={0} page={page} onChange={handleChange} count={maxPages}></Pagination>
-                        </Box>
-                    }
+                    <Box sx={{ pt: 3 }}>
+                        <Pagination disabled={tableLoading} color="error" siblingCount={matches ? 2 : 0} page={page} onChange={handleChange} count={maxPages}></Pagination>
+                    </Box>
 
                     {(tableLoading) ? <TableLoadingSkeleton /> :
 
-                        <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 6, borderRadius: '16px', mb: 6, minWidth: 343 }}>
+                        <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 4, borderRadius: '16px', mb: 6, width: { xs: '100%', md: '50%' } }}>
                             <Table>
                                 <TableBody>
                                     {vocabularyData.map((x, index) => (
@@ -861,7 +867,15 @@ const NewVocabTable = () => {
                                                         disabled={(!session) ? true : false} />
                                                 </TableCell>
 
-                                                <TableCell sx={{ width: '98%', textAlign: 'center', pr: 9, fontSize: '1rem', fontWeight: 'bold' }}>
+                                                {/* MD: main slugs - 1.5, in table kanji - 1.4, reading/meaning header - 1.3, reading/meaning details - 1.2   */}
+                                                <TableCell
+                                                    sx={{
+                                                        width: '98%',
+                                                        textAlign: 'center',
+                                                        pr: 9,
+                                                        fontSize: { xs: '1rem', md: '1.5rem' },
+                                                        fontWeight: 'bold'
+                                                    }}>
                                                     {x.slug}
                                                 </TableCell>
 
@@ -871,18 +885,55 @@ const NewVocabTable = () => {
                                                     <Collapse timeout={{ enter: 250, exit: 250 }} in={open.includes(index) ? true : false}>
                                                         <Box sx={{ paddingY: 2 }}>
                                                             {[...new Set(x.japanese.map(y => y.word))].map((z, zindex) => (
-                                                                <Typography key={zindex} sx={{ fontWeight: 'bold', fontSize: '1rem' }}>{z}</Typography>
+                                                                <Typography key={zindex}
+                                                                    sx={{
+                                                                        fontWeight: 'bold',
+                                                                        fontSize: { xs: '1rem', md: '1.4rem' }
+                                                                    }}>{z}</Typography>
                                                             ))}
-                                                            <Typography sx={{ color: 'orange', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>Reading</Typography>
+                                                            <Typography
+                                                                sx={{
+                                                                    color: 'orange',
+                                                                    fontSize: { xs: '1rem', md: '1.3rem' },
+                                                                    mt: 1,
+                                                                    fontWeight: 'bold'
+                                                                }}>
+                                                                Reading
+                                                            </Typography>
                                                             {[...new Set(x.japanese.map(y => y.reading))].map((a, aindex) => (
-                                                                <Typography key={aindex} sx={{ fontWeight: 'bold', fontSize: '1rem' }}>{a}</Typography>
+                                                                <Typography key={aindex}
+                                                                    sx={{
+                                                                        fontWeight: 'bold',
+                                                                        fontSize: { xs: '1rem', md: '1.2rem' }
+                                                                    }}>
+                                                                    {a}
+                                                                </Typography>
                                                             ))}
-                                                            <Typography sx={{ color: 'orange', fontSize: '1rem', mt: 1, fontWeight: 'bold' }}>Meaning</Typography>
+                                                            <Typography
+                                                                sx={{
+                                                                    color: 'orange',
+                                                                    fontSize: { xs: '1rem', md: '1.3rem' },
+                                                                    mt: 1,
+                                                                    fontWeight: 'bold'
+                                                                }}>
+                                                                Meaning
+                                                            </Typography>
                                                             {x.senses.filter(c => !c.parts_of_speech?.includes('Place') && !c.parts_of_speech?.includes('Wikipedia definition'))
                                                                 .map((c, cindex) => (
                                                                     <Box key={cindex}>
-                                                                        <Typography key={`pos-${cindex}`} sx={{ color: 'grey', fontSize: '1rem' }}>{c.parts_of_speech.join(", ")}</Typography>
-                                                                        <Typography key={`ed-${cindex}`} sx={{ fontSize: '1rem' }}>{c.english_definitions.join(", ")}</Typography>
+                                                                        <Typography key={`pos-${cindex}`}
+                                                                            sx={{
+                                                                                color: 'grey',
+                                                                                fontSize: { xs: '1rem', md: '1.2rem' }
+                                                                            }}
+                                                                        >{c.parts_of_speech.join(", ")}
+                                                                        </Typography>
+                                                                        <Typography key={`ed-${cindex}`}
+                                                                            sx={{
+                                                                                fontSize: { xs: '1rem', md: '1.2rem' }
+                                                                            }}>
+                                                                            {c.english_definitions.join(", ")
+                                                                            }</Typography>
                                                                     </Box>
                                                                 ))}
                                                         </Box>
@@ -903,7 +954,9 @@ const NewVocabTable = () => {
     }
 
     return (
-        <MobileLayout />
+        <ThemeProvider theme={theme}>
+            <MobileLayout />
+        </ThemeProvider>
     )
 }
 

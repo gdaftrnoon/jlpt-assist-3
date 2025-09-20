@@ -1,5 +1,5 @@
 "use client"
-import { Alert, Box, Button, Card, CardContent, CardHeader, Checkbox, Chip, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import { Alert, Box, Button, Card, CardActions, CardContent, CardHeader, Checkbox, Chip, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, Cancel, CancelOutlined, Check, CheckCircle, CheckCircleOutline, Clear, Done, DoneOutline, InfoOutline, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Quiz, Visibility } from '@mui/icons-material';
 import Collapse from '@mui/material/Collapse';
@@ -14,6 +14,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import SportsScoreIcon from '@mui/icons-material/SportsScore';
 import { redirect } from 'next/navigation'
+import { createTheme, ThemeProvider } from '@mui/material/styles';
 
 const NewQuizMaster = () => {
 
@@ -22,6 +23,9 @@ const NewQuizMaster = () => {
         // getting user session if it exists
         const { data: session, status } = useSession()
         const userid = session?.user?.userId
+
+        // paused quiz metadata
+        const [dbQuizMeta, setDbQuizMeta] = useState({})
 
         const fileCount = {
             'n1': 172,
@@ -42,6 +46,7 @@ const NewQuizMaster = () => {
         const nLevelArray = ['n1', 'n2', 'n3', 'n4', 'n5']
 
         const quizMin = 10
+        const quizMax = 100
 
         ///////////////////////////////////////// STATES ///////////////////////////////////////////////
 
@@ -84,10 +89,11 @@ const NewQuizMaster = () => {
 
         // true if the custom input is an error
         const inputError = (
-            isNaN(Number(customCardCount)) ||
-            (customCardCount != '' && Number(customCardCount) < quizMin)
-            || (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel])) ||
-            customCardCount.length > 0 && customCardCount.trim() === ''
+            customCardCount === '' ||
+            isNaN(Number(customCardCount)) || // not a number
+            (Number(customCardCount) < quizMin) || // under min
+            (Number(customCardCount) > quizMax) || // over max 
+            (customCardCount.length > 0 && customCardCount.trim() === '') // whitespaces
         )
 
         // orignal pre slice
@@ -293,16 +299,17 @@ const NewQuizMaster = () => {
             }
         }
 
-        // function to retrieve all word ids within user's vocab db
+        // function to retrieve all word ids within user's vocab db AND users paused quiz if exists
         const getUserVocab = async () => {
 
             if (session) {
+
+                // getting user vocab
                 const response = await fetch('/api/GetUserVocab', {
                     method: 'GET',
                 })
 
                 const data = await response.json()
-                console.log('heres our resp', data)
 
                 // if error, show error message
                 if (!response.ok) {
@@ -317,6 +324,27 @@ const NewQuizMaster = () => {
                     setUserKnownWordIds(knownWordIds)
                     console.log('user word ids', knownWordIds)
                     console.log('userdata pulled', knownWordIds)
+                }
+
+                // getting paused quiz metadata
+                const paused = await fetch('/api/GetPausedQuiz', {
+                    method: 'GET',
+                })
+
+                const pausedData = await paused.json()
+
+                if (paused.ok) {
+                    const pMeta = pausedData.message[0]
+                    console.log('paused metadata', pMeta)
+                    setDbQuizMeta(
+                        {
+                            quiz_id: pMeta.quiz_id,
+                            n_level: pMeta.n_level,
+                            quiz_type: pMeta.quiz_type,
+                            random: pMeta.random,
+                            created_at: pMeta.created_at
+                        }
+                    )
                 }
             }
         }
@@ -448,6 +476,56 @@ const NewQuizMaster = () => {
             }
         }
 
+        // send paused quiz data to db
+        const pauseQuiz = async () => {
+
+            try {
+
+                // sending paused quiz metadata
+                const pausedQuizMetadata = {
+                    quizID: quizID,
+                    nLevel: nLevel,
+                    quizType: quizType,
+                    random: randomQuiz,
+                }
+
+                const apiResponse = await fetch('/api/PauseQuizMetadata',
+                    {
+                        method: 'POST',
+                        body: JSON.stringify(pausedQuizMetadata)
+                    })
+
+                const apiResult = await apiResponse.json()
+                console.log(apiResult.message)
+
+                // sending paused quiz word data
+                const pausedQuizData = quizData.map(x => (
+                    { quizID: quizID, wordID: x.id, result: x.result }
+                ))
+
+                const pausedQuizDataPackage = {
+                    pausedQuizData: pausedQuizData
+                }
+
+                const submitPausedQuizData = await fetch('/api/PauseQuizData',
+                    {
+                        method: 'POST',
+                        body: JSON.stringify(pausedQuizDataPackage)
+                    })
+
+                const submitPausedQuizDataResult = await submitPausedQuizData.json()
+                console.log(submitPausedQuizDataResult.message)
+            }
+
+            catch (error) {
+                console.log(error)
+            }
+
+            finally {
+                endQuiz()
+                openPauseSelect(false)
+            }
+        }
 
         ///////////////////////////////////////// EFFECTS ///////////////////////////////////////////////
 
@@ -467,6 +545,7 @@ const NewQuizMaster = () => {
         // use effect for testing
         useEffect(() => {
             console.log('quizid', quizID)
+            console.log('pmetadatastate', dbQuizMeta)
         }, [quizData, cardNumber])
 
         // for don't show again
@@ -533,6 +612,13 @@ const NewQuizMaster = () => {
             }
         }, [quizData])
 
+        // ensuring custom card count is between card max and min
+        useEffect(() => {
+            if (customCardCount > quizMax) {
+                setCustomCardCount(quizMax)
+            }
+        }, [customCardCount])
+
 
         ///////////////////////////////////////// DIALOGS ///////////////////////////////////////////////
 
@@ -576,7 +662,7 @@ const NewQuizMaster = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => openPauseSelect(false)}>Cancel</Button>
-                    <Button>Save Progress</Button>
+                    <Button onClick={() => pauseQuiz()}>Save Progress</Button>
                 </DialogActions>
             </Dialog>
         )
@@ -606,12 +692,13 @@ const NewQuizMaster = () => {
                 <PauseDialog />
                 <StopDialog />
 
+                {/* quiz settings */}
                 <Dialog sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} open={settingsDialog} onClose={() => toggleSettingsDialog(false)}>
                     <DialogTitle sx={{ textAlign: 'center', maxWidth: 340 }} variant='subtitle1'>
                         Quiz Settings
                     </DialogTitle>
                     <DialogContent sx={{ maxWidth: 340 }}>
-                        <Card sx={{ minHeight: 460, minWidth: 285 }}>
+                        <Card sx={{ minHeight: 370, minWidth: 285 }}>
                             <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
 
                                 <ToggleButtonGroup disabled={quizOn} color='error' exclusive onChange={(someEvent, newN) => (newN) != null ? setNLevel(newN) : null} value={nLevel} size='small' sx={{ mt: 2 }}>
@@ -623,7 +710,7 @@ const NewQuizMaster = () => {
                                 </ToggleButtonGroup>
 
                                 <ToggleButtonGroup disabled={quizOn} color='error' onChange={(event, newA) => (newA) != null ? setQuizType(newA) : null} exclusive value={quizType} size='small' sx={{ mt: 2 }}>
-                                    <ToggleButton onClick={() => setCustomCardCount('')} value='all'>All</ToggleButton>
+                                    <ToggleButton value='all'>All</ToggleButton>
                                     <ToggleButton value='unknown'>Unknown</ToggleButton>
                                 </ToggleButtonGroup>
 
@@ -637,7 +724,10 @@ const NewQuizMaster = () => {
                                     <TextField
                                         sx={{ minWidth: '100%' }}
                                         autoFocus
-                                        error={isNaN(Number(customCardCount)) || (customCardCount != '' && Number(customCardCount) < quizMin) || (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel]))}
+                                        error={
+                                            isNaN(Number(customCardCount)) ||
+                                            (Number(customCardCount) < quizMin)
+                                        }
                                         label="Number of Cards"
                                         disabled={quizOn}
                                         size="small"
@@ -646,15 +736,12 @@ const NewQuizMaster = () => {
                                         onChange={(e) => setCustomCardCount(e.target.value)}
                                         helperText={
                                             isNaN(Number(customCardCount)) ? "Please enter a valid number." :
-                                                customCardCount.length > 0 && customCardCount.trim() === '' ? "Please enter a valid number." :
-                                                    (customCardCount.trim() != '' && Number(customCardCount) < quizMin) ? "A quiz must hold at least 30 cards." :
-                                                        (customCardCount != '' && Number(customCardCount) > Number(slugCount[nLevel])) ? `Exceeds ${nLevel.toUpperCase()} max card count (${slugCount[nLevel]}).` :
-                                                            null
+                                                (customCardCount === '') ? "Please enter a valid number." :
+                                                    customCardCount.length > 0 && customCardCount.trim() === '' ? "Please enter a valid number." :
+                                                        (Number(customCardCount) < Number(quizMin)) && `A quiz must hold at least ${quizMin} cards.`
                                         }
                                     />
                                 </Box>
-
-                                <Alert color='error' icon={false} sx={{ mt: 2, textAlign: 'center', fontSize: '0.85rem' }} severity='info'>{quizMin} card minimum. If left blank, all available cards will be tested.</Alert>
 
                                 {
                                     (quizType) === 'all' && (randomQuiz) ?
@@ -983,7 +1070,7 @@ const NewQuizMaster = () => {
 
                                     }
                                 }} variant='contained' size='small' sx={{ borderColor: '#d32f2f' }}>
-                                    {(quizOn) ? <PauseIcon color={(quizOver) ? '' :'error'} /> : <PlayArrowIcon color={(quizOver) ? '' :'error'} />}
+                                    {(quizOn) ? <PauseIcon color={(quizOver) ? '' : 'error'} /> : <PlayArrowIcon color={(quizOver) ? '' : 'error'} />}
                                 </ToggleButton>
 
                                 <ToggleButton onClick={(quizOn) ? () => openStopSelect(true) : null} variant='contained' size='small' sx={{ borderColor: '#d32f2f' }}>
@@ -999,6 +1086,25 @@ const NewQuizMaster = () => {
 
                             </ToggleButtonGroup>
                         </Box>
+
+                        {
+                            (dbQuizMeta.quiz_id) &&
+                            <Card sx={{ mt: 3 }}>
+                                <CardContent>
+                                    <Typography gutterBottom>
+                                        Resume Quiz?
+                                    </Typography>
+                                    <Typography>
+                                        You paused a {dbQuizMeta.n_level} quiz on {dbQuizMeta.created_at}, would you like to resume the quiz?
+                                    </Typography>
+                                </CardContent>
+                                <CardActions>
+                                    <Button>
+                                        Resume
+                                    </Button>
+                                </CardActions>
+                            </Card>
+                        }
 
                         <Collapse sx={{ mt: (inputError) ? 2 : 0 }} in={inputError}>
                             <Alert severity='error'>Error in quiz settings</Alert>
