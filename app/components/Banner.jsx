@@ -2,7 +2,7 @@
 import { Box, Button, Card, CardContent, Container, Divider, Grid, IconButton, Paper, Table, TableBody, TableCell, TableRow, Typography } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import AutoStoriesIcon from '@mui/icons-material/AutoStories';
-import { ArrowLeft, ArrowRight, CancelOutlined, Check, Clear, CloudUploadOutlined, DoneOutline, InfoOutlineSharp, InsertChartOutlinedOutlined, KeyboardArrowUp, MyLocationOutlined, PersonAddAlt1, Quiz, QuizOutlined, Visibility } from '@mui/icons-material';
+import { ArrowLeft, ArrowRight, CancelOutlined, Check, Clear, CloudUploadOutlined, DoneOutline, InfoOutlineSharp, InsertChartOutlinedOutlined, KeyboardArrowUp, MyLocationOutlined, PersonAddAlt1, Quiz, QuizOutlined, SchoolOutlined, Visibility } from '@mui/icons-material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import Collapse from '@mui/material/Collapse';
 import Checkbox from "@mui/material/Checkbox";
@@ -203,7 +203,7 @@ const Banner = () => {
                                     onClick={() => redirect('/vocab')}
                                     variant="contained"
                                     size="small"
-                                    startIcon={<PersonAddAlt1 />}
+                                    startIcon={<SchoolOutlined />}
                                     color='error'
                                     sx={{
                                         fontSize: '0.95rem',

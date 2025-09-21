@@ -11,7 +11,7 @@ import {
 import { useState } from "react";
 import Alert from '@mui/material/Alert';
 import CheckIcon from '@mui/icons-material/Check';
-import { useRouter } from 'next/navigation'
+import { redirect, useRouter } from 'next/navigation'
 import CircularProgress from '@mui/material/CircularProgress';
 
 const SignUp = () => {
@@ -125,7 +125,7 @@ const SignUp = () => {
               <CircularProgress size="25px" color="inherit" />
             </Button>
             :
-            <Button type="submit" variant="contained" fullWidth sx={{ mt: 1 }}>
+            <Button color="error" type="submit" variant="contained" fullWidth sx={{ mt: 1 }}>
               Create Account
             </Button>
           }
@@ -140,7 +140,7 @@ const SignUp = () => {
           >
             <Typography>Already have an account?</Typography>
           </Box>
-          <Button variant="outlined" fullWidth>
+          <Button color="error" variant="outlined" onClick={() => {redirect('/login')}} fullWidth>
             Login
           </Button>
         </Box>
