@@ -9,6 +9,7 @@ import Checkbox from "@mui/material/Checkbox";
 import { redirect } from 'next/navigation';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { useRef } from "react";
+import { useSession } from 'next-auth/react';
 
 const Banner = () => {
 
@@ -24,6 +25,9 @@ const Banner = () => {
     })
 
     const MobileHomepage = () => {
+
+        // getting user session if it exists
+        const { data: session, status } = useSession()
 
         // list containing the example words we use on the homepage
         const [exampleWords, setExampleWords] = useState([
@@ -193,21 +197,40 @@ const Banner = () => {
                         </Box>
 
                         <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 6 }}>
-                            <Button
-                                onClick={() => redirect('/login')}
-                                variant="contained"
-                                size="small"
-                                startIcon={<PersonAddAlt1 />}
-                                color='error'
-                                sx={{
-                                    fontSize: '0.95rem',
-                                    borderRadius: '12px',
-                                    px: 2,
-                                    py: 1
-                                }}
-                            >
-                                Register
-                            </Button>
+
+                            {(session) ?
+                                <Button
+                                    onClick={() => redirect('/vocab')}
+                                    variant="contained"
+                                    size="small"
+                                    startIcon={<PersonAddAlt1 />}
+                                    color='error'
+                                    sx={{
+                                        fontSize: '0.95rem',
+                                        borderRadius: '12px',
+                                        px: 2,
+                                        py: 1
+                                    }}
+                                >
+                                    Start Learning
+                                </Button> :
+                                <Button
+                                    onClick={() => redirect('/login')}
+                                    variant="contained"
+                                    size="small"
+                                    startIcon={<PersonAddAlt1 />}
+                                    color='error'
+                                    sx={{
+                                        fontSize: '0.95rem',
+                                        borderRadius: '12px',
+                                        px: 2,
+                                        py: 1
+                                    }}
+                                >
+                                    Register
+                                </Button>
+                            }
+
                             <Button
                                 onClick={() =>
                                     window.scrollTo({
@@ -490,7 +513,7 @@ const Banner = () => {
                         backgroundColor: '#ffebee',
                         mt: 5,
                         pt: 10,
-                        pb:15
+                        pb: 15
                     }}>
                     <Box sx={{ mb: 5, width: '100%', textAlign: 'center' }}>
                         <Typography gutterBottom sx={{ fontSize: '2rem' }}>Core Features</Typography>
