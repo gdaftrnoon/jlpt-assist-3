@@ -71,7 +71,7 @@ const NewQuizMaster = () => {
         const [nLevel, setNLevel] = useState('n1')
         const [quizType, setQuizType] = useState('all')
         const [randomQuiz, setRandomQuiz] = useState(false)
-        const [customCardCount, setCustomCardCount] = useState('10')
+        const [customCardCount, setCustomCardCount] = useState('20')
 
         // state to toggle quiz on/off
         const [quizOn, toggleQuizOn] = useState(false)
