@@ -251,11 +251,9 @@ const NewQuizMaster = () => {
                 try {
 
                     const unknownQuizData = flatPages.filter(x => !userKnownWordIds.includes(x.id))
-                    console.log('unknown quizdata', unknownQuizData)
 
                     // if the number of cards we DON'T KNOW is less than the custom card count, add x number of cards to the quiz
                     if (unknownQuizData.length < customCardCount) {
-                        console.log('hello')
                         const fillerCardCount = customCardCount - unknownQuizData.length
                         shuffle(flatPages) // shuffle the cards
                         const unknownSlugs = unknownQuizData.map(x => x.slug)
@@ -401,8 +399,6 @@ const NewQuizMaster = () => {
                 if (response.ok && data) {
                     const knownWordIds = data.message.map(a => Number(a.word_id))
                     setUserKnownWordIds(knownWordIds)
-                    console.log('user word ids', knownWordIds)
-                    console.log('userdata pulled', knownWordIds)
                 }
 
                 // getting paused quiz metadata
@@ -414,7 +410,6 @@ const NewQuizMaster = () => {
 
                 if (paused.ok) {
                     const pMeta = pausedData.message[0]
-                    console.log('paused metadata', pMeta)
                     setDbQuizMeta(
                         {
                             quiz_id: pMeta.quiz_id,
@@ -493,10 +488,8 @@ const NewQuizMaster = () => {
                         const result = await resp.json()
                         console.log(result.message)
                         if (result.message === 'No errors') {
-                            console.log('setting ls pullfromdb to true...')
                             localStorage.setItem('pullFromDb', "true")
                             const updatedUKWI = userKnownWordIds.filter(x => !toBeIncorrectWordIds.includes(x)).concat(toBeCorrectWordIds)
-                            console.log('updatedUKWI', updatedUKWI)
                             setUserKnownWordIds(updatedUKWI)
                         }
                     }
@@ -626,8 +619,6 @@ const NewQuizMaster = () => {
 
         // use effect for testing
         useEffect(() => {
-            console.log('quizid', quizID)
-            console.log('pmetadatastate', dbQuizMeta)
         }, [quizData, cardNumber])
 
         // for don't show again
@@ -749,12 +740,13 @@ const NewQuizMaster = () => {
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        Your progress will be saved. You will be able to resume at anytime, from any device.
+                        Pause feature in development.
+                        {/* Your progress will be saved. You will be able to resume at anytime, from any device. */}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => openPauseSelect(false)}>Cancel</Button>
-                    <Button onClick={() => pauseQuiz()}>Save Progress</Button>
+                    <Button disabled onClick={() => pauseQuiz()}>Save Progress</Button>
                 </DialogActions>
             </Dialog>
         )

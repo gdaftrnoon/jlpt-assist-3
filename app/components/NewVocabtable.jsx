@@ -192,7 +192,6 @@ const NewVocabTable = () => {
                 })
 
                 const data = await response.json()
-                console.log('heres our resp', data)
 
                 // if error, show error message
                 if (!response.ok) {
@@ -208,7 +207,6 @@ const NewVocabTable = () => {
                 if (response.ok && data) {
                     const knownWordIds = data.message.map(a => Number(a.word_id))
                     setUserKnownWordIds(knownWordIds)
-                    console.log('userdata pulled', knownWordIds)
                 }
             }
         }
@@ -334,7 +332,6 @@ const NewVocabTable = () => {
 
             const knownSlugsSet = new Set(knownSlugs)
             const knownSlugsOnLevel = allSlugs.filter(x => knownSlugsSet.has(x))
-            console.log('known slugs on level', knownSlugsOnLevel)
 
             if (knownSlugsOnLevel.length != 0) {
 
@@ -342,7 +339,6 @@ const NewVocabTable = () => {
 
                 const knownObjectsOnLevel = (tableData.filter(x => knownSlugsOnLevelSet.has(x.slug)))
 
-                console.log('known objects on level', knownObjectsOnLevel)
 
                 const allFalseSlugChanges = {}
 
@@ -356,19 +352,14 @@ const NewVocabTable = () => {
                     allTrueSlugs[slug] = true
                 )
 
-                console.log('allfalseslugchanges', allFalseSlugChanges)
-                console.log('alltrueslugs', allTrueSlugs)
-
                 setInitialPackage(allTrueSlugs)
                 setSlugChanges(allFalseSlugChanges)
 
                 const vocabTableIds = knownObjectsOnLevel.map(x => x.id)
 
-                console.log('wordids', vocabTableIds)
 
                 const toSend = { initial: allTrueSlugs, changes: allFalseSlugChanges, ids: vocabTableIds, overrideLengthBar: true }
 
-                console.log('tosend', toSend)
 
                 const resp = await fetch('/api/SubmitVocabData',
                     {
@@ -401,8 +392,6 @@ const NewVocabTable = () => {
                 const vocabTableIds = vocabularyData.map(x => x.id)
 
                 const toSend = { initial: initialPackage, changes: slugChanges, ids: vocabTableIds, overrideLengthBar: false }
-
-                console.log(toSend)
 
                 const resp = await fetch('/api/SubmitVocabData',
                     {
@@ -483,7 +472,7 @@ const NewVocabTable = () => {
 
             if (status === 'unauthenticated') {
                 fetchAllData(nLevel, page, itemsPerPage)
-                console.log('status', status)
+
             }
 
             if (status === 'authenticated') {
@@ -533,8 +522,6 @@ const NewVocabTable = () => {
 
         // logs for testing
         useEffect(() => {
-            console.log("vocabdata", vocabularyData)
-
         }, [page,])
 
         useEffect(() => {
