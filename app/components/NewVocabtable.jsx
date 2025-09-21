@@ -123,6 +123,12 @@ const NewVocabTable = () => {
 
         const [infoPageNumber, setInfoPageNumber] = useState(1)
 
+        const [searchQuery, setSearchQuery] = useState('')
+
+        const lowercase = Array.from({ length: 26 }, (_, i) => String.fromCharCode(97 + i));
+        const uppercase = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
+        const alphabet = [...lowercase, ...uppercase]
+
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
 
 
@@ -145,18 +151,34 @@ const NewVocabTable = () => {
         // function for word/page number search
 
         const tableQuery = (searchQuery) => {
+
+            if (
+                Number(searchQuery) < 0 || Number(searchQuery) > maxPages
+            ) {
+                openSearchSelect(false)
+                setSearchQuery('')
+            }
+
             if (
                 Number.isInteger(Number(searchQuery)) &&
                 Number(searchQuery) > 0 &&
                 Number(searchQuery) <= maxPages
             ) {
                 handleChange(null, Number(searchQuery))
+                setSearchQuery('')
             }
 
             else if (searchQuery != '') {
                 const searchIndex = allSlugs.indexOf(String(searchQuery)) + 1
                 const searchQueryPage = Math.ceil(Number(searchIndex) / Number(itemsPerPage))
-                handleChange(null, Number(searchQueryPage))
+                if (searchQueryPage) {
+                    handleChange(null, Number(searchQueryPage))
+                    setSearchQuery('')
+                }
+                else {
+                    openSearchSelect(false)
+                    setSearchQuery('')
+                }
             }
         }
 
@@ -533,7 +555,7 @@ const NewVocabTable = () => {
         const NLevelDialog = () => (
             <Dialog open={nLevelSelect} onClose={() => openNLevelSelect(false)}>
                 <DialogTitle variant='subtitle1'>
-                    Please choose an N-Level
+                    Please choose an N-level
                 </DialogTitle>
                 <List sx={{ pt: 0 }}>
                     {nLevelArray.map(x => (
@@ -579,34 +601,6 @@ const NewVocabTable = () => {
             </Dialog>
         )
 
-        const SearchDialog = () => (
-
-            <Dialog open={searchSelect} onClose={() => openSearchSelect(false)}>
-                <DialogTitle variant='subtitle1'>
-                    Please enter a page number or word
-                </DialogTitle>
-                <DialogContent>
-                    <form onSubmit={handleSearchSubmit} id="search-form">
-                        <TextField
-                            autoFocus
-                            required
-                            margin="dense"
-                            name="query"
-                            label="Page/Word"
-                            fullWidth
-                            variant="standard"
-                        />
-                    </form>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => openSearchSelect(false)}>Cancel</Button>
-                    <Button type="submit" form="search-form">
-                        Search
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        )
-
         const UntickAllDialog = () => (
             <Dialog open={untickAllSelect} onClose={() => openUntickAllSelect(false)}>
                 <DialogTitle variant='subtitle1'>
@@ -643,7 +637,7 @@ const NewVocabTable = () => {
                                         <Checkbox disabled />
                                     </TableCell>
 
-                                    <TableCell key={`C-${x}-${index}`} sx={{ width: '98%', textAlign: 'center', pr: 9, fontSize: '1rem', fontWeight: 'bold' }}>
+                                    <TableCell key={`C-${x}-${index}`} sx={{ width: '98%', textAlign: 'center', pr: 9, fontSize: '1.5rem', fontWeight: 'bold' }}>
                                         <Skeleton animation="wave" variant="text" />
                                     </TableCell>
                                 </TableRow>
@@ -674,7 +668,7 @@ const NewVocabTable = () => {
                                 <Card>
                                     <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <LooksOne /><Typography sx={{ fontSize: '0.95rem' }}>N-Level selection</Typography>
+                                            <LooksOne /><Typography sx={{ fontSize: '0.95rem' }}>N-level selection</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
                                             <ArticleIcon /><Typography sx={{ fontSize: '0.95rem' }}>Vocabulary items per page</Typography>
@@ -742,9 +736,37 @@ const NewVocabTable = () => {
                         </DialogActions>
                     </Dialog>
 
+                    <Dialog open={searchSelect} onClose={() => openSearchSelect(false)}>
+                        <DialogTitle variant='subtitle1'>
+                            Please enter a page number or word
+                        </DialogTitle>
+                        <DialogContent>
+                            <TextField
+                                autoFocus
+                                required
+                                margin="dense"
+                                name="query"
+                                label="Page/Japanese word"
+                                fullWidth
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => openSearchSelect(false)}>Cancel</Button>
+                            <Button
+                                onClick={() => {
+                                    tableQuery(searchQuery)
+                                    openSearchSelect(false)
+                                }}>
+                                Search
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+
                     <NLevelDialog />
                     <SliceDialog />
-                    <SearchDialog />
                     <UntickAllDialog />
 
                     <Box sx={{ pt: 5 }}>
@@ -806,29 +828,27 @@ const NewVocabTable = () => {
                         </ToggleButtonGroup>
                     </Box>
 
-                    {(session && (!tableLoading)) &&
-                        <Box sx={{ mt: 3 }}>
-                            <Button
-                                onClick={() => { sendChanges(); setSubmitChangesLoading(true) }}
-                                disabled={(JSON.stringify(initialPackage) === JSON.stringify(slugChanges))}
-                                variant="contained"
-                                color="error"
-                                size="small"
-                                sx={{
-                                    fontWeight: 'bold',
-                                    fontSize: '0.95rem',
-                                    borderRadius: '12px',
-                                    px: 2,
-                                    py: 1,
-                                    minWidth: 111,
-                                    minHeight: 43
-                                }}
+                    <Box sx={{ mt: 3 }}>
+                        <Button
+                            onClick={() => { sendChanges(); setSubmitChangesLoading(true) }}
+                            disabled={(JSON.stringify(initialPackage) === JSON.stringify(slugChanges))}
+                            variant="contained"
+                            color="error"
+                            size="small"
+                            sx={{
+                                fontWeight: 'bold',
+                                fontSize: '0.95rem',
+                                borderRadius: '12px',
+                                px: 2,
+                                py: 1,
+                                minWidth: 111,
+                                minHeight: 43
+                            }}
 
-                            >
-                                {(submitChangesLoading) ? <CircularProgress sx={{ color: 'white' }} size='25px' /> : `変更を保存`}
-                            </Button>
-                        </Box>
-                    }
+                        >
+                            {(submitChangesLoading) ? <CircularProgress sx={{ color: 'white' }} size='25px' /> : `Save Changes`}
+                        </Button>
+                    </Box>
 
                     {
                         (status === 'authenticated') && (apiResp) ?
@@ -839,7 +859,7 @@ const NewVocabTable = () => {
                     }
 
                     <Box sx={{ pt: 3 }}>
-                        <Pagination disabled={tableLoading} color="error" siblingCount={matches ? 2 : 0} page={page} onChange={handleChange} count={maxPages}></Pagination>
+                        <Pagination size={matches ? 'large' : 'medium'} disabled={tableLoading} color="error" siblingCount={matches ? 2 : 0} page={page} onChange={handleChange} count={maxPages}></Pagination>
                     </Box>
 
                     {(tableLoading) ? <TableLoadingSkeleton /> :

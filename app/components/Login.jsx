@@ -62,7 +62,7 @@ const LoginLogout = () => {
               </Button>
               <Alert severity="info" sx={{mt: 2}}>
                 <Typography>
-                  Google is currently the our sole provider, please bear with us while we work on adding more!
+                  Google is currently the our sole auth service provider, please bear with us while we work on adding more!
                 </Typography>
               </Alert>
             </Box>

@@ -8,6 +8,7 @@ import Collapse from '@mui/material/Collapse';
 import Checkbox from "@mui/material/Checkbox";
 import { redirect } from 'next/navigation';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { useRef } from "react";
 
 const Banner = () => {
 
@@ -155,6 +156,8 @@ const Banner = () => {
 
         }, [exampleWords])
 
+        // for the more info button
+        const moreInfo = useRef(null);
 
         return (
 
@@ -206,7 +209,12 @@ const Banner = () => {
                                 Register
                             </Button>
                             <Button
-                                onClick={() => redirect('/login')}
+                                onClick={() =>
+                                    window.scrollTo({
+                                        top: moreInfo.current.offsetTop,
+                                        behavior: "smooth"
+                                    })
+                                }
                                 variant="outlined"
                                 size="small"
                                 startIcon={<InfoOutlineSharp />}
@@ -327,7 +335,7 @@ const Banner = () => {
                         </Card>
 
                         {/* card explaining the quiz table */}
-                        <Box sx={{minHeight:{ md: 636, xs:684 }}}>
+                        <Box sx={{ minHeight: { md: 636, xs: 684 } }}>
                             <Card sx={{ display: 'flex', flexDirection: 'column', mt: 3, borderRadius: '16px' }}>
 
                                 <CardContent sx={{ paddingBottom: 0 }}>
@@ -471,16 +479,19 @@ const Banner = () => {
                     </Box>
                 </Container>
 
-                <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexDirection: 'column',
-                    width: '100%',
-                    backgroundColor: '#ffebee',
-                    mt: 5,
-                    py: 10
-                }}>
+                <Box
+                    ref={moreInfo}
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexDirection: 'column',
+                        width: '100%',
+                        backgroundColor: '#ffebee',
+                        mt: 5,
+                        pt: 10,
+                        pb:15
+                    }}>
                     <Box sx={{ mb: 5, width: '100%', textAlign: 'center' }}>
                         <Typography gutterBottom sx={{ fontSize: '2rem' }}>Core Features</Typography>
                         <Typography gutterBottom sx={{ fontSize: '1.2rem', color: 'grey' }}>Modern features, simple design philosophy</Typography>
