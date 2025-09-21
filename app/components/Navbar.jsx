@@ -90,7 +90,6 @@ const Navbar = () => {
                                             </Avatar>
                                             <Menu anchorEl={avatarAnchorEl} open={Boolean(avatarAnchorEl)} onClose={() => setAvatarAnchorEl(null)}>
                                                 <MenuItem onClick={() => signOut()}>Logout</MenuItem>
-                                                <MenuItem>Settings</MenuItem>
                                             </Menu>
                                         </>
                                         :
