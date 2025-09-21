@@ -61,7 +61,7 @@ const Navbar = () => {
                                 <Box sx={{ display: { xs: 'none', md:'flex', gap: 5 }}}>
                                     <Button onClick={() => redirect('/vocab')} variant='text' sx={{color:'white', fontWeight:'600'}}>Vocabulary</Button>
                                     <Button onClick={() => redirect('/quiz')} variant='text' sx={{color:'white', fontWeight:'600'}}>Quiz</Button>
-                                    <Button onClick={() => redirect('/')} variant='text' sx={{color:'white', fontWeight:'600'}}>Review</Button>
+                                    <Button onClick={() => redirect('/review')} variant='text' sx={{color:'white', fontWeight:'600'}}>Review</Button>
                                 </Box>
 
                             </Box>

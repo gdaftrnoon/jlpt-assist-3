@@ -56,7 +56,7 @@ const NewVocabTable = () => {
             'n2': 91,
             'n3': 89,
             'n4': 29,
-            'n5': 1,
+            'n5': 5,
         }
 
         // holds all fetched page data pre-slicing
@@ -554,7 +554,7 @@ const NewVocabTable = () => {
 
         const NLevelDialog = () => (
             <Dialog open={nLevelSelect} onClose={() => openNLevelSelect(false)}>
-                <DialogTitle variant='subtitle1'>
+                <DialogTitle sx={{ fontSize: { xs: '0.9rem', md: '1.2rem' } }}>
                     Please choose an N-level
                 </DialogTitle>
                 <List sx={{ pt: 0 }}>
@@ -569,7 +569,7 @@ const NewVocabTable = () => {
                                     openNLevelSelect(false)
                                 }
                             }}>
-                                <ListItemText sx={{ textAlign: 'center' }}>
+                                <ListItemText sx={{ textAlign: 'center', fontSize: { xs: '0.9rem', md: '1.2rem' } }}>
                                     {x.toUpperCase()}
                                 </ListItemText>
                             </ListItemButton>
@@ -581,7 +581,7 @@ const NewVocabTable = () => {
 
         const SliceDialog = () => (
             <Dialog open={sliceSelect} onClose={() => openSliceSelect(false)}>
-                <DialogTitle variant='subtitle1'>
+                <DialogTitle sx={{ fontSize: { xs: '0.9rem', md: '1.2rem' } }}>
                     How many items should be shown per page?
                 </DialogTitle>
                 <List sx={{ pt: 0 }}>
@@ -591,7 +591,7 @@ const NewVocabTable = () => {
                                 setItemsPerPage(x)
                                 openSliceSelect(false)
                             }}>
-                                <ListItemText sx={{ textAlign: 'center' }}>
+                                <ListItemText sx={{ textAlign: 'center', fontSize: { xs: '0.9rem', md: '1.2rem' } }}>
                                     {x}
                                 </ListItemText>
                             </ListItemButton>
@@ -603,17 +603,17 @@ const NewVocabTable = () => {
 
         const UntickAllDialog = () => (
             <Dialog open={untickAllSelect} onClose={() => openUntickAllSelect(false)}>
-                <DialogTitle variant='subtitle1'>
-                    {nLevel.toUpperCase()}レベルの全データを削除する？
+                <DialogTitle sx={{ fontSize: { xs: '0.9rem', md: '1.2rem' } }}>
+                    Would you like to remove all checks for the {nLevel.toUpperCase()} level?
                 </DialogTitle>
                 <DialogContent>
-                    <DialogContentText>
-                        削除すると後戻りはできません
+                    <DialogContentText sx={{ fontSize: { xs: '0.9rem', md: '1.2rem' } }}>
+                        This action cannot be undone.
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => openUntickAllSelect(false)}>戻る</Button>
-                    <Button onClick={() => untickAll()}>削除</Button>
+                    <Button onClick={() => openUntickAllSelect(false)}>Return</Button>
+                    <Button onClick={() => untickAll()}>Remove all</Button>
                 </DialogActions>
             </Dialog>
         )
@@ -661,41 +661,41 @@ const NewVocabTable = () => {
                         <DialogContent sx={{ paddingBottom: 0, minHeight: 400 }}>
 
                             <Box>
-                                <Alert icon={false} severity='info' sx={{ mb: 2, textAlign: 'center', fontSize: '0.95rem' }}>
+                                <Alert icon={false} severity='info' sx={{ mb: 2, textAlign: 'center', fontSize: { xs: '1rem', md: '1.2rem' } }}>
                                     Tick words you're familiar with, you must be logged in to use the vocabulary table.
                                 </Alert>
 
                                 <Card>
                                     <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <LooksOne /><Typography sx={{ fontSize: '0.95rem' }}>N-level selection</Typography>
+                                            <LooksOne /><Typography sx={{ fontSize: { xs: '0.9rem', md: '1.2rem' } }}>N-level selection</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <ArticleIcon /><Typography sx={{ fontSize: '0.95rem' }}>Vocabulary items per page</Typography>
+                                            <ArticleIcon /><Typography sx={{ fontSize: { xs: '0.9rem', md: '1.2rem' } }}>Vocabulary items per page</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <Expand /><Typography sx={{ fontSize: '0.95rem' }}>Expand all</Typography>
+                                            <Expand /><Typography sx={{ fontSize: { xs: '0.9rem', md: '1.2rem' } }}>Expand all</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <UnfoldLess /><Typography sx={{ fontSize: '0.95rem' }}>Collapse all</Typography>
+                                            <UnfoldLess /><Typography sx={{ fontSize: { xs: '0.9rem', md: '1.2rem' } }}>Collapse all</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <DoneAll /><Typography sx={{ fontSize: '0.95rem' }}>Tick all on page</Typography>
+                                            <DoneAll /><Typography sx={{ fontSize: { xs: '0.9rem', md: '1.2rem' } }}>Tick all on page</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <CheckBoxOutlineBlankRoundedIcon /><Typography sx={{ fontSize: '0.95rem' }}>Untick all on page</Typography>
+                                            <CheckBoxOutlineBlankRoundedIcon /><Typography sx={{ fontSize: { xs: '0.9rem', md: '1.2rem' } }}>Untick all on page</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <ManageSearchIcon /><Typography sx={{ fontSize: '0.95rem' }}>Search word/page number</Typography>
+                                            <ManageSearchIcon /><Typography sx={{ fontSize: { xs: '0.9rem', md: '1.2rem' } }}>Search word/page number</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <DeleteForever /><Typography sx={{ fontSize: '0.95rem' }}>Remove all checks for level</Typography>
+                                            <DeleteForever /><Typography sx={{ fontSize: { xs: '0.9rem', md: '1.2rem' } }}>Remove all checks for level</Typography>
                                         </Box>
                                     </CardContent>
                                 </Card>
                             </Box>
 
-                            <TableContainer sx={{ pb: 1.5, mt: 1 }}>
+                            <TableContainer sx={{ pb: 1.5, mt: 2 }}>
                                 <Table>
                                     <TableHead>
                                         <TableRow>
@@ -707,14 +707,14 @@ const NewVocabTable = () => {
                                     </TableHead>
                                     <TableBody>
                                         <TableRow>
-                                            <TableCell sx={{ textAlign: 'center', py: 1 }}>{nLevel.toUpperCase()}</TableCell>
-                                            <TableCell sx={{ textAlign: 'center', py: 1 }}>
+                                            <TableCell sx={{ textAlign: 'center', py: 1, fontSize: { xs: '0.9rem', md: '1.2rem' } }}>{nLevel.toUpperCase()}</TableCell>
+                                            <TableCell sx={{ textAlign: 'center', py: 1, fontSize: { xs: '0.9rem', md: '1.2rem' } }}>
                                                 {(session) && (knownSlugs.length > 0) ? knownSlugs.length : `...`}
                                             </TableCell>
-                                            <TableCell sx={{ textAlign: 'center', py: 1 }}>
+                                            <TableCell sx={{ textAlign: 'center', py: 1, fontSize: { xs: '0.9rem', md: '1.2rem' } }}>
                                                 {(tableData.length) === 0 ? `...` : tableData.length}
                                             </TableCell>
-                                            <TableCell sx={{ textAlign: 'center', py: 1 }}>
+                                            <TableCell sx={{ textAlign: 'center', py: 1, fontSize: { xs: '0.9rem', md: '1.2rem' } }}>
                                                 {(knownSlugs.length) === 0 ? `...` : ((knownSlugs.length / tableData.length) * 100).toFixed(2)}
                                             </TableCell>
                                         </TableRow>
@@ -769,9 +769,10 @@ const NewVocabTable = () => {
                     <SliceDialog />
                     <UntickAllDialog />
 
+                    {/* buttons */}
                     <Box sx={{ pt: 5 }}>
 
-                        <ToggleButtonGroup disabled={tableLoading}>
+                        <ToggleButtonGroup size={matches ? 'large' : 'medium'} disabled={tableLoading}>
 
                             <ToggleButton onClick={() => toggleIntroDialog(true)} sx={{ borderColor: '#d32f2f' }}>
                                 <InfoOutlineIcon color='error' />
@@ -828,13 +829,14 @@ const NewVocabTable = () => {
                         </ToggleButtonGroup>
                     </Box>
 
+                    {/* submit changes */}
                     <Box sx={{ mt: 3 }}>
                         <Button
                             onClick={() => { sendChanges(); setSubmitChangesLoading(true) }}
                             disabled={(JSON.stringify(initialPackage) === JSON.stringify(slugChanges))}
                             variant="contained"
                             color="error"
-                            size="small"
+                            size={matches ? 'large' : 'medium'}
                             sx={{
                                 fontWeight: 'bold',
                                 fontSize: '0.95rem',
@@ -887,14 +889,13 @@ const NewVocabTable = () => {
                                                         disabled={(!session) ? true : false} />
                                                 </TableCell>
 
-                                                {/* MD: main slugs - 1.5, in table kanji - 1.4, reading/meaning header - 1.3, reading/meaning details - 1.2   */}
                                                 <TableCell
                                                     sx={{
                                                         width: '98%',
                                                         textAlign: 'center',
                                                         pr: 9,
-                                                        fontSize: { xs: '1rem', md: '1.5rem' },
-                                                        fontWeight: 'bold'
+                                                        fontWeight: '700',
+                                                        fontSize: { xs: '1.4rem', md: '2rem' },
                                                     }}>
                                                     {x.slug}
                                                 </TableCell>
@@ -907,24 +908,24 @@ const NewVocabTable = () => {
                                                             {[...new Set(x.japanese.map(y => y.word))].map((z, zindex) => (
                                                                 <Typography key={zindex}
                                                                     sx={{
-                                                                        fontWeight: 'bold',
-                                                                        fontSize: { xs: '1rem', md: '1.4rem' }
+                                                                        fontWeight: '700',
+                                                                        fontSize: { xs: '1.4rem', md: '2rem' },
                                                                     }}>{z}</Typography>
                                                             ))}
                                                             <Typography
                                                                 sx={{
                                                                     color: 'orange',
-                                                                    fontSize: { xs: '1rem', md: '1.3rem' },
+                                                                    fontSize: { xs: '1rem', md: '1.5rem' },
                                                                     mt: 1,
-                                                                    fontWeight: 'bold'
+                                                                    fontWeight: '700',
                                                                 }}>
                                                                 Reading
                                                             </Typography>
                                                             {[...new Set(x.japanese.map(y => y.reading))].map((a, aindex) => (
                                                                 <Typography key={aindex}
                                                                     sx={{
-                                                                        fontWeight: 'bold',
-                                                                        fontSize: { xs: '1rem', md: '1.2rem' }
+                                                                        fontWeight: '700',
+                                                                        fontSize: { xs: '1rem', md: '1.5rem' },
                                                                     }}>
                                                                     {a}
                                                                 </Typography>
@@ -932,9 +933,9 @@ const NewVocabTable = () => {
                                                             <Typography
                                                                 sx={{
                                                                     color: 'orange',
-                                                                    fontSize: { xs: '1rem', md: '1.3rem' },
+                                                                    fontSize: { xs: '1rem', md: '1.5rem' },
                                                                     mt: 1,
-                                                                    fontWeight: 'bold'
+                                                                    fontWeight: '700',
                                                                 }}>
                                                                 Meaning
                                                             </Typography>
@@ -944,13 +945,13 @@ const NewVocabTable = () => {
                                                                         <Typography key={`pos-${cindex}`}
                                                                             sx={{
                                                                                 color: 'grey',
-                                                                                fontSize: { xs: '1rem', md: '1.2rem' }
+                                                                                fontSize: { xs: '1rem', md: '1.5rem' },
                                                                             }}
                                                                         >{c.parts_of_speech.join(", ")}
                                                                         </Typography>
                                                                         <Typography key={`ed-${cindex}`}
                                                                             sx={{
-                                                                                fontSize: { xs: '1rem', md: '1.2rem' }
+                                                                                fontSize: { xs: '1rem', md: '1.5rem' },
                                                                             }}>
                                                                             {c.english_definitions.join(", ")
                                                                             }</Typography>

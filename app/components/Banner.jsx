@@ -105,7 +105,7 @@ const Banner = () => {
 
         // card state management
         const [cardNumber, setCardNumber] = useState(0)
-        const [cardCollapse, toggleCardCollapse] = useState(false)
+        const [cardCollapse, toggleCardCollapse] = useState(true)
 
         // card correct incorrect counter state management
         const [correctCount, setCorrectCount] = useState(0)

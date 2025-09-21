@@ -17,6 +17,8 @@ import { redirect } from 'next/navigation'
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import Slider from '@mui/material/Slider';
 import Snackbar from '@mui/material/Snackbar';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
 
 const theme = createTheme({
     typography: {
@@ -33,6 +35,9 @@ const NewQuizMaster = () => {
 
     const MobileLayout = () => {
 
+        const thema = useTheme();
+        const matches = useMediaQuery(thema.breakpoints.up('md'));
+
         // getting user session if it exists
         const { data: session, status } = useSession()
         const userid = session?.user?.userId
@@ -45,7 +50,7 @@ const NewQuizMaster = () => {
             'n2': 91,
             'n3': 89,
             'n4': 29,
-            'n5': 2,
+            'n5': 5,
         }
 
         const slugCount = {
@@ -152,7 +157,7 @@ const NewQuizMaster = () => {
 
         // snackbar for when we add filler cards
         const [snackOpen, setSnackOpen] = useState(false)
-        const [fillerCardsLength, setFillerCardsLength] = useState(0)
+        const [snackMsg, setSnackMsg] = useState('')
 
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
 
@@ -176,13 +181,11 @@ const NewQuizMaster = () => {
         // function to fetch and return ALL cards for a selected N level, and set quiz data
         const runQuiz = async (nLevel, quizType, randomQuiz, customCardCount, value) => {
 
-            console.log('ccc', customCardCount)
-            console.log('val', value)
-
             setProgTableButton('blank')
 
             const allPages = []
 
+            // if it's "all", the start from the value of the slider, else start from 1
             for (let index = (quizType === 'all' ? value : 1); index <= fileCount[nLevel]; index++) {
                 const data = await (await fetch(`vocab/${nLevel}/${nLevel}_page${index}_v1.json`)).json()
                 allPages.push(data)
@@ -198,10 +201,14 @@ const NewQuizMaster = () => {
                 try {
 
                     const slicedQuizData = flatPages.slice(0, customCardCount)
-                    console.log('slicedquizdatalenght', slicedQuizData.length)
+
+                    // in the case that the user chose a page 99 for example, and there were only 10 words left, but they wanted 100 cards
                     if (slicedQuizData.length < customCardCount) {
+
+                        // get the slugs for all words on page 99 and 100 for example
                         const quizSlugs = slicedQuizData.map(x => x.slug)
 
+                        // run the page pulling loop again to get data for all cards in the n level, because it was sliced originally according to "value"
                         const allPagesReal = []
                         for (let i = 1; i <= fileCount[nLevel]; i++) {
                             const vData = await (await fetch(`vocab/${nLevel}/${nLevel}_page${i}_v1.json`)).json()
@@ -210,26 +217,31 @@ const NewQuizMaster = () => {
                         const flatData = allPagesReal.flatMap(x => x)
                         shuffle(flatData)
 
+                        // from the new loop, we want cards that are NOT in pages 99 and 100 for example
                         const fillerCards = flatData.filter(x => !quizSlugs.includes(x.slug))
+
+                        // slice the filler so it fits with the number of cards the user wants
                         const fillerCardsSliced = fillerCards.slice(0, customCardCount - slicedQuizData.length)
+
+                        // combine page 99 + 100 words for example, in addition to the filler words from other pages in the n level
                         const fullQuizData = slicedQuizData.concat(fillerCardsSliced)
                         setQuizData(fullQuizData)
                         setSlugArray(fullQuizData.map(x => x.slug))
-                        setFillerCardsLength(fillerCardsSliced.length)
+                        setSnackMsg(`Insufficient words to fill ${customCardCount} cards, test partially filled with ${fillerCardsSliced.length} random cards`)
                         setSnackOpen(true)
                     }
+
+                    // in the case that there are enough cards left to cover the number of cards the user wants
                     else {
                         setQuizData(slicedQuizData)
                         setSlugArray(slicedQuizData.map(x => x.slug))
                     }
-
                 }
 
                 catch (err) { console.log(err) }
 
                 finally {
                     setQuizID(uuidv4())
-                    console.log('uuid set!')
                     setLoading(false)
                     toggleQuizOn(true)
                 }
@@ -239,55 +251,79 @@ const NewQuizMaster = () => {
                 try {
 
                     const unknownQuizData = flatPages.filter(x => !userKnownWordIds.includes(x.id))
+                    console.log('unknown quizdata', unknownQuizData)
 
-                    // if unknown is less than min and custom field blank, get enough filler cards to reach quiz min
-                    if (unknownQuizData.length < quizMin) {
-                        if (customCardCount === '') {
-                            const fillerCardCount = quizMin - unknownQuizData.length
-                            shuffle(flatPages) // shuffle the cards
-                            const unknownSlugs = unknownQuizData.map(x => x.slug)
-                            const fillerCards = flatPages.filter(x => !unknownSlugs.includes(x.slug)).slice(0, fillerCardCount)
-                            const safeQuizData = unknownQuizData.concat(fillerCards)
-                            setQuizData(safeQuizData)
-                            setSlugArray(safeQuizData.map(x => x.slug))
-                            setFillerCardsLength(fillerCards.length)
-                            setSnackOpen(true)
-
-                        }
-
-                        // if unknown is less than min and custom field exists, get enough filler cards to reach custom number
-                        else {
-                            const fillerCardCount = customCardCount - unknownQuizData.length
-                            shuffle(flatPages) // shuffle the cards
-                            const unknownSlugs = unknownQuizData.map(x => x.slug)
-                            const fillerCards = flatPages.filter(x => !unknownSlugs.includes(x => x.slug)).slice(0, fillerCardCount)
-                            const safeQuizData = unknownQuizData.concat(fillerCards)
-                            setQuizData(safeQuizData)
-                            setSlugArray(safeQuizData.map(x => x.slug))
-                            setFillerCardsLength(fillerCards.length)
-                            setSnackOpen(true)
-                        }
+                    // if the number of cards we DON'T KNOW is less than the custom card count, add x number of cards to the quiz
+                    if (unknownQuizData.length < customCardCount) {
+                        console.log('hello')
+                        const fillerCardCount = customCardCount - unknownQuizData.length
+                        shuffle(flatPages) // shuffle the cards
+                        const unknownSlugs = unknownQuizData.map(x => x.slug)
+                        const fillerCards = [... new Set(flatPages.filter(x => !unknownSlugs.includes(x => x.slug)).slice(0, fillerCardCount))]
+                        const safeQuizData = unknownQuizData.concat(fillerCards)
+                        const uniq = [...new Set(safeQuizData)];
+                        setQuizData(uniq)
+                        setSlugArray(uniq.map(x => x.slug))
+                        setSnackMsg(`Insufficient unknown words to fill ${customCardCount} cards, test partially filled with ${fillerCardsSliced.length} random known cards`)
+                        setSnackOpen(true)
                     }
 
-                    // if unknown is more than min and custom field exists, simply slice
-                    else if (unknownQuizData.length >= quizMin && customCardCount != '') {
+                    // if the number of words we DON'T KNOW is more than the custom card count, there is no need to add any filler cards
+                    else {
                         const slicedUnknownQuizData = unknownQuizData.slice(0, customCardCount)
                         setQuizData(slicedUnknownQuizData)
                         setSlugArray(slicedUnknownQuizData.map(x => x.slug))
                     }
-
-                    // if unknown is more than min and custom field is blank, just give all unknown
-                    else if (unknownQuizData.length >= quizMin && customCardCount === '') {
-                        setQuizData(unknownQuizData)
-                        setSlugArray(unknownQuizData.map(x => x.slug))
-                    }
-
                 }
 
                 catch (err) { console.log(err) }
                 finally {
                     setQuizID(uuidv4())
-                    console.log('uuid set!')
+                    setLoading(false)
+                    toggleQuizOn(true)
+                }
+            }
+
+            if (quizType === 'known') {
+
+                // get the cards that the user knows
+                const knownCards = flatPages.filter(x => userKnownWordIds.includes(x.id))
+
+                try {
+
+                    // if for example, user knows 5 cards but chose a quiz of 20, fill the quiz in with 15 unknown cards
+                    if (knownCards.length < customCardCount) {
+                        shuffle(flatPages)
+
+                        // calculate the number of filler cards we need
+                        const fillerCardCount = customCardCount - knownCards.length
+
+                        // make, for example, 15 filler cards, first removing any cards that the user already knows, and slicing
+                        const filler = flatPages.filter(x => !userKnownWordIds.includes(x.id)).slice(0, fillerCardCount)
+
+                        // known cards + filler
+                        const quizData = knownCards.concat(filler)
+
+                        setQuizData(quizData)
+                        setSlugArray(quizData.map(x => x.slug))
+                        setSnackMsg(`Insufficient known words to fill ${customCardCount} cards, test partially filled with ${fillerCardCount} random unknown cards`)
+                        setSnackOpen(true)
+                    }
+
+                    // if there are ENOUGH known cards to fill the users custom request
+                    else {
+                        const quizData = flatPages.filter(x => userKnownWordIds.includes(x.id)).slice(0, customCardCount)
+                        setQuizData(quizData)
+                        setSlugArray(quizData.map(x => x.slug))
+                    }
+                }
+
+                catch (error) {
+                    console.log(error)
+                }
+
+                finally {
+                    setQuizID(uuidv4())
                     setLoading(false)
                     toggleQuizOn(true)
                 }
@@ -517,6 +553,9 @@ const NewQuizMaster = () => {
                     setSaveComplete(true)
                 }
             }
+            else {
+                endQuiz()
+            }
         }
 
         // send paused quiz data to db
@@ -739,7 +778,7 @@ const NewQuizMaster = () => {
 
         return (
 
-            <Container maxWidth='xl' sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Container maxWidth='xl' sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
 
                 <NLevelDialog />
                 <PauseDialog />
@@ -751,7 +790,16 @@ const NewQuizMaster = () => {
                         <Card sx={{ minHeight: 370, minWidth: 285 }}>
                             <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 0 }}>
 
-                                <ToggleButtonGroup disabled={quizOn} color='error' exclusive onChange={(someEvent, newN) => (newN) != null ? setNLevel(newN) : null} value={nLevel} size='small' sx={{ mt: 2 }}>
+                                <ToggleButtonGroup
+                                    disabled={quizOn}
+                                    color='error'
+                                    exclusive
+                                    onChange={
+                                        (someEvent, newN) => (newN) != null ? (setNLevel(newN), setValue(1)) : null}
+                                    value={nLevel}
+                                    size={matches ? 'medium' : 'small'}
+                                    sx={{ mt: 2 }}
+                                >
                                     <ToggleButton value='n1'>N1</ToggleButton>
                                     <ToggleButton value='n2'>N2</ToggleButton>
                                     <ToggleButton value='n3'>N3</ToggleButton>
@@ -759,32 +807,30 @@ const NewQuizMaster = () => {
                                     <ToggleButton value='n5'>N5</ToggleButton>
                                 </ToggleButtonGroup>
 
-                                <ToggleButtonGroup disabled={quizOn} color='error' onChange={(event, newA) => (newA) != null ? setQuizType(newA) : null} exclusive value={quizType} size='small' sx={{ mt: 2 }}>
+                                <ToggleButtonGroup disabled={quizOn} color='error' onChange={(event, newA) => (newA) != null ? setQuizType(newA) : null} exclusive value={quizType} size={matches ? 'medium' : 'small'} sx={{ mt: 2 }}>
                                     <ToggleButton value='all'>All</ToggleButton>
-                                    <ToggleButton value='known'>Known</ToggleButton>
-                                    <ToggleButton value='unknown'>Unknown</ToggleButton>
+                                    <ToggleButton disabled={!session} value='known'>Known</ToggleButton>
+                                    <ToggleButton disabled={!session} value='unknown'>Unknown</ToggleButton>
                                 </ToggleButtonGroup>
 
                                 <Collapse sx={{}} in={sliderCollapse}>
 
                                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
 
-                                        <Typography gutterBottom sx={{ mt: 2, textAlign: 'center' }}>Start page</Typography>
-
-                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '80%' }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '80%', mt: { md: 6, xs: 4 }, mb: { md: 2, xs: 1 } }}>
                                             <Slider
                                                 disabled={quizOn}
-                                                size='small'
+                                                size={matches ? 'medium' : 'small'}
                                                 value={value}
                                                 onChange={(e, newValue) => setValue(newValue)}
-                                                valueLabelDisplay="auto"
+                                                valueLabelDisplay="on"
                                                 min={1}
                                                 max={fileCount[nLevel]}
                                             ></Slider>
                                         </Box>
 
-                                        <Alert severity='info' icon={false}>
-                                            The {nLevel.toUpperCase()} level holds {fileCount[nLevel]} pages, each containing roughly 20 cards. Use the slider to select which page the flashcards should start from.
+                                        <Alert sx={{ fontSize: { md: '1rem', xs: '0.85rem' } }} severity='info' icon={false}>
+                                            Each page contains about 20 cards. Use the slider to select which page the flashcards should start from.
                                         </Alert>
 
                                     </Box>
@@ -794,7 +840,9 @@ const NewQuizMaster = () => {
                                 <Divider sx={{ mt: 2, width: '80%' }} />
 
                                 <Box sx={{ pl: 2, mt: 2 }}>
-                                    <FormControlLabel control={<Switch disabled={quizOn} checked={randomQuiz} size='small' color='error' onChange={() => setRandomQuiz(prev => !prev)} />} label="Randomise card order" />
+                                    <FormControlLabel
+                                        control={<Switch disabled={quizOn} checked={randomQuiz} size={matches ? 'medium' : 'small'} color='error' onChange={() => setRandomQuiz(prev => !prev)} />}
+                                        label="Randomise card order" />
                                 </Box>
 
                                 <Box sx={{ minWidth: '100%', mt: 2, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -807,7 +855,7 @@ const NewQuizMaster = () => {
                                         }
                                         label="Number of Cards"
                                         disabled={quizOn}
-                                        size="small"
+                                        size={matches ? 'medium' : 'small'}
                                         variant="outlined"
                                         value={customCardCount}
                                         onChange={(e) => setCustomCardCount(e.target.value)}
@@ -825,49 +873,70 @@ const NewQuizMaster = () => {
                                         <Alert
                                             color='error'
                                             variant='filled'
-                                            sx={{ mt: 2, textAlign: 'center', fontSize: '0.85rem' }}
+                                            sx={{ mt: 2, textAlign: 'center', fontSize: { xs: '0.85rem', md: '1rem' } }}
                                             severity='info'
                                             icon={false}>
-                                            Quiz on {nLevel.toUpperCase()} cards, cards arranged randomly.
+                                            Quiz on {nLevel.toUpperCase()} cards, from page {value} onwards, arranged randomly.
                                         </Alert>
                                         :
                                         (quizType) === 'all' && (!randomQuiz) ?
                                             <Alert
                                                 color='error'
                                                 variant='filled'
-                                                sx={{ mt: 2, textAlign: 'center', fontSize: '0.85rem' }}
+                                                sx={{ mt: 2, textAlign: 'center', fontSize: { xs: '0.85rem', md: '1rem' } }}
                                                 severity='info'
                                                 icon={false}>
-                                                Quiz on {nLevel.toUpperCase()} cards, cards arranged in default order.
+                                                {nLevel.toUpperCase()} cards, from page {value} onwards, arranged in default order.
                                             </Alert>
                                             :
                                             (quizType) === 'unknown' && (randomQuiz) ?
                                                 <Alert
                                                     color='error'
                                                     variant='filled'
-                                                    sx={{ mt: 2, textAlign: 'center', fontSize: '0.85rem' }}
+                                                    sx={{ mt: 2, textAlign: 'center', fontSize: { xs: '0.85rem', md: '1rem' } }}
                                                     severity='info'
                                                     icon={false}>
-                                                    Quiz on {nLevel.toUpperCase()} cards that have yet to be ticked in your vocabulary table, cards arranged randomly.
+                                                    {nLevel.toUpperCase()} cards that are unmarked in your vocabulary table, arranged randomly.
                                                 </Alert>
                                                 :
-                                                <Alert
-                                                    color='error'
-                                                    variant='filled'
-                                                    sx={{ mt: 2, textAlign: 'center', fontSize: '0.85rem' }}
-                                                    severity='info'
-                                                    icon={false}>
-                                                    Quiz on {nLevel.toUpperCase()} cards that have yet to be ticked in your vocabulary table, cards arranged in default order.
-                                                </Alert>
+                                                (quizType) === 'unknown' && (!randomQuiz) ?
+                                                    <Alert
+                                                        color='error'
+                                                        variant='filled'
+                                                        sx={{ mt: 2, textAlign: 'center', fontSize: { xs: '0.85rem', md: '1rem' } }}
+                                                        severity='info'
+                                                        icon={false}>
+                                                        {nLevel.toUpperCase()} cards that are unmarked in your vocabulary table, arranged in default order.
+                                                    </Alert>
+                                                    :
+                                                    (quizType) === 'known' && (!randomQuiz) ?
+                                                        <Alert
+                                                            color='error'
+                                                            variant='filled'
+                                                            sx={{ mt: 2, textAlign: 'center', fontSize: { xs: '0.85rem', md: '1rem' } }}
+                                                            severity='info'
+                                                            icon={false}>
+                                                            {nLevel.toUpperCase()} cards that are marked in your vocabulary table, arranged in default order.
+                                                        </Alert>
+                                                        :
+                                                        <Alert
+                                                            color='error'
+                                                            variant='filled'
+                                                            sx={{ mt: 2, textAlign: 'center', fontSize: { xs: '0.85rem', md: '1rem' } }}
+                                                            severity='info'
+                                                            icon={false}>
+                                                            {nLevel.toUpperCase()} cards that are marked in your vocabulary table, arranged in random order.
+                                                        </Alert>
                                 }
                             </CardContent>
                         </Card>
                     </DialogContent>
                     <DialogActions>
-                        <Button size='small' onClick={() => { (!inputError) && toggleSettingsDialog(false) }}>Save Changes</Button>
+                        <Button size={matches ? 'medium' : 'small'} onClick={() => { (!inputError) && toggleSettingsDialog(false) }}>Save Changes</Button>
                     </DialogActions>
                 </Dialog>
 
+                {/* intro dialog */}
                 <Dialog open={introDialog} sx={{}}>
                     <DialogTitle sx={{ fontSize: '1.25rem', textAlign: 'center' }}>
                         Vocabulary Test
@@ -875,7 +944,7 @@ const NewQuizMaster = () => {
                     <DialogContent sx={{}}>
                         <Box>
                             <Box>
-                                <Alert icon={false} severity='info' sx={{ mb: 2, textAlign: 'center' }}>
+                                <Alert icon={false} severity='info' sx={{ mb: 2, textAlign: 'center', fontSize: { xs: '1rem', md: '1.2rem' } }}>
                                     Set the test configuration before running, a test can hold between 20 and 100 cards. Unauthenticated users have limited access to test functions.
                                 </Alert>
                             </Box>
@@ -883,22 +952,22 @@ const NewQuizMaster = () => {
                                 <Card>
                                     <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <LooksOne /><Typography sx={{ fontSize: '0.95rem' }}>N-level selection</Typography>
+                                            <LooksOne /><Typography sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>Current n-level</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <SettingsIcon /><Typography sx={{ fontSize: '0.95rem' }}>Test configuration</Typography>
+                                            <SettingsIcon /><Typography sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>Test configuration</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <PlayArrowIcon /><Typography sx={{ fontSize: '0.95rem' }}>Start test</Typography>
+                                            <PlayArrowIcon /><Typography sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>Start test</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <StopIcon /><Typography sx={{ fontSize: '0.95rem' }}>End test</Typography>
+                                            <StopIcon /><Typography sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>End test</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <PauseIcon /><Typography sx={{ fontSize: '0.95rem' }}>Pause test</Typography>
+                                            <PauseIcon /><Typography sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>Pause test</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <SportsScoreIcon /><Typography sx={{ fontSize: '0.95rem' }}>Post-test options</Typography>
+                                            <SportsScoreIcon /><Typography sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>Post-test options</Typography>
                                         </Box>
                                     </CardContent>
                                 </Card>
@@ -918,6 +987,7 @@ const NewQuizMaster = () => {
                     </DialogActions>
                 </Dialog>
 
+                {/* quiz progres dialog */}
                 {(quizOn) &&
                     <Dialog sx={{}} open={quizProgressDialog}>
                         <DialogTitle sx={{ textAlign: 'center' }}>
@@ -991,10 +1061,11 @@ const NewQuizMaster = () => {
                         </DialogActions>
                     </Dialog>}
 
+                {/* post quiz dialog */}
                 {(quizOn) &&
                     <Dialog open={quizEndDialog} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                         <DialogContent sx={{ minWidth: 300, pb: 0.3 }}>
-                            <Card>
+                            {(session) ? <Card>
                                 <Typography variant='h6' sx={{ textAlign: 'center', mt: 1.5 }}>
                                     Quiz Complete
                                 </Typography>
@@ -1007,17 +1078,19 @@ const NewQuizMaster = () => {
                                         </CardContent>
                                         :
                                         (saveComplete) ?
-                                            <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-                                                {(saveToVT) && <Typography gutterBottom sx={{ textAlign: 'center', ml: 2 }} variant='subtitle1'>
-                                                    Changes saved <Done color='success' sx={{ mb: 1 }} />
-                                                </Typography>}
+                                            <CardContent sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 1 }}>
+                                                {(saveToVT) &&
+                                                    <Button disableRipple disableFocusRipple disableTouchRipple size={matches ? 'medium' : 'small'} variant='text' startIcon={<Done color='success' />}>
+                                                        Changes saved
+                                                    </Button>
+                                                }
                                                 {(saveToDB) &&
                                                     <React.Fragment>
-                                                        <Typography gutterBottom sx={{ textAlign: 'center', ml: 2 }} variant='subtitle1'>
-                                                            Results saved <Done color='success' sx={{ mb: 1 }} />
-                                                        </Typography>
+                                                        <Button disableRipple disableFocusRipple disableTouchRipple size={matches ? 'medium' : 'small'} variant='text' startIcon={<Done color='success' />}>
+                                                            Results saved
+                                                        </Button>
                                                         <Typography sx={{ textAlign: 'center' }} variant='subtitle1'>
-                                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => redirect('/')}>
+                                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => redirect('/review')}>
                                                                 Click here to view your results
                                                             </Link>
                                                         </Typography>
@@ -1026,57 +1099,85 @@ const NewQuizMaster = () => {
                                             </CardContent>
                                             :
                                             <CardContent>
+
                                                 {(progData.toBeChecked.length === 1) &&
-                                                    <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
-                                                        <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeChecked')}>
-                                                            {progData.toBeChecked.length} card
-                                                        </Link>
-                                                        {''} was marked as correct, but not marked as known within your vocabulary table.
-                                                    </Typography>}
+                                                    <Alert sx={{ mb: 1 }} icon={false} severity='success'>
+                                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', fontSize: { md: '1rem' } }} >
+                                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeChecked')}>
+                                                                {progData.toBeChecked.length} card
+                                                            </Link>
+                                                            {''} was marked as correct, but not marked as known within your vocabulary table.
+                                                        </Typography>
+                                                    </Alert>
+                                                }
                                                 {(progData.toBeChecked.length > 1) &&
-                                                    <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
-                                                        <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeChecked')}>
-                                                            {progData.toBeChecked.length} cards
-                                                        </Link>
-                                                        {''} were marked as correct, but not marked as known within your vocabulary table.
-                                                    </Typography>}
+                                                    <Alert sx={{ mb: 1 }} icon={false} severity='success'>
+                                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', fontSize: { md: '1rem' } }} >
+                                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeChecked')}>
+                                                                {progData.toBeChecked.length} cards
+                                                            </Link>
+                                                            {''} were marked as correct, but not marked as known within your vocabulary table.
+                                                        </Typography>
+                                                    </Alert>
+                                                }
 
                                                 {(progData.toBeUnchecked.length === 1) &&
-                                                    <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
-                                                        <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeUnchecked')}>
-                                                            {progData.toBeUnchecked.length} card
-                                                        </Link>
-                                                        {''} was marked as incorrect, yet marked as known within your vocabulary table.
-                                                    </Typography>}
+                                                    <Alert sx={{ mb: 1 }} icon={false} severity='error'>
+                                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', fontSize: { md: '1rem' } }} >
+                                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeUnchecked')}>
+                                                                {progData.toBeUnchecked.length} card
+                                                            </Link>
+                                                            {''} was marked as incorrect, yet marked as known within your vocabulary table.
+                                                        </Typography>
+                                                    </Alert>
+                                                }
                                                 {(progData.toBeUnchecked.length > 1) &&
-                                                    <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }} >
-                                                        <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeUnchecked')}>{progData.toBeUnchecked.length} cards</Link>
-                                                        {''} were marked as incorrect, yet marked as known within your vocabulary table.
-                                                    </Typography>}
+                                                    <Alert sx={{ mb: 1 }} icon={false} severity='error'>
+                                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', fontSize: { md: '1rem' } }} >
+                                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeUnchecked')}>{progData.toBeUnchecked.length} cards</Link>
+                                                            {''} were marked as incorrect, yet marked as known within your vocabulary table.
+                                                        </Typography>
+                                                    </Alert>
+                                                }
 
                                                 {(progData.toBeChecked.length != 0 || progData.toBeUnchecked.length != 0) &&
                                                     <React.Fragment>
-                                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center' }}>
+                                                        <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', fontSize: { md: '1rem' } }}>
                                                             Would you like the quiz results to be reflected in your vocabulary table?
                                                         </Typography>
                                                         <Stack direction="row" spacing={1} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', mt: 1.5 }}>
-                                                            <Chip size='small' component={Button} label="Yes" color="success" onClick={() => toggleSaveToVT(true)} variant={saveToVT === true ? 'filled' : 'outlined'} />
-                                                            <Chip size='small' component={Button} label="No" color="error" onClick={() => toggleSaveToVT(false)} variant={saveToVT === false ? 'filled' : 'outlined'} />
+                                                            <Chip size={matches ? 'medium' : 'small'} component={Button} label="Yes" color="success" onClick={() => toggleSaveToVT(true)} variant={saveToVT === true ? 'filled' : 'outlined'} />
+                                                            <Chip size={matches ? 'medium' : 'small'} component={Button} label="No" color="error" onClick={() => toggleSaveToVT(false)} variant={saveToVT === false ? 'filled' : 'outlined'} />
                                                         </Stack>
                                                     </React.Fragment>
                                                 }
-                                                <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', mt: 2 }}>
+                                                <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', mt: 2, fontSize: { md: '1rem' } }}>
                                                     Would you like to save your quiz result?
                                                 </Typography>
                                                 <Stack direction="row" spacing={1} sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', mt: 1.5 }}>
-                                                    <Chip size='small' component={Button} label="Yes" color="success" onClick={() => toggleSaveToDB(true)} variant={saveToDB === true ? 'filled' : 'outlined'} />
-                                                    <Chip size='small' component={Button} label="No" color="error" onClick={() => toggleSaveToDB(false)} variant={saveToDB === false ? 'filled' : 'outlined'} />
+                                                    <Chip size={matches ? 'medium' : 'small'} component={Button} label="Yes" color="success" onClick={() => toggleSaveToDB(true)} variant={saveToDB === true ? 'filled' : 'outlined'} />
+                                                    <Chip size={matches ? 'medium' : 'small'} component={Button} label="No" color="error" onClick={() => toggleSaveToDB(false)} variant={saveToDB === false ? 'filled' : 'outlined'} />
                                                 </Stack>
-                                            </CardContent>}
-                            </Card>
+                                            </CardContent>
+                                }
+                            </Card> :
+                                <Card>
+                                    <Typography variant='h6' sx={{ textAlign: 'center', mt: 1.5 }}>
+                                        Quiz Complete
+                                    </Typography>
+                                    <CardContent>
+                                        <Alert sx={{ mb: 1 }} icon={false} severity='error'>
+                                            <Typography variant='subtitle2' sx={{ textAlign: 'center', fontSize: { md: '1rem' } }} >
+                                                Please register or log in to save your quiz results.
+                                            </Typography>
+                                        </Alert>
+                                    </CardContent>
+                                </Card>
+                            }
                         </DialogContent>
                         <DialogActions>
                             <Button
+                                size={matches ? 'large' : 'small'}
                                 disabled={saveLoading}
                                 onClick={() => {
                                     toggleQuizEndDialog(false);
@@ -1084,43 +1185,64 @@ const NewQuizMaster = () => {
                                 }}>
                                 {(saveComplete) ? 'Close & End Quiz' : 'Close'}
                             </Button>
-                            <Button
-                                disabled={saveLoading || saveComplete}
-                                onClick={() => {
-                                    updateDb()
-                                }}>
-                                Confirm
-                            </Button>
+
+                            {(session) ?
+                                <Button
+                                    size={matches ? 'large' : 'small'}
+                                    disabled={saveLoading || saveComplete}
+                                    onClick={() => {
+                                        if (session) {
+                                            updateDb()
+                                        }
+                                        else {
+                                            endQuiz()
+                                        }
+                                    }}>
+                                    Confirm
+                                </Button>
+                                :
+                                <Button
+                                    size={matches ? 'large' : 'small'}
+                                    disabled={saveLoading || saveComplete}
+                                    onClick={() => {
+                                        redirect('/login')
+                                    }}>
+                                    Login
+                                </Button>
+                            }
+
                         </DialogActions>
-                    </Dialog>}
+                    </Dialog>
+                }
 
-                <Card sx={{ mt: 3, mb: 6, width: { xs: '100%', md: '50%' } }}>
+                {/* quiz body */}
+                <Card sx={{ mt: { xs: 3, md: 6 }, mb: 3, width: { xs: '100%', md: '50%' } }}>
 
-                    {/* for controls */}
+                    {/* for quiz controls */}
                     <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
 
                         <Box sx={{ pt: 1 }}>
 
-                            <ToggleButtonGroup size='small'>
+                            <ToggleButtonGroup size={matches ? 'medium' : 'medium'}>
 
                                 <ToggleButton onClick={() => toggleIntroDialog(true)} sx={{ borderColor: '#d32f2f' }}>
-                                    <InfoOutline color='error' />
+                                    <InfoOutline fontSize={matches ? 'medium' : 'small'} color='error' />
                                 </ToggleButton>
 
-                                <ToggleButton onClick={(!quizOn) ? () => { openNLevelSelect(true) } : null} sx={{ borderColor: '#d32f2f' }}>
+                                <ToggleButton disableFocusRipple disableTouchRipple disableRipple sx={{ borderColor: '#d32f2f' }}>
                                     {
-                                        (nLevel) === 'n1' ? <LooksOne color={(!quizOn) ? 'error' : ''} /> :
-                                            (nLevel) === 'n2' ? <LooksTwo color={(!quizOn) ? 'error' : ''} /> :
-                                                (nLevel) === 'n3' ? <Looks3 color={(!quizOn) ? 'error' : ''} /> :
-                                                    (nLevel) === 'n4' ? <Looks4 color={(!quizOn) ? 'error' : ''} /> :
-                                                        (nLevel) === 'n5' ? <Looks5 color={(!quizOn) ? 'error' : ''} /> :
+                                        (nLevel) === 'n1' ? <LooksOne fontSize={matches ? 'medium' : 'small'} color={(!quizOn) ? 'error' : ''} /> :
+                                            (nLevel) === 'n2' ? <LooksTwo fontSize={matches ? 'medium' : 'small'} color={(!quizOn) ? 'error' : ''} /> :
+                                                (nLevel) === 'n3' ? <Looks3 fontSize={matches ? 'medium' : 'small'} color={(!quizOn) ? 'error' : ''} /> :
+                                                    (nLevel) === 'n4' ? <Looks4 fontSize={matches ? 'medium' : 'small'} color={(!quizOn) ? 'error' : ''} /> :
+                                                        (nLevel) === 'n5' ? <Looks5 fontSize={matches ? 'medium' : 'small'} color={(!quizOn) ? 'error' : ''} /> :
                                                             null
 
                                     }
                                 </ToggleButton>
 
-                                <ToggleButton onClick={() => toggleSettingsDialog(true)} size='small' sx={{ borderColor: '#d32f2f' }}>
-                                    <SettingsIcon color={'error'} />
+                                <ToggleButton onClick={() => toggleSettingsDialog(true)} size='small' sx={{ borderColor: '#d32f2f', px: { md: 1.4, xs: 1.4 } }}>
+                                    <SettingsIcon fontSize={matches ? 'medium' : 'small'} color={'error'} />
                                 </ToggleButton>
 
 
@@ -1137,17 +1259,19 @@ const NewQuizMaster = () => {
                                         }
 
                                     }
-                                }} variant='contained' size='small' sx={{ borderColor: '#d32f2f' }}>
-                                    {(quizOn) ? <PauseIcon color={(quizOver) ? '' : 'error'} /> : <PlayArrowIcon color={(quizOver) ? '' : 'error'} />}
+                                }} variant='contained' size='small' sx={{ borderColor: '#d32f2f', px: { md: 1.3, xs: 1.3 } }}>
+                                    {(quizOn) ? <PauseIcon
+                                        fontSize={matches ? 'medium' : 'small'} color={(quizOver) ? '' : 'error'} /> :
+                                        <PlayArrowIcon fontSize={matches ? 'medium' : 'small'} color={(quizOver) ? '' : 'error'} />}
                                 </ToggleButton>
 
-                                <ToggleButton onClick={(quizOn) ? () => openStopSelect(true) : null} variant='contained' size='small' sx={{ borderColor: '#d32f2f' }}>
-                                    <StopIcon color={(quizOn) ? 'error' : ''} />
+                                <ToggleButton onClick={(quizOn) ? () => openStopSelect(true) : null} variant='contained' size='small' sx={{ borderColor: '#d32f2f', px: { md: 1.3, xs: 1.3 } }}>
+                                    <StopIcon fontSize={matches ? 'medium' : 'small'} color={(quizOn) ? 'error' : ''} />
                                 </ToggleButton>
 
                                 {progData['blank'].length === 0 && quizOn ?
-                                    <ToggleButton onClick={() => toggleQuizEndDialog(true)} variant='contained' size='small' sx={{ borderColor: '#d32f2f' }}>
-                                        <SportsScoreIcon color='error' />
+                                    <ToggleButton onClick={() => toggleQuizEndDialog(true)} variant='contained' size='small' sx={{ borderColor: '#d32f2f', px: { md: 1.3, xs: 1.3 } }}>
+                                        <SportsScoreIcon fontSize={matches ? 'medium' : 'small'} color='error' />
                                     </ToggleButton>
                                     : null
                                 }
@@ -1175,22 +1299,22 @@ const NewQuizMaster = () => {
                         } */}
 
                         <Collapse sx={{ mt: (inputError) ? 2 : 0 }} in={inputError}>
-                            <Alert severity='error'>Error in quiz settings</Alert>
+                            <Alert sx={{ fontSize: { md: '1.2rem' } }} severity='error'>Error in quiz settings</Alert>
                         </Collapse>
 
                         <Collapse in={quizOn}>
                             {(quizOn && quizData) &&
                                 <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1.5, pt: 1.5 }}>
 
-                                    <Button onClick={() => toggleQuizProgressDialog(true)} size='small' startIcon={<Quiz />} variant="outlined" color="info">
+                                    <Button onClick={() => toggleQuizProgressDialog(true)} size={matches ? 'large' : 'small'} startIcon={<Quiz />} variant="outlined" color="info">
                                         <Typography variant="body1">{`${cardNumber + 1} / ${quizData.length}`}</Typography>
                                     </Button>
 
-                                    <Button size='small' startIcon={<DoneOutline />} disableRipple disableFocusRipple variant={quizData[cardNumber].result === true ? 'contained' : 'outlined'} color="success">
+                                    <Button size={matches ? 'large' : 'small'} startIcon={<DoneOutline />} disableRipple disableFocusRipple variant={quizData[cardNumber].result === true ? 'contained' : 'outlined'} color="success">
                                         <Typography variant="body1">{quizData.filter(x => x.result === true).length}</Typography>
                                     </Button>
 
-                                    <Button size='small' startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant={quizData[cardNumber].result === false ? 'contained' : 'outlined'} color="error">
+                                    <Button size={matches ? 'large' : 'small'} startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant={quizData[cardNumber].result === false ? 'contained' : 'outlined'} color="error">
                                         <Typography variant="body1">{quizData.filter(x => x.result === false).length}</Typography>
                                     </Button>
                                 </Box>
@@ -1201,7 +1325,7 @@ const NewQuizMaster = () => {
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1.5 }}>
 
                                 <Button
-                                    size='small'
+                                    size={matches ? 'large' : 'small'}
                                     variant="outlined"
                                     color="primary"
                                     startIcon={<ArrowLeft />}
@@ -1211,12 +1335,12 @@ const NewQuizMaster = () => {
                                     Prev
                                 </Button>
 
-                                <Button startIcon={<Visibility />} disabled={showCard} size='small' onClick={() => toggleShowCard(true)} variant="contained" color="primary">
+                                <Button startIcon={<Visibility />} disabled={showCard} size={matches ? 'large' : 'small'} onClick={() => toggleShowCard(true)} variant="contained" color="primary">
                                     Show
                                 </Button>
 
                                 <Button
-                                    size='small'
+                                    size={matches ? 'large' : 'small'}
                                     variant="outlined"
                                     color="primary"
                                     endIcon={<ArrowRight />}
@@ -1231,22 +1355,22 @@ const NewQuizMaster = () => {
                                 <Button
                                     onClick={() => detCardResult(cardNumber, true)}
                                     disabled={!showCard}
-                                    size='small'
+                                    size={matches ? 'large' : 'small'}
                                     variant="contained"
                                     color="success"
                                     startIcon={<Check />}
                                 >
-                                    正解
+                                    Correct
                                 </Button>
                                 <Button
                                     onClick={() => detCardResult(cardNumber, false)}
                                     disabled={!showCard}
-                                    size='small'
+                                    size={matches ? 'large' : 'small'}
                                     variant="contained"
                                     color="error"
                                     startIcon={<Clear />}
                                 >
-                                    不正解
+                                    Incorrect
                                 </Button>
                             </Box>
                         </Collapse>
@@ -1259,11 +1383,10 @@ const NewQuizMaster = () => {
                     </CardContent>
 
                     {(quizOn) &&
-
                         <CardContent sx={{ paddingTop: 0 }}>
 
                             <Box>
-                                <Typography sx={{ textAlign: 'center' }} variant='h4'>
+                                <Typography sx={{ textAlign: 'center', fontWeight: '700', fontSize: { xs: '2.5rem', md: '3rem' } }}>
                                     {quizData[cardNumber].slug}
                                 </Typography>
                             </Box>
@@ -1273,16 +1396,16 @@ const NewQuizMaster = () => {
                                 <Box sx={{ py: 1 }}>
 
                                     {[...new Set(quizData[cardNumber].japanese.map(y => y.word))].map((z, zindex) => (
-                                        <Typography key={zindex} sx={{ fontWeight: 'bold', fontSize: '1.2rem' }}>{z}</Typography>
+                                        <Typography key={zindex} sx={{ fontWeight: '700', fontSize: { xs: '1.8rem', md: '2rem' } }}>{z}</Typography>
                                     ))}
 
-                                    <Typography gutterBottom sx={{ color: 'orange', mt: 1, fontWeight: 'bold' }}>Reading</Typography>
+                                    <Typography gutterBottom sx={{ color: 'orange', mt: 1, fontWeight: '700', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>Reading</Typography>
 
                                     {[...new Set(quizData[cardNumber].japanese.map((x => x.reading)))].map(b => (
-                                        <Typography key={b} sx={{ fontWeight: 'bold' }}>{b}</Typography>
+                                        <Typography key={b} sx={{ fontWeight: '700', fontSize: { xs: '1.2rem', md: '1.2rem' } }}>{b}</Typography>
                                     ))}
 
-                                    <Typography gutterBottom sx={{ color: 'orange', mt: 1, fontWeight: 'bold' }}>Meaning</Typography>
+                                    <Typography gutterBottom sx={{ color: 'orange', mt: 1, fontWeight: '700', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>Meaning</Typography>
 
                                     <Box sx={{ mb: 1 }}>
 
@@ -1291,18 +1414,18 @@ const NewQuizMaster = () => {
                                                 <Box key={senseIndex}>
 
                                                     {x.parts_of_speech.map((f, posIndex) => (
-                                                        <Typography key={posIndex} sx={{ color: 'grey' }}>
+                                                        <Typography key={posIndex} sx={{ color: 'grey', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
                                                             {f}
                                                         </Typography>
                                                     ))}
 
                                                     {x.tags.map((g, tagIndex) => (
-                                                        <Typography key={tagIndex} sx={{ color: 'grey' }}>
+                                                        <Typography key={tagIndex} sx={{ color: 'grey', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
                                                             {g}
                                                         </Typography>
                                                     ))}
 
-                                                    <Typography sx={{ mb: 1 }}>
+                                                    <Typography sx={{ mb: 1, fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
                                                         {x.english_definitions.join(', ')}
                                                     </Typography>
                                                 </Box>
@@ -1314,10 +1437,50 @@ const NewQuizMaster = () => {
                         </CardContent>
                     }
                 </Card>
+
+                {/* quiz info card */}
+
+                {(!quizOn) &&
+                    <Card sx={{ width: { xs: '100%', md: '50%' } }}>
+                        <Box>
+                            <Box>
+                                <Alert icon={false} severity='info' sx={{ mb: 0, textAlign: 'center', fontSize: { md: '1.2rem', xs: '1rem' } }}>
+                                    Set the test configuration before running, a test can hold between 20 and 100 cards. Unauthenticated users have limited access to test functions.
+                                </Alert>
+                            </Box>
+                            <Box>
+                                <Card>
+                                    <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <LooksOne /><Typography sx={{ fontSize: { md: '1.2rem', xs: '1rem' } }}>Current n-level</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <SettingsIcon /><Typography sx={{ fontSize: { md: '1.2rem', xs: '1rem' } }}>Test configuration</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <PlayArrowIcon /><Typography sx={{ fontSize: { md: '1.2rem', xs: '1rem' } }}>Start test</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <StopIcon /><Typography sx={{ fontSize: { md: '1.2rem', xs: '1rem' } }}>End test</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <PauseIcon /><Typography sx={{ fontSize: { md: '1.2rem', xs: '1rem' } }}>Pause test</Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
+                                            <SportsScoreIcon /><Typography sx={{ fontSize: { md: '1.2rem', xs: '1rem' } }}>Post-test options</Typography>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Box>
+                        </Box>
+                    </Card>}
+
                 <Snackbar
                     open={snackOpen}
                     autoHideDuration={6000}
-                    message={`${fillerCardsLength} cards added`}
+                    onClose={() => setSnackOpen(false)}
+                    message={snackMsg}
+                    sx={{ width: '80%' }}
                 />
             </Container >
         )
