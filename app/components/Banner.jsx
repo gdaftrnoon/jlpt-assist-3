@@ -28,6 +28,7 @@ const Banner = () => {
 
         // getting user session if it exists
         const { data: session, status } = useSession()
+        const userid = session?.user?.userId
 
         // list containing the example words we use on the homepage
         const [exampleWords, setExampleWords] = useState([
@@ -198,7 +199,7 @@ const Banner = () => {
 
                         <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 6 }}>
 
-                            {(session) ?
+                            {(userid) ?
                                 <Button
                                     onClick={() => redirect('/vocab')}
                                     variant="contained"
