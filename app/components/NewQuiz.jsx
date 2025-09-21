@@ -50,7 +50,7 @@ const NewQuizMaster = () => {
             'n2': 91,
             'n3': 89,
             'n4': 29,
-            'n5': 5,
+            'n5': 33,
         }
 
         const slugCount = {
@@ -63,7 +63,7 @@ const NewQuizMaster = () => {
 
         const nLevelArray = ['n1', 'n2', 'n3', 'n4', 'n5']
 
-        const quizMin = 10
+        const quizMin = 20
         const quizMax = 100
 
         ///////////////////////////////////////// STATES ///////////////////////////////////////////////

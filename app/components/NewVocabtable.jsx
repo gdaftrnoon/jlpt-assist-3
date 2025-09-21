@@ -56,7 +56,7 @@ const NewVocabTable = () => {
             'n2': 91,
             'n3': 89,
             'n4': 29,
-            'n5': 5,
+            'n5': 33,
         }
 
         // holds all fetched page data pre-slicing
@@ -72,7 +72,7 @@ const NewVocabTable = () => {
         const [page, setPage] = useState(1)
 
         // state managing table n level
-        const [nLevel, setNLevel] = useState('n1')
+        const [nLevel, setNLevel] = useState('n5')
 
         // state determining whether all cards are open/closed
         const [isExpanded, setExpanded] = useState(false)
