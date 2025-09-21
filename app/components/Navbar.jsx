@@ -111,7 +111,7 @@ const Navbar = () => {
                                 >
                                     <MenuItem component={Link} href='/vocab' sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Vocabulary</MenuItem>
                                     <MenuItem component={Link} href='/quiz' sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Quiz</MenuItem>
-                                    <MenuItem component={Link} href='/' sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Review</MenuItem>
+                                    <MenuItem component={Link} href='/review' sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Review</MenuItem>
                                 </Menu>
                             </Box>
                         </Box>
