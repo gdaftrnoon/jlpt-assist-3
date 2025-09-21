@@ -60,7 +60,7 @@ const LoginLogout = () => {
               >
                 Login with Google
               </Button>
-              <Alert severity="info" sx={{mt: 2}}>
+              <Alert icon={false} severity="info" sx={{mt: 2}}>
                 <Typography>
                   Google is currently the our sole auth service provider, please bear with us while we work on adding more!
                 </Typography>
