@@ -1090,8 +1090,8 @@ const NewQuizMaster = () => {
                                                             Results saved
                                                         </Button>
                                                         <Typography sx={{ textAlign: 'center' }} variant='subtitle1'>
-                                                            <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => redirect('/review')}>
-                                                                Click here to view your results
+                                                            <Link disabled sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => redirect('/')}>
+                                                                Review feature coming soon
                                                             </Link>
                                                         </Typography>
                                                     </React.Fragment>

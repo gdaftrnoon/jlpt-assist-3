@@ -61,7 +61,7 @@ const Navbar = () => {
                                 <Box sx={{ display: { xs: 'none', md:'flex', gap: 5 }}}>
                                     <Button onClick={() => redirect('/vocab')} variant='text' sx={{color:'white', fontWeight:'600'}}>Vocabulary</Button>
                                     <Button onClick={() => redirect('/quiz')} variant='text' sx={{color:'white', fontWeight:'600'}}>Quiz</Button>
-                                    <Button onClick={() => redirect('/review')} variant='text' sx={{color:'white', fontWeight:'600'}}>Review</Button>
+                                    <Button disabled onClick={() => redirect('/review')} variant='text' sx={{color:'white', fontWeight:'600'}}>Review</Button>
                                 </Box>
 
                             </Box>
@@ -111,7 +111,7 @@ const Navbar = () => {
                                 >
                                     <MenuItem component={Link} href='/vocab' sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Vocabulary</MenuItem>
                                     <MenuItem component={Link} href='/quiz' sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Quiz</MenuItem>
-                                    <MenuItem component={Link} href='/review' sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Review</MenuItem>
+                                    <MenuItem disabled component={Link} href='/review' sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>Review</MenuItem>
                                 </Menu>
                             </Box>
                         </Box>
