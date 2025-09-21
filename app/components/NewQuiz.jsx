@@ -829,7 +829,7 @@ const NewQuizMaster = () => {
                                             ></Slider>
                                         </Box>
 
-                                        <Alert sx={{ fontSize: { md: '1rem', xs: '0.85rem' } }} severity='info' icon={false}>
+                                        <Alert sx={{ fontSize: { md: '1rem', xs: '0.85rem' }, textAlign:'center' }} severity='info' icon={false}>
                                             Each page contains about 20 cards. Use the slider to select which page the flashcards should start from.
                                         </Alert>
 
