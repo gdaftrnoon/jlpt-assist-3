@@ -89,7 +89,7 @@ const Navbar = () => {
                                                 {username[0].toUpperCase()}
                                             </Avatar>
                                             <Menu anchorEl={avatarAnchorEl} open={Boolean(avatarAnchorEl)} onClose={() => setAvatarAnchorEl(null)}>
-                                                <MenuItem onClick={() => signOut()}>Logout</MenuItem>
+                                                <MenuItem onClick={() => signOutHelper()}>Logout</MenuItem>
                                             </Menu>
                                         </>
                                         :
