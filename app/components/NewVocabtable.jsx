@@ -129,6 +129,12 @@ const NewVocabTable = () => {
         const uppercase = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
         const alphabet = [...lowercase, ...uppercase]
 
+        // ticked on page counter
+        const [counter, setCounter] = useState({
+            trueCount: 0,
+            falseCount: 0
+        })
+
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
 
 
@@ -520,9 +526,16 @@ const NewVocabTable = () => {
             }
         }, [nLevel])
 
-        // logs for testing
+        // setting counter on page chage
         useEffect(() => {
-        }, [page,])
+            const results = Object.values(slugChanges)
+            const trueCount = results.filter(x => x === true).length
+            const falseCount = results.filter(x => x === false).length
+            setCounter({
+                trueCount: trueCount,
+                falseCount: falseCount
+            })
+        }, [page, slugChanges])
 
         useEffect(() => {
             if (localStorage.getItem('vtintroCheckbox')) { // if ls item exists
@@ -756,9 +769,8 @@ const NewVocabTable = () => {
                     <SliceDialog />
                     <UntickAllDialog />
 
-                    {/* buttons */}
+                    {/* control button group */}
                     <Box sx={{ pt: 5 }}>
-
                         <ToggleButtonGroup size={matches ? 'large' : 'medium'} disabled={tableLoading}>
 
                             <ToggleButton onClick={() => toggleIntroDialog(true)} sx={{ borderColor: '#d32f2f' }}>
@@ -816,8 +828,27 @@ const NewVocabTable = () => {
                         </ToggleButtonGroup>
                     </Box>
 
-                    {/* submit changes */}
-                    <Box sx={{ mt: 3 }}>
+                    {/* submit changes top */}
+                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', mt: 3, gap: 2 }}>
+                        <Button
+                            variant="outlined"
+                            color={tableLoading ? 'error' : counter.trueCount === vocabularyData.length ? 'success' : 'error'}
+                            disableFocusRipple
+                            disableRipple
+                            disableTouchRipple
+                            sx={{
+                                fontWeight: 'bold',
+                                fontSize: '0.95rem',
+                                borderRadius: '12px',
+                                px: 2,
+                                py: 1,
+                                minWidth: 111,
+                                minHeight: 43
+                            }}
+                        >
+                            {tableLoading ? '/' : `${counter.trueCount} / ${vocabularyData.length}`}
+                        </Button>
+
                         <Button
                             onClick={() => { sendChanges(); setSubmitChangesLoading(true) }}
                             disabled={(JSON.stringify(initialPackage) === JSON.stringify(slugChanges))}
@@ -847,13 +878,14 @@ const NewVocabTable = () => {
                             : null
                     }
 
+                    {/* pagination top */}
                     <Box sx={{ pt: 3 }}>
                         <Pagination size={matches ? 'large' : 'medium'} disabled={tableLoading} color="error" siblingCount={matches ? 2 : 0} page={page} onChange={handleChange} count={maxPages}></Pagination>
                     </Box>
 
                     {(tableLoading) ? <TableLoadingSkeleton /> :
 
-                        <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 4, borderRadius: '16px', mb: 6, width: { xs: '100%', md: '50%' } }}>
+                        <Card sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 4, borderRadius: '16px', mb: 4, width: { xs: '100%', md: '50%' } }}>
                             <Table>
                                 <TableBody>
                                     {vocabularyData.map((x, index) => (
@@ -953,8 +985,55 @@ const NewVocabTable = () => {
                                 </TableBody>
                             </Table>
                         </Card>
-
                     }
+
+                    {/* pagination bot */}
+                    <Box sx={{ mb: 3 }}>
+                        <Pagination size={matches ? 'large' : 'medium'} disabled={tableLoading} color="error" siblingCount={matches ? 2 : 0} page={page} onChange={handleChange} count={maxPages}></Pagination>
+                    </Box>
+
+                    {/* submit changes bot */}
+                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 6 }}>
+
+                        <Button
+                            variant="outlined"
+                            color={tableLoading ? 'error' : counter.trueCount === vocabularyData.length ? 'success' : 'error'}
+                            disableFocusRipple
+                            disableRipple
+                            disableTouchRipple
+                            sx={{
+                                fontWeight: 'bold',
+                                fontSize: '0.95rem',
+                                borderRadius: '12px',
+                                px: 2,
+                                py: 1,
+                                minWidth: 111,
+                                minHeight: 43
+                            }}
+                        >
+                            {tableLoading ? '/' : `${counter.trueCount} / ${vocabularyData.length}`}
+                        </Button>
+
+                        <Button
+                            onClick={() => { sendChanges(); setSubmitChangesLoading(true) }}
+                            disabled={(JSON.stringify(initialPackage) === JSON.stringify(slugChanges))}
+                            variant="contained"
+                            color="error"
+                            size={matches ? 'large' : 'medium'}
+                            sx={{
+                                fontWeight: 'bold',
+                                fontSize: '0.95rem',
+                                borderRadius: '12px',
+                                px: 2,
+                                py: 1,
+                                minWidth: 111,
+                                minHeight: 43
+                            }}
+
+                        >
+                            {(submitChangesLoading) ? <CircularProgress sx={{ color: 'white' }} size='25px' /> : `Save Changes`}
+                        </Button>
+                    </Box>
 
                 </Box>
             </Container>
