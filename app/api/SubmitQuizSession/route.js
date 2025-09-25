@@ -19,6 +19,7 @@ export async function POST(request) {
     const random = body.random
     const correct = body.correct
     const incorrect = body.incorrect
+    const startFrom = body.startFrom
 
     const { error } = await supabase
         .from("quiz_sessions")
@@ -29,7 +30,8 @@ export async function POST(request) {
             quiz_type: quizType,
             random: random,
             correct: correct,
-            incorrect: incorrect
+            incorrect: incorrect,
+            start_from: startFrom
         })
 
     if (error) {

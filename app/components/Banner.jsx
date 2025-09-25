@@ -29,6 +29,7 @@ const Banner = () => {
         // getting user session if it exists
         const { data: session, status } = useSession()
         const userid = session?.user?.userId
+        const username = session?.user?.username
 
         // list containing the example words we use on the homepage
         const [exampleWords, setExampleWords] = useState([
@@ -188,9 +189,15 @@ const Banner = () => {
                             mb: 3
                         }}>
 
-                            <Typography gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, minWidth: { md: 416 } }}>
-                                「日本語能力試験アシスト」
-                            </Typography>
+                            {(status) === 'authenticated' ?
+                                < Typography gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, minWidth: { md: 416 } }}>
+                                    Welcome back, {username}!
+                                </Typography> :
+                                < Typography gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, minWidth: { md: 416 } }}>
+                                    「日本語能力試験アシスト」
+                                </Typography>
+
+                            }
 
                             <Typography sx={{ textAlign: 'center' }}>
                                 Master Japanese vocabulary through targeted practice and spaced repetition.
@@ -501,7 +508,7 @@ const Banner = () => {
                             </Card>
                         </Box>
                     </Box>
-                </Container>
+                </Container >
 
                 <Box
                     ref={moreInfo}

@@ -505,7 +505,8 @@ const NewQuizMaster = () => {
                             quizType: quizType,
                             random: randomQuiz,
                             correct: correctCount,
-                            incorrect: incorrectCount
+                            incorrect: incorrectCount,
+                            startFrom: value
                         }
 
                         const apiResponse = await fetch('/api/SubmitQuizSession',
@@ -699,6 +700,7 @@ const NewQuizMaster = () => {
             }
             else {
                 setSliderCollapse(false)
+                setValue(null)
             }
         }, [quizType])
 
@@ -717,6 +719,7 @@ const NewQuizMaster = () => {
                             <ListItemButton onClick={() => {
                                 if (nLevel != x) {
                                     setNLevel(x)
+                                    setValue(1)
                                     openNLevelSelect(false)
                                 }
                                 else {
@@ -944,7 +947,7 @@ const NewQuizMaster = () => {
                                 <Card>
                                     <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <LooksOne /><Typography sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>Current n-level</Typography>
+                                            <LooksOne /><Typography sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>N-level selection</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
                                             <SettingsIcon /><Typography sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>Test configuration</Typography>
@@ -1221,7 +1224,7 @@ const NewQuizMaster = () => {
                                     <InfoOutline fontSize={matches ? 'medium' : 'small'} color='error' />
                                 </ToggleButton>
 
-                                <ToggleButton disableFocusRipple disableTouchRipple disableRipple sx={{ borderColor: '#d32f2f' }}>
+                                <ToggleButton onClick={() => openNLevelSelect(true)} sx={{ borderColor: '#d32f2f' }}>
                                     {
                                         (nLevel) === 'n1' ? <LooksOne fontSize={matches ? 'medium' : 'small'} color={(!quizOn) ? 'error' : ''} /> :
                                             (nLevel) === 'n2' ? <LooksTwo fontSize={matches ? 'medium' : 'small'} color={(!quizOn) ? 'error' : ''} /> :
@@ -1444,7 +1447,7 @@ const NewQuizMaster = () => {
                                 <Card>
                                     <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.2 }}>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
-                                            <LooksOne /><Typography sx={{ fontSize: { md: '1.2rem', xs: '1rem' } }}>Current n-level</Typography>
+                                            <LooksOne /><Typography sx={{ fontSize: { md: '1.2rem', xs: '1rem' } }}>N-level selection</Typography>
                                         </Box>
                                         <Box sx={{ display: 'flex', flexDirection: 'row', gap: 1, alignItems: 'center', justifyContent: 'left' }}>
                                             <SettingsIcon /><Typography sx={{ fontSize: { md: '1.2rem', xs: '1rem' } }}>Test configuration</Typography>

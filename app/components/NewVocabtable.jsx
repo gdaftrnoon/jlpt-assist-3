@@ -223,7 +223,7 @@ const NewVocabTable = () => {
             // get all pages from n level
             const allPages = []
             for (let index = 1; index <= fileCount[nLevel]; index++) {
-                const response = await fetch(`vocab/${nLevel}/${nLevel}_page${index}_v1.json`)
+                const response = await fetch(`vocab/${nLevel}/${nLevel}_page${index}_v1.json`, { cache: 'force-cache' })
                 const responseJson = await response.json()
                 allPages.push(responseJson)
             }
@@ -431,16 +431,6 @@ const NewVocabTable = () => {
                 }
 
             }
-        }
-
-        // handling table search function
-        const handleSearchSubmit = (event) => {
-            event.preventDefault();
-            const formData = new FormData(event.currentTarget);
-            const formJson = Object.fromEntries(formData.entries());
-            const query = formJson.query;
-            tableQuery(query)
-            openSearchSelect(false)
         }
 
         // checkbox don't show again
