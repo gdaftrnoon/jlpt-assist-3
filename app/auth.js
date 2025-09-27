@@ -12,26 +12,22 @@ const supabaseServerside = createClient(supabaseUrl, supabaseServiceKey)
 export const { handlers, signIn, signOut, auth } = NextAuth({
     providers: [Google],
     callbacks: {
-            async jwt({ token, account, profile }) {
+        async jwt({ token, account, profile }) {
 
-                console.log("JWT callback:", { token })
-                console.log("JWT account:", { account })
-                console.log("JWT profile:", { profile })
+            if (token?.email && !token.userId) {
+                const { data } = await supabaseServerside
+                    .from('users')
+                    .select('username, user_id')
+                    .eq('email', token.email)
+                    .maybeSingle()
 
-                if (token?.email && !token.userId) {
-                    const { data } = await supabaseServerside
-                        .from('users')
-                        .select('username, user_id')
-                        .eq('email', token.email)
-                        .maybeSingle()
-
-                    if (data) {
-                        token.username = data.username;
-                        token.userId = data.user_id
-                    }
+                if (data) {
+                    token.username = data.username;
+                    token.userId = data.user_id
                 }
-                return token
-            },
+            }
+            return token
+        },
 
         async session({ session, token }) {
             if (token.username) session.user.username = token.username

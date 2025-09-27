@@ -1099,7 +1099,7 @@ const NewQuizMaster = () => {
                                                     <Alert sx={{ mb: 1 }} icon={false} severity='success'>
                                                         <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', fontSize: { md: '1rem' } }} >
                                                             <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeChecked')}>
-                                                                {progData.toBeChecked.length} card
+                                                                {orgProgData.toBeChecked.length} card
                                                             </Link>
                                                             {''} was marked as correct, but not marked as known within your vocabulary table.
                                                         </Typography>
@@ -1109,7 +1109,7 @@ const NewQuizMaster = () => {
                                                     <Alert sx={{ mb: 1 }} icon={false} severity='success'>
                                                         <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', fontSize: { md: '1rem' } }} >
                                                             <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeChecked')}>
-                                                                {progData.toBeChecked.length} cards
+                                                                {orgProgData.toBeChecked.length} cards
                                                             </Link>
                                                             {''} were marked as correct, but not marked as known within your vocabulary table.
                                                         </Typography>
@@ -1120,13 +1120,13 @@ const NewQuizMaster = () => {
                                                     <Alert sx={{ mb: 1 }} icon={false} severity='error'>
                                                         <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', fontSize: { md: '1rem' } }} >
                                                             <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeUnchecked')}>
-                                                                {progData.toBeUnchecked.length} card
+                                                                {orgProgData.toBeUnchecked.length} card
                                                             </Link>
                                                             {''} was marked as incorrect, yet marked as known within your vocabulary table.
                                                         </Typography>
                                                     </Alert>
                                                 }
-                                                {(progData.toBeUnchecked.length > 1) &&
+                                                {(orgProgData.toBeUnchecked.length > 1) &&
                                                     <Alert sx={{ mb: 1 }} icon={false} severity='error'>
                                                         <Typography gutterBottom variant='subtitle2' sx={{ textAlign: 'center', fontSize: { md: '1rem' } }} >
                                                             <Link sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => handleLinkClick('toBeUnchecked')}>{progData.toBeUnchecked.length} cards</Link>
@@ -1405,7 +1405,7 @@ const NewQuizMaster = () => {
                                     <Box sx={{ mb: 1 }}>
 
                                         {quizData[cardNumber].senses.map((x, senseIndex) => (
-                                            x.parts_of_speech != 'Wikipedia definition' && x.parts_of_speech != 'Place' ?
+                                            x.parts_of_speech != 'Wikipedia definition' && x.parts_of_speech != 'Place' && x.parts_of_speech != 'Full name' ?
                                                 <Box key={senseIndex}>
 
                                                     {x.parts_of_speech.map((f, posIndex) => (

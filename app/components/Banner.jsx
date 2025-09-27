@@ -21,7 +21,8 @@ const Banner = () => {
             button: {
                 textTransform: 'none'
             }
-        }
+        },
+        
     })
 
     const MobileHomepage = () => {

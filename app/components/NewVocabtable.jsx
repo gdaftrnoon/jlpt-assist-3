@@ -29,6 +29,9 @@ const NewVocabTable = () => {
             button: {
                 textTransform: 'none'
             }
+        },
+        palette: {
+            mode:'dark'
         }
     })
 
@@ -643,7 +646,7 @@ const NewVocabTable = () => {
         )
 
         return (
-            <Container maxWidth='xl' sx={{}}>
+            <Container sx={{}}>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
 
                     <Dialog open={introDialog}>
@@ -950,7 +953,7 @@ const NewVocabTable = () => {
                                                                 }}>
                                                                 Meaning
                                                             </Typography>
-                                                            {x.senses.filter(c => !c.parts_of_speech?.includes('Place') && !c.parts_of_speech?.includes('Wikipedia definition'))
+                                                            {x.senses.filter(c => !c.parts_of_speech?.includes('Place') && !c.parts_of_speech?.includes('Wikipedia definition') && c.parts_of_speech != 'Full name')
                                                                 .map((c, cindex) => (
                                                                     <Box key={cindex}>
                                                                         <Typography key={`pos-${cindex}`}
