@@ -579,6 +579,8 @@ const NewVocabTable = () => {
                         <ListItem key={x}>
                             <ListItemButton onClick={() => {
                                 setItemsPerPage(x)
+                                setPage(1)
+                                adjustTable(page, itemsPerPage)
                                 openSliceSelect(false)
                             }}>
                                 <ListItemText sx={{ textAlign: 'center', fontSize: { xs: '0.9rem', md: '1.2rem' } }}>
