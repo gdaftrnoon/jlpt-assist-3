@@ -506,7 +506,7 @@ const NewQuizMaster = () => {
                             random: randomQuiz,
                             correct: correctCount,
                             incorrect: incorrectCount,
-                            startFrom: value
+                            startFrom: value[0]
                         }
 
                         const apiResponse = await fetch('/api/SubmitQuizSession',

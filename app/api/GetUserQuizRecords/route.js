@@ -16,20 +16,32 @@ export async function POST(request) {
 
         const { data, error } = await supabase
             .from('quiz_sessions')
-            .select('n_level, quiz_type, random, correct, incorrect, start_from, created_at')
+            .select('quiz_id, n_level, quiz_type, random, correct, incorrect, start_from, created_at')
             .eq('user_id', userid)
 
         if (data) {
-            console.log(data)
             return NextResponse.json({ message: data, status: '200' })
         }
         else {
-            return NextResponse.json({ message: 'error pulling quiz data', status: '404' })
+            return NextResponse.json({ message: `error pulling test metadata: ${error}`, status: '404' })
         }
 
     }
     else if (requestMsg.RequestType === 'data') {
-        return NextResponse.json({ message: 'hello data, from GetUserQuizMeta', status: '200' })
+
+        const qid = requestMsg.QuizID
+
+        const { data, error } = await supabase
+            .from('quiz_results')
+            .select('word_id, is_correct')
+            .eq('quiz_id', qid)
+
+        if (data) {
+            return NextResponse.json({ message: data, status: '200' })
+        }
+        else {
+            return NextResponse.json({ message: `error pulling test metadata: ${error}`, status: '404' })
+        }
     }
 
     else {
