@@ -7,25 +7,15 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import Collapse from '@mui/material/Collapse';
 import Checkbox from "@mui/material/Checkbox";
 import { redirect } from 'next/navigation';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { createTheme, useColorScheme } from '@mui/material/styles';
 import { useRef } from "react";
 import { useSession } from 'next-auth/react';
 
 const Banner = () => {
 
-    const theme = createTheme({
-        typography: {
-            fontFamily: [
-                "Quicksand"
-            ].join(','),
-            button: {
-                textTransform: 'none'
-            }
-        },
-        
-    })
-
     const MobileHomepage = () => {
+
+        const [mode, setMode] = useState('light')
 
         // getting user session if it exists
         const { data: session, status } = useSession()
@@ -163,6 +153,23 @@ const Banner = () => {
 
         }, [exampleWords])
 
+
+        useEffect(() => {
+            if (localStorage.getItem('mode')) {
+                setMode(localStorage.getItem('mode'))
+            }
+        }, [])
+
+        useEffect(() => {
+            const handler = (event) => {
+                if (event.key === 'mode') {
+                    setMode(event.newValue)
+                }
+            }
+            window.addEventListener("storage", handler)
+            return () => window.removeEventListener("storage", handler)
+        }, [])
+
         // for the more info button
         const moreInfo = useRef(null);
 
@@ -191,7 +198,7 @@ const Banner = () => {
                         }}>
 
                             {(status) === 'authenticated' ?
-                                < Typography gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, minWidth: { md: 416 } }}>
+                                < Typography gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, minWidth: { md: 416 }, textAlign: 'center' }}>
                                     Welcome back, {username}!
                                 </Typography> :
                                 < Typography gutterBottom sx={{ fontSize: { xs: '1.5rem', md: '2rem' }, minWidth: { md: 416 } }}>
@@ -519,7 +526,7 @@ const Banner = () => {
                         justifyContent: 'center',
                         flexDirection: 'column',
                         width: '100%',
-                        backgroundColor: '#ffebee',
+                        backgroundColor: mode === 'light' ? '#ffebee' : 'rgba(255, 255, 255, 0.08)',
                         mt: 5,
                         pt: 10,
                         pb: 15
@@ -588,9 +595,7 @@ const Banner = () => {
     }
 
     return (
-        <ThemeProvider theme={theme}>
-            <MobileHomepage />
-        </ThemeProvider>
+        <MobileHomepage />
     )
 }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useContext, useEffect } from 'react'
-import { AppBar, IconButton, Toolbar, Typography, Button, Box, Popper, Paper, MenuList, MenuItem, ClickAwayListener, Zoom, Container, Avatar, CircularProgress } from '@mui/material'
+import { AppBar, IconButton, Toolbar, Typography, Button, Box, Popper, Paper, MenuList, MenuItem, ClickAwayListener, Zoom, Container, Avatar, CircularProgress, Switch } from '@mui/material'
 import Link from 'next/link'
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { signOut } from 'next-auth/react';
@@ -14,21 +14,9 @@ import Menu from '@mui/material/Menu';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { redirect } from 'next/navigation';
 
-const theme = createTheme({
-    typography: {
-        fontFamily: [
-            "Quicksand"
-        ].join(','),
-        button: {
-            textTransform: 'none'
-        }
-    },
-    palette: {
-        mode:'dark'
-    }
-})
-
 const Navbar = () => {
+
+    const [mode, setMode] = useState('light')
 
     const { user, status } = useContext(UserContext)
 
@@ -37,6 +25,26 @@ const Navbar = () => {
     async function signOutHelper() {
         await signOut({ redirectTo: '/' })
     }
+
+    useEffect(() => {
+        if (!localStorage.getItem("mode")) {
+            localStorage.setItem('mode', 'light')
+            setMode('light')
+        }
+        else {
+            setMode(localStorage.getItem('mode'))
+        }
+    }, [])
+
+    useEffect(() => {
+        const handler = (event) => {
+            if (event.key === 'mode') {
+                setMode(event.newValue)
+            }
+        }
+        window.addEventListener("storage", handler)
+        return () => window.removeEventListener("storage", handler)
+    }, [])
 
     useEffect(() => {
         if (!localStorage.getItem("pullFromDb")) {
@@ -55,22 +63,22 @@ const Navbar = () => {
                         <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
 
                             {/* LEFT */}
-                            <Box sx={{ display: 'flex', flex:1 }}>
+                            <Box sx={{ display: 'flex', flex: 1 }}>
 
                                 <IconButton sx={{ display: { md: 'none' } }} onClick={(event) => setMobileAnchorEl(event.currentTarget)}>
                                     <MenuIcon sx={{ color: 'white' }} />
                                 </IconButton>
 
-                                <Box sx={{ display: { xs: 'none', md:'flex', gap: 5 }}}>
-                                    <Button onClick={() => redirect('/vocab')} variant='text' sx={{color:'white', fontWeight:'600'}}>Vocabulary</Button>
-                                    <Button onClick={() => redirect('/quiz')} variant='text' sx={{color:'white', fontWeight:'600'}}>Quiz</Button>
-                                    <Button disabled onClick={() => redirect('/review')} variant='text' sx={{color:'white', fontWeight:'600'}}>Review</Button>
+                                <Box sx={{ display: { xs: 'none', md: 'flex', gap: 5 } }}>
+                                    <Button onClick={() => redirect('/vocab')} variant='text' sx={{ color: 'white', fontWeight: '600' }}>Vocabulary</Button>
+                                    <Button onClick={() => redirect('/quiz')} variant='text' sx={{ color: 'white', fontWeight: '600' }}>Quiz</Button>
+                                    <Button disabled onClick={() => redirect('/review')} variant='text' sx={{ color: 'white', fontWeight: '600' }}>Review</Button>
                                 </Box>
 
                             </Box>
 
                             {/* CENTER */}
-                            <Box component={Link} href='/' sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1, textDecoration: 'none', flex:{xs:2, md:1}}}>
+                            <Box component={Link} href='/' sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1, textDecoration: 'none', flex: { xs: 2, md: 1 } }}>
                                 <SunnySnowingIcon sx={{ color: 'white' }} />
                                 <Typography sx={{ color: 'white', fontWeight: '700' }}>
                                     JLPT ASSIST
@@ -78,7 +86,7 @@ const Navbar = () => {
                             </Box>
 
                             {/* RIGHT */}
-                            <Box sx={{ display: 'flex', minWidth: 64, minHeight: 37, justifyContent: 'right', flex:1 }}>
+                            <Box sx={{ display: 'flex', minWidth: 64, minHeight: 37, justifyContent: 'right', flex: 1 }}>
                                 {(status) === 'loading' ? null :
                                     (status === 'authenticated' && (username)) ?
                                         <>
@@ -93,12 +101,26 @@ const Navbar = () => {
                                             </Avatar>
                                             <Menu anchorEl={avatarAnchorEl} open={Boolean(avatarAnchorEl)} onClose={() => setAvatarAnchorEl(null)}>
                                                 <MenuItem onClick={() => signOutHelper()}>Logout</MenuItem>
+                                                <MenuItem onClick={() => {
+                                                    if (mode === 'light') {
+                                                        localStorage.setItem('mode', 'dark')
+                                                        window.dispatchEvent(new StorageEvent('storage', { key: 'mode', newValue: 'dark' }))
+                                                        setMode('dark')
+                                                    }
+                                                    else if (mode === 'dark') {
+                                                        localStorage.setItem('mode', 'light')
+                                                        window.dispatchEvent(new StorageEvent('storage', { key: 'mode', newValue: 'light' }))
+                                                        setMode('light')
+                                                    }
+                                                }}>
+                                                    {(mode === 'light') ? 'Dark Mode' : 'Light Mode'}
+                                                </MenuItem>
                                             </Menu>
                                         </>
                                         :
                                         <Button
                                             component={Link}
-                                            sx={{ color: 'white', fontWeight:'700' }}
+                                            sx={{ color: 'white', fontWeight: '700' }}
                                             href='/login'
                                         >
                                             Login
@@ -124,9 +146,9 @@ const Navbar = () => {
     }
 
     return (
-        <ThemeProvider theme={theme}>
-            <MobileNavbar />
-        </ThemeProvider>
+
+        <MobileNavbar />
+
     )
 }
 

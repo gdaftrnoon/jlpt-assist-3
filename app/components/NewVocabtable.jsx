@@ -1,5 +1,5 @@
 'use client'
-import { Box, Button, Card, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Table, TableBody, TableCell, TableRow, ToggleButton, ToggleButtonGroup, Typography, CircularProgress, TextField, Container, List, ListItemButton, ListItemText, ListItem, Alert, CardContent, DialogContentText, Skeleton, TableContainer, TableHead } from '@mui/material'
+import { Box, Button, Card, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Table, TableBody, TableCell, TableRow, ToggleButton, ToggleButtonGroup, Typography, CircularProgress, TextField, Container, List, ListItemButton, ListItemText, ListItem, Alert, CardContent, DialogContentText, Skeleton, TableContainer, TableHead, CssBaseline } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -21,19 +21,6 @@ import { createTheme } from '@mui/material/styles';
 
 const NewVocabTable = () => {
 
-    const theme = createTheme({
-        typography: {
-            fontFamily: [
-                "Quicksand"
-            ].join(','),
-            button: {
-                textTransform: 'none'
-            }
-        },
-        palette: {
-            mode:'dark'
-        }
-    })
 
     const MobileLayout = () => {
 
@@ -1036,9 +1023,9 @@ const NewVocabTable = () => {
     }
 
     return (
-        <ThemeProvider theme={theme}>
+
             <MobileLayout />
-        </ThemeProvider>
+
     )
 }
 

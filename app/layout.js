@@ -1,5 +1,5 @@
-import "./globals.css";
 import { Quicksand } from 'next/font/google'
+import MuiThemeProvider from './MuiThemeProvider';
 
 const quicksand = Quicksand({
   subsets: ['latin'],
@@ -15,7 +15,9 @@ export default function RootLayout({ children }) {
 
     <html lang="en" className={quicksand.className}>
       <body>
-        {children}
+        <MuiThemeProvider>
+          {children}
+        </MuiThemeProvider>
       </body>
     </html>
 

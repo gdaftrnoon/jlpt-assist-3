@@ -12,20 +12,10 @@ import {
   TextField,
   Typography,
   Alert,
+  CssBaseline,
 } from "@mui/material";
 import GoogleSignIn from "../serveraction";
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-
-const theme = createTheme({
-  typography: {
-    fontFamily: [
-      "Quicksand"
-    ].join(','),
-    button: {
-      textTransform: 'none'
-    }
-  }
-})
 
 const LoginLogout = () => {
 
@@ -48,7 +38,7 @@ const LoginLogout = () => {
               Login Options
             </Typography>
 
-            <Box sx={{ mt: 2, textAlign:'center' }}>
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
               <Button
                 onClick={() => GoogleSignIn()}
                 color="error"
@@ -60,7 +50,7 @@ const LoginLogout = () => {
               >
                 Login with Google
               </Button>
-              <Alert icon={false} severity="info" sx={{mt: 2}}>
+              <Alert icon={false} severity="info" sx={{ mt: 2 }}>
                 <Typography>
                   Google is currently the our sole auth service provider, please bear with us while we work on adding more!
                 </Typography>
@@ -76,9 +66,7 @@ const LoginLogout = () => {
   )
 
   return (
-    <ThemeProvider theme={theme}>
       <MobileLogin />
-    </ThemeProvider>
   );
 };
 

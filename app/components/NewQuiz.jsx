@@ -1,5 +1,5 @@
 "use client"
-import { Alert, Box, Button, Card, CardActions, CardContent, CardHeader, Checkbox, Chip, CircularProgress, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
+import { Alert, Box, Button, Card, CardActions, CardContent, CardHeader, Checkbox, Chip, CircularProgress, Container, CssBaseline, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControlLabel, IconButton, List, ListItem, ListItemButton, ListItemText, Paper, Stack, Switch, Table, TableBody, TableCell, TableContainer, TableFooter, TableHead, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import { ArrowLeft, ArrowRight, Cancel, CancelOutlined, Check, CheckCircle, CheckCircleOutline, Clear, Done, DoneOutline, InfoOutline, Looks3, Looks4, Looks5, LooksOne, LooksTwo, Quiz, Visibility } from '@mui/icons-material';
 import Collapse from '@mui/material/Collapse';
@@ -19,17 +19,6 @@ import Slider from '@mui/material/Slider';
 import Snackbar from '@mui/material/Snackbar';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
-
-const theme = createTheme({
-    typography: {
-        fontFamily: [
-            "Quicksand"
-        ].join(','),
-        button: {
-            textTransform: 'none'
-        }
-    }
-})
 
 const NewQuizMaster = () => {
 
@@ -824,7 +813,7 @@ const NewQuizMaster = () => {
                                             ></Slider>
                                         </Box>
 
-                                        <Alert sx={{ fontSize: { md: '1rem', xs: '0.85rem' }, textAlign:'center' }} severity='info' icon={false}>
+                                        <Alert sx={{ fontSize: { md: '1rem', xs: '0.85rem' }, textAlign: 'center' }} severity='info' icon={false}>
                                             Each page contains about 20 cards. Use the slider to select which page the flashcards should start from.
                                         </Alert>
 
@@ -1261,7 +1250,7 @@ const NewQuizMaster = () => {
                                 </ToggleButton>
 
                                 <ToggleButton onClick={(quizOn) ? () => openStopSelect(true) : null} variant='contained' size='small' sx={{ borderColor: '#d32f2f', px: { md: 1.3, xs: 1.3 } }}>
-                                    <StopIcon fontSize={matches ? 'medium' : 'small'} color={(quizOn) ? 'error' : ''} />
+                                    <StopIcon fontSize={matches ? 'medium' : 'small'} color={(quizOn) ? 'error' : 'error'} />
                                 </ToggleButton>
 
                                 {progData['blank'].length === 0 && quizOn ?
@@ -1482,9 +1471,9 @@ const NewQuizMaster = () => {
     }
 
     return (
-        <ThemeProvider theme={theme}>
+
             <MobileLayout />
-        </ThemeProvider>
+
     )
 
 }

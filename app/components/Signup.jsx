@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Collapse,
+  CssBaseline,
   Paper,
   TextField,
   Typography,
@@ -13,6 +14,8 @@ import Alert from '@mui/material/Alert';
 import CheckIcon from '@mui/icons-material/Check';
 import { redirect, useRouter } from 'next/navigation'
 import CircularProgress from '@mui/material/CircularProgress';
+import { ThemeProvider } from '@mui/material/styles';
+import { createTheme } from '@mui/material/styles';
 
 const SignUp = () => {
 
@@ -79,78 +82,80 @@ const SignUp = () => {
   }
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        width: '100vw',
-        overflow: 'hidden',
-        backgroundColor: '#f5f5f5',
-      }}
-    >
-
-      <Paper
-        elevation={3}
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          padding: 4,
-          width: '100%',
-          maxWidth: 400,
-          overflow: 'hidden',
-        }}
-      >
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Sign Up with Google
-        </Typography>
 
         <Box
-          component="form"
-          onSubmit={handleSubmit}
           sx={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 2,
-            width: '100%',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100vh',
+            width: '100vw',
+            overflow: 'hidden',
+            backgroundColor: '#f5f5f5',
           }}
         >
 
-          <TextField placeholder="Enter username" id='username' value={username} onChange={(e) => setUsername(e.target.value)} required fullWidth autoFocus />
-          {loading ?
-            <Button variant="contained" fullWidth sx={{ mt: 1 }}>
-              <CircularProgress size="25px" color="inherit" />
-            </Button>
-            :
-            <Button color="error" type="submit" variant="contained" fullWidth sx={{ mt: 1 }}>
-              Create Account
-            </Button>
-          }
-          <Box
+          <Paper
+            elevation={3}
             sx={{
               display: 'flex',
-              justifyContent: 'center',
+              flexDirection: 'column',
               alignItems: 'center',
-              fontSize: '0.85rem',
-              mt: 1,
+              padding: 4,
+              width: '100%',
+              maxWidth: 400,
+              overflow: 'hidden',
             }}
           >
-            <Typography>Already have an account?</Typography>
-          </Box>
-          <Button color="error" variant="outlined" onClick={() => {redirect('/login')}} fullWidth>
-            Login
-          </Button>
-        </Box>
-      </Paper>
-      <Collapse in={alertMsgVisible} sx={{ marginTop: '20px' }}>
-        <Alert severity={alertSeverity}>
-          {alertMsgBody}
-        </Alert>
-      </Collapse>
-    </Box >
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Sign Up with Google
+            </Typography>
+
+            <Box
+              component="form"
+              onSubmit={handleSubmit}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                width: '100%',
+              }}
+            >
+
+              <TextField placeholder="Enter username" id='username' value={username} onChange={(e) => setUsername(e.target.value)} required fullWidth autoFocus />
+              {loading ?
+                <Button variant="contained" fullWidth sx={{ mt: 1 }}>
+                  <CircularProgress size="25px" color="inherit" />
+                </Button>
+                :
+                <Button color="error" type="submit" variant="contained" fullWidth sx={{ mt: 1 }}>
+                  Create Account
+                </Button>
+              }
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  fontSize: '0.85rem',
+                  mt: 1,
+                }}
+              >
+                <Typography>Already have an account?</Typography>
+              </Box>
+              <Button color="error" variant="outlined" onClick={() => { redirect('/login') }} fullWidth>
+                Login
+              </Button>
+            </Box>
+          </Paper>
+          <Collapse in={alertMsgVisible} sx={{ marginTop: '20px' }}>
+            <Alert severity={alertSeverity}>
+              {alertMsgBody}
+            </Alert>
+          </Collapse>
+        </Box >
+
   );
 };
 
