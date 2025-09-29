@@ -1213,7 +1213,7 @@ const NewQuizMaster = () => {
                                     <InfoOutline fontSize={matches ? 'medium' : 'small'} color='error' />
                                 </ToggleButton>
 
-                                <ToggleButton onClick={() => openNLevelSelect(true)} sx={{ borderColor: '#d32f2f' }}>
+                                <ToggleButton onClick={() => {!quizOn && openNLevelSelect(true)}} sx={{ borderColor: '#d32f2f' }}>
                                     {
                                         (nLevel) === 'n1' ? <LooksOne fontSize={matches ? 'medium' : 'small'} color={(!quizOn) ? 'error' : ''} /> :
                                             (nLevel) === 'n2' ? <LooksTwo fontSize={matches ? 'medium' : 'small'} color={(!quizOn) ? 'error' : ''} /> :
