@@ -68,9 +68,6 @@ const ReviewComponent = () => {
 
                 const jlptResponse = await fetch('api/FetchJlpt',
                     {
-                        cache: 'force-cache'
-                    },
-                    {
                         method: 'POST', body: JSON.stringify({ nLevel: nLevel, startPage: startPage })
                     }
                 )
