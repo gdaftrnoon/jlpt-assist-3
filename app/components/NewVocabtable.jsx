@@ -119,6 +119,8 @@ const NewVocabTable = () => {
         const uppercase = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
         const alphabet = [...lowercase, ...uppercase]
 
+        const [progress, setProgress] = useState(0)
+
         // ticked on page counter
         const [counter, setCounter] = useState({
             trueCount: 0,
@@ -213,9 +215,10 @@ const NewVocabTable = () => {
             // get all pages from n level
             const allPages = []
             for (let index = 1; index <= fileCount[nLevel]; index++) {
-                const response = await fetch(`vocab/${nLevel}/${nLevel}_page${index}_v1.json`, { cache: 'force-cache' })
+                const response = await fetch(`vocab/${nLevel}/${nLevel}_page${index}_v1.json`)
                 const responseJson = await response.json()
                 allPages.push(responseJson)
+                setProgress(Math.floor((index / fileCount[nLevel]) * 100))
             }
 
             const flatPages = allPages.flatMap(x => x)
@@ -232,6 +235,7 @@ const NewVocabTable = () => {
             // slice data based on items per page and page number
             const slicedPages = flatPages.slice((page - 1) * itemsPerPage, Math.min(itemsPerPage * page, slugCount))
             setVocabularyData(slicedPages)
+            setProgress(0)
         }
 
         // get user known words according to known ids
@@ -828,7 +832,7 @@ const NewVocabTable = () => {
                                 minHeight: 43
                             }}
                         >
-                            {tableLoading ? '/' : `${counter.trueCount} / ${vocabularyData.length}`}
+                            {tableLoading ? `${progress}%` : `${counter.trueCount} / ${vocabularyData.length}`}
                         </Button>
 
                         <Button
@@ -993,7 +997,7 @@ const NewVocabTable = () => {
                                 minHeight: 43
                             }}
                         >
-                            {tableLoading ? '/' : `${counter.trueCount} / ${vocabularyData.length}`}
+                            {tableLoading ? `${progress}%` : `${counter.trueCount} / ${vocabularyData.length}`}
                         </Button>
 
                         <Button
@@ -1024,7 +1028,7 @@ const NewVocabTable = () => {
 
     return (
 
-            <MobileLayout />
+        <MobileLayout />
 
     )
 }

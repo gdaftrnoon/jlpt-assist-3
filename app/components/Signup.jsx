@@ -1,21 +1,16 @@
 'use client'
-import { Google } from "@mui/icons-material";
 import {
   Box,
   Button,
   Collapse,
-  CssBaseline,
   Paper,
   TextField,
   Typography,
 } from "@mui/material";
 import { useState } from "react";
 import Alert from '@mui/material/Alert';
-import CheckIcon from '@mui/icons-material/Check';
 import { redirect, useRouter } from 'next/navigation'
 import CircularProgress from '@mui/material/CircularProgress';
-import { ThemeProvider } from '@mui/material/styles';
-import { createTheme } from '@mui/material/styles';
 
 const SignUp = () => {
 
