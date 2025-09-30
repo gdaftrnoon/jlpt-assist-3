@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { readFileSync } from 'fs'
 
 export async function POST(request) {
 
@@ -18,8 +17,8 @@ export async function POST(request) {
     const allPages = []
 
     for (let index = startPage; index <= fileCount[nLevel]; index++) {
-        const fileContents = readFileSync(`public/vocab/${nLevel}/${nLevel}_page${index}_v1.json`, 'utf-8')
-        const jsonData = JSON.parse(fileContents)
+        const data = (await fetch(`https://jlptassist.vercel.app/vocab/${nLevel}/${nLevel}_page${index}_v1.json`))
+        const jsonData = await data.json()    
         // const data = (await fetch(`vocab/${nLevel}/${nLevel}_page${index}_v1.json`)).json()
         allPages.push(jsonData)
     }
@@ -27,7 +26,7 @@ export async function POST(request) {
     const flatPages = allPages.flatMap(x => x)
 
     console.log('-----------------------------------------------------------------------')
-    console.log(flatPages[1])
+    console.log(allPages)
     console.log('-----------------------------------------------------------------------')
 
     return new Response(

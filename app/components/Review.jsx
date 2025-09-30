@@ -1,9 +1,21 @@
 'use client'
-import { Typography, Container, Button, TableContainer, TableHead, TableRow, TableCell, TableBody, Table, Box, Paper } from "@mui/material"
+import { Typography, Container, Button, TableContainer, TableHead, TableRow, TableCell, TableBody, Table, Box, Paper, useTheme, useMediaQuery, Grid, Card } from "@mui/material"
 import { useEffect, useState } from "react";
+import { styled } from '@mui/material/styles';
+import { BarChart } from '@mui/x-charts/BarChart';
+import { useAnimate, useAnimateBar, useDrawingArea } from '@mui/x-charts/hooks';
+import { PiecewiseColorLegend } from '@mui/x-charts/ChartsLegend';
+import { useSession } from "next-auth/react";
 
 
 const ReviewComponent = () => {
+
+    // getting user session if it exists
+    const { data: session, status } = useSession()
+    const userid = session?.user?.userId
+
+    const thema = useTheme();
+    const matches = useMediaQuery(thema.breakpoints.up('md'));
 
     const fileCount = {
         'n1': 172,
@@ -24,6 +36,73 @@ const ReviewComponent = () => {
 
     // holds the card in spotlight
     const [spotlightCard, setSpotlightCard] = useState({})
+
+    const [knownWordIDs, setKnownWordIDs] = useState([])
+
+    const [progData, setProgData] = useState([])
+
+    // function to retrieve all word ids, all vocab pages
+    const getUserVocab = async () => {
+
+        if (session) {
+
+            // getting user vocab
+            const response = await fetch('/api/GetUserVocab', {
+                method: 'GET',
+            })
+
+            const data = await response.json()
+
+            // if error, show error message
+            if (!response.ok) {
+                alert(data.message)
+                setTimeout(() => {
+                    redirect('/')
+                }, 2000)
+            }
+
+            if (response.ok && data) {
+
+                const knownWordIds = data.message.map(a => Number(a.word_id))
+                setKnownWordIDs(knownWordIds)
+
+                const info = {} // contains vocab data for all n levels
+                const barchartData = []
+
+                // Fetch all levels in parallel
+                await Promise.all(
+                    Object.keys(fileCount).map(async (level) => {
+                        const fc = fileCount[level];
+                        const pagePromises = [];
+                        for (let index = 1; index <= fc; index++) {
+                            pagePromises.push(
+                                fetch(`vocab/${level}/${level}_page${index}_v1.json`).then(res => res.json())
+                            );
+                        }
+                        const store = await Promise.all(pagePromises);
+                        info[level] = store.flatMap(x => x);
+                    })
+                );
+
+                console.log('info', info)
+
+                Object.keys(info).forEach(level => {
+                    const slugCount = info[level].length
+                    const levelWordIDs = info[level].map(x => x.id)
+                    const knownWordIDsSet = new Set(knownWordIds) // make it a set for speed
+                    const knownWordsOnLevelCount = levelWordIDs.filter(x => knownWordIDsSet.has(x)).length
+                    const completePerc = Math.floor((knownWordsOnLevelCount / slugCount) * 100)
+                    const nData = {
+                        level: level,
+                        completion: completePerc
+                    }
+                    barchartData.push(nData)
+                })
+                console.log('barchartdata', barchartData)
+                setProgData(barchartData)
+            }
+        }
+    }
 
     // fetching test metadata only
     const fetchUserQuizRecords = async (reqtype, qid) => {
@@ -134,182 +213,51 @@ const ReviewComponent = () => {
 
     return (
 
-                <Container sx={{}}>
-
-                    {/* metadata */}
-                    <TableContainer component={Paper} sx={{ mt: 6, pb: 2, pt: 2 }}>
-                        <Table size="small">
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell sx={{ textAlign: 'center' }}>Test Date</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>N-Level</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>Test Type</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>Random</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>Correct</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>Incorrect</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>Score</TableCell>
-                                    <TableCell sx={{ textAlign: 'center' }}>Start Page</TableCell>
-                                    <TableCell></TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {(testMeta.length > 0) ?
-                                    testMetaSliced.map((test, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell sx={{ textAlign: 'center' }}>{`${test.created_at.slice(8, 10)}/${test.created_at.slice(5, 7)}/${test.created_at.slice(0, 4)}`}</TableCell>
-                                            <TableCell sx={{ textAlign: 'center' }}>{test.n_level}</TableCell>
-                                            <TableCell sx={{ textAlign: 'center' }}>{test.quiz_type}</TableCell>
-                                            <TableCell sx={{ textAlign: 'center' }}>{test.random === true ? 'True' : 'False'}</TableCell>
-                                            <TableCell sx={{ textAlign: 'center' }}>{test.correct}</TableCell>
-                                            <TableCell sx={{ textAlign: 'center' }}>{test.incorrect}</TableCell>
-                                            <TableCell sx={{ textAlign: 'center' }}>{Math.round(((test.correct) / (test.correct + test.incorrect)) * 100) / 100}</TableCell>
-                                            <TableCell sx={{ textAlign: 'center' }}>{test.start_from}</TableCell>
-                                            <TableCell sx={{ textAlign: 'left' }}>
-                                                <Button onClick={() => fetchTestData(
-                                                    'data',
-                                                    test.quiz_id,
-                                                    test.n_level
-                                                )}
-                                                    size="small"
-                                                >
-                                                    View
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
-                                    :
-                                    <TableRow>
-                                        <TableCell colSpan={9}>
-                                            <Typography sx={{ textAlign: 'center' }}>No test data available</Typography>
-                                        </TableCell>
-                                    </TableRow>
+        <Container sx={{}}>
+            <Grid container spacing={2} sx={{ mt: 6 }}>
+                <Grid size={12}>
+                    <Paper sx={{ textAlign: 'center' }}>
+                        <Button onClick={() => getUserVocab()}>!</Button>
+                        <BarChart
+                            height={250}
+                            dataset={progData}
+                            series={[
+                                {
+                                    id: 'completion',
+                                    dataKey: 'completion',
+                                    stack: 'user completion',
+                                    valueFormatter: (value) => `${value}%`,
                                 }
-                            </TableBody>
-                        </Table>
+                            ]}
+                            layout="horizontal"
+                            xAxis={[
+                                {
+                                    id: 'color',
+                                    min: 0,
+                                    max: 100,
+                                    colorMap: {
+                                        type: 'piecewise',
+                                        thresholds: [50, 85],
+                                        colors: ['#d32f2f', '#78909c', '#1976d2'],
+                                    },
+                                    valueFormatter: (value) => `${value}%`
+                                }
+                            ]}
+                            barLabel={(v) => `${v.value}%`}
+                            yAxis={[
+                                {
+                                    scaleType: 'band',
+                                    dataKey: 'level',
+                                    width: 140,
+                                },
+                            ]}
+                        >
+                        </BarChart>
+                    </Paper>
+                </Grid>
+            </Grid>
 
-                        {(testMeta.length > 0) &&
-                            <Box sx={{ textAlign: 'center', mt: 2 }}>
-                                <Button onClick={() => { changePage('back', page) }}>Prev</Button>
-                                {<Button>{`${page + 1} | ${Math.ceil(testMeta.length / 5)}`}</Button>}
-                                <Button onClick={() => { changePage('forward', page) }}>Next</Button>
-                            </Box>
-                        }
-
-                    </TableContainer>
-
-                    {/* test data and card details */}
-                    <Box sx={{ display: 'flex', flexDirection: 'row', mt: 3, gap: 2 }}>
-
-                        <TableContainer component={Paper} sx={{ py: 2, px: 4, width: '40%', height: 560 }}>
-                            <Box sx={{ minHeight: '90%' }}>
-                                <Table size="small">
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell sx={{ textAlign: 'left' }}>Word</TableCell>
-                                            <TableCell sx={{ textAlign: 'left' }}>Result</TableCell>
-                                            <TableCell sx={{ textAlign: 'left' }}></TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {(testCardsSliced.length > 0) ?
-                                            testCardsSliced.map((word, index) => (
-                                                <TableRow key={index}>
-                                                    <TableCell sx={{ textAlign: 'left', width: '90%' }}>
-                                                        {word.slug}
-                                                    </TableCell>
-                                                    <TableCell sx={{ textAlign: 'left', width: '5%' }}>
-                                                        {word.result === true ? 'Correct' : 'Incorrect'}
-                                                    </TableCell>
-                                                    <TableCell sx={{ textAlign: 'left', width: '5%' }}>
-                                                        <Button onClick={() => {
-                                                            setSpotlightCard(testCardsSliced.filter(x => x.id === word.id))
-                                                            console.log('spotlight', testCardsSliced.filter(x => x.id === word.id))
-                                                        }
-                                                        }
-                                                            size="small"
-                                                        >
-                                                            Details
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
-                                            :
-                                            <TableRow>
-                                                <TableCell colSpan={7}>
-                                                    <Typography sx={{ textAlign: 'center' }}>No data available</Typography>
-                                                </TableCell>
-                                            </TableRow>
-                                        }
-                                    </TableBody>
-                                </Table>
-                            </Box>
-
-                            {/* test data pagination buttons */}
-
-                            {(testCards.length > 0) &&
-                                <Box sx={{ textAlign: 'center', mt: 2, width: '100%' }}>
-                                    <Button onClick={() => { changeTCpage('back', tcPage) }}>Prev</Button>
-                                    {<Button>{`${tcPage + 1} | ${Math.ceil(testCards.length / 10)}`}</Button>}
-                                    <Button onClick={() => { changeTCpage('forward', tcPage) }}>Next</Button>
-                                </Box>
-                            }
-
-                        </TableContainer>
-
-                        {/* spotlight card */}
-                        <Paper sx={{ py: 2, px: 4, width: '60%' }}>
-
-                            {(spotlightCard.length > 0) ?
-                                <Box>
-                                    <Box>
-                                        <Typography sx={{ textAlign: 'center', fontWeight: '700', fontSize: { xs: '2.5rem', md: '3rem' } }}>
-                                            {spotlightCard[0].slug}
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{ py: 1 }}>
-                                        {[...new Set(spotlightCard[0].japanese.map(y => y.word))].map((z, zindex) => (
-                                            <Typography key={zindex} sx={{ fontWeight: '700', fontSize: { xs: '1.8rem', md: '2rem' } }}>{z}</Typography>
-                                        ))}
-
-                                        <Typography gutterBottom sx={{ color: 'orange', mt: 1, fontWeight: '700', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>Reading</Typography>
-
-                                        {[...new Set(spotlightCard[0].japanese.map((x => x.reading)))].map(b => (
-                                            <Typography key={b} sx={{ fontWeight: '700', fontSize: { xs: '1.2rem', md: '1.2rem' } }}>{b}</Typography>
-                                        ))}
-
-                                        <Typography gutterBottom sx={{ color: 'orange', mt: 1, fontWeight: '700', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>Meaning</Typography>
-
-                                        <Box sx={{ mb: 1 }}>
-                                            {spotlightCard[0].senses.map((x, senseIndex) => (
-                                                x.parts_of_speech != 'Wikipedia definition' && x.parts_of_speech != 'Place' && x.parts_of_speech != 'Full name' ?
-                                                    <Box key={senseIndex}>
-
-                                                        {x.parts_of_speech.map((f, posIndex) => (
-                                                            <Typography key={posIndex} sx={{ color: 'grey', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
-                                                                {f}
-                                                            </Typography>
-                                                        ))}
-
-                                                        {x.tags.map((g, tagIndex) => (
-                                                            <Typography key={tagIndex} sx={{ color: 'grey', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
-                                                                {g}
-                                                            </Typography>
-                                                        ))}
-
-                                                        <Typography sx={{ mb: 1, fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
-                                                            {x.english_definitions.join(', ')}
-                                                        </Typography>
-                                                    </Box>
-                                                    : null
-                                            ))}
-                                        </Box>
-                                    </Box>
-                                </Box> :
-                                null
-                            }
-                        </Paper>
-                    </Box>
-                </Container>
+        </Container>
 
 
     )
