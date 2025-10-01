@@ -1,11 +1,13 @@
 'use client'
-import { Typography, Container, Button, TableContainer, TableHead, TableRow, TableCell, TableBody, Table, Box, Paper, useTheme, useMediaQuery, Grid, Card } from "@mui/material"
+import { Typography, Container, Button, TableContainer, TableHead, TableRow, TableCell, TableBody, Table, Box, Paper, useTheme, useMediaQuery, Grid, Card, IconButton, Collapse } from "@mui/material"
 import { useEffect, useState } from "react";
 import { styled } from '@mui/material/styles';
 import { BarChart } from '@mui/x-charts/BarChart';
 import { useAnimate, useAnimateBar, useDrawingArea } from '@mui/x-charts/hooks';
 import { PiecewiseColorLegend } from '@mui/x-charts/ChartsLegend';
 import { useSession } from "next-auth/react";
+import { LineChart } from "@mui/x-charts";
+import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 
 
 const ReviewComponent = () => {
@@ -40,6 +42,12 @@ const ReviewComponent = () => {
     const [knownWordIDs, setKnownWordIDs] = useState([])
 
     const [progData, setProgData] = useState([])
+
+    const [timeData, setTimeData] = useState({})
+
+    const [open, setOpen] = useState([])
+
+    ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
 
     // function to retrieve all word ids, all vocab pages
     const getUserVocab = async () => {
@@ -115,7 +123,27 @@ const ReviewComponent = () => {
         // pulling metadata
         if (responseMsg.status === '200' && reqtype === 'meta') {
             setTestMeta(responseMsg.message)
-            setTestMetaSliced(responseMsg.message.slice(page, 5))
+            console.log('test metadata', responseMsg.message)
+            setTestMetaSliced(responseMsg.message.slice(page, 4))
+
+            const lineData = {
+                n1: [],
+                n2: [],
+                n3: [],
+                n4: [],
+                n5: [],
+            }
+
+            responseMsg.message.map(x => (lineData[x.n_level].push(
+                {
+                    date: new Date(`${x.created_at.slice(0, 10)}`),
+                    score: Math.floor((x.correct / (x.correct + x.incorrect)) * 100)
+                }
+            )))
+
+            console.log('linedata', lineData)
+            setTimeData(lineData)
+
         }
         // if error pulling metadata
         else if (responseMsg.status != '200' && reqtype === 'meta') {
@@ -173,7 +201,7 @@ const ReviewComponent = () => {
         if (direction === 'back' && page > 0) {
             setPage(page - 1)
         }
-        if (direction === 'forward' && page < Math.floor(testMeta.length / 5)) {
+        if (direction === 'forward' && page < Math.floor(testMeta.length / 4)) {
             setPage(page + 1)
         }
     }
@@ -188,16 +216,23 @@ const ReviewComponent = () => {
         }
     }
 
+    ///////////////////////////////////////// USE EFFECTS ///////////////////////////////////////////////
+
     // pulling test metadata on mount
     useEffect(() => {
+        if (status === 'loading' || status == 'unauthenticated') {
+            return
+        }
+        else
+            getUserVocab()
         fetchUserQuizRecords('meta', null)
-    }, [])
+    }, [status])
 
     // adjusting test metadata table on page change
     useEffect(() => {
         if (testMeta.length > 0) {
             setTestMetaSliced(
-                testMeta.slice(page * 5, (page * 5) + 5)
+                testMeta.slice(page * 4, (page * 4) + 4)
             )
         }
     }, [page])
@@ -211,49 +246,121 @@ const ReviewComponent = () => {
         }
     }, [tcPage])
 
+    ////////////////////////////////////////////////////////////////////////////////////////
+
     return (
 
         <Container sx={{}}>
             <Grid container spacing={2} sx={{ mt: 6 }}>
-                <Grid size={12}>
-                    <Paper sx={{ textAlign: 'center' }}>
-                        <Button onClick={() => getUserVocab()}>!</Button>
+                <Grid size={(matches) ? 6 : 12}>
+                    <Paper sx={{}}>
+                        <Typography fontWeight={600} pt={2} textAlign={'center'}>
+                            Vocabulary Progress
+                        </Typography>
                         <BarChart
-                            height={250}
-                            dataset={progData}
-                            series={[
-                                {
-                                    id: 'completion',
-                                    dataKey: 'completion',
-                                    stack: 'user completion',
-                                    valueFormatter: (value) => `${value}%`,
-                                }
-                            ]}
-                            layout="horizontal"
-                            xAxis={[
-                                {
-                                    id: 'color',
-                                    min: 0,
-                                    max: 100,
-                                    colorMap: {
-                                        type: 'piecewise',
-                                        thresholds: [50, 85],
-                                        colors: ['#d32f2f', '#78909c', '#1976d2'],
-                                    },
-                                    valueFormatter: (value) => `${value}%`
-                                }
-                            ]}
+
+                            slots={{ tooltip: Box }}
+                            loading={progData.length < 5 ? true : false}
+                            hideLegend
+                            axisHighlight={{ x: 'band' }}
+                            height={261}
                             barLabel={(v) => `${v.value}%`}
-                            yAxis={[
-                                {
-                                    scaleType: 'band',
-                                    dataKey: 'level',
-                                    width: 140,
+                            margin={{ left: 0, right: 25 }}
+                            dataset={progData}
+                            series={[{
+                                dataKey: 'completion'
+                            }]}
+                            xAxis={[{
+                                data: ['N1', 'N2', 'N3', 'N4', 'N5']
+                            }]}
+                            yAxis={[{
+                                min: 0,
+                                max: 100,
+                                colorMap: {
+                                    type: 'piecewise',
+                                    thresholds: [50, 70],
+                                    colors: ['#ef9a9a', '#fff176', '#66bb6a'],
                                 },
-                            ]}
+                                valueFormatter: (value) => `${value}%`
+                            }]}
+                            sx={{
+                                '& .MuiBarLabel-root': {
+                                    translate: '0px -15px',
+                                    fontWeight: '500'
+                                },
+                            }}
                         >
                         </BarChart>
                     </Paper>
+                </Grid>
+                <Grid size={(matches) ? 6 : 12}>
+                    <TableContainer component={Paper} sx={{}}>
+                        <Table size="small" sx={{}}>
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell />
+                                    <TableCell sx={{}}>Date</TableCell>
+                                    <TableCell sx={{}}>Level</TableCell>
+                                    <TableCell sx={{}}>Score</TableCell>
+                                    <TableCell />
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {(testMeta.length > 0) ?
+                                    testMetaSliced.map((test, index) => (
+                                        <>
+                                            <TableRow key={index}>
+                                                <TableCell sx={{}}>
+                                                    <IconButton onClick={() => open.includes(index) ? setOpen(prev => prev.filter(x => x != index)) : setOpen([...open, index])}>
+                                                        {open.includes(index) ?
+                                                            <KeyboardArrowUp /> :
+                                                            <KeyboardArrowDown />}
+                                                    </IconButton>
+                                                </TableCell>
+                                                <TableCell sx={{}}>{`${test.created_at.slice(8, 10)}/${test.created_at.slice(5, 7)}/${test.created_at.slice(0, 4)}`}</TableCell>
+                                                <TableCell sx={{}}>{test.n_level.toUpperCase()}</TableCell>
+                                                <TableCell sx={{}}>{Math.round(((test.correct) / (test.correct + test.incorrect)) * 100) / 100}</TableCell>
+                                                <TableCell sx={{}}>
+                                                    <Button onClick={() => fetchTestData(
+                                                        'data',
+                                                        test.quiz_id,
+                                                        test.n_level
+                                                    )}
+                                                        size="small"
+                                                    >
+                                                        View
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
+                                                    <Collapse timeout={{ enter: 250, exit: 250 }} in={open.includes(index) ? true : false}>
+                                                        <Box>
+                                                            <Typography>Quiz Type: {test.quiz_type}</Typography>
+                                                        </Box>
+                                                    </Collapse>
+                                                </TableCell>
+                                            </TableRow>
+                                        </>
+                                    ))
+                                    :
+                                    <TableRow>
+                                        <TableCell colSpan={5}>
+                                            <Typography sx={{ textAlign: 'center' }}>No test data available</Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                }
+                            </TableBody>
+                        </Table>
+
+                        {(testMeta.length > 0) &&
+                            <Box sx={{ textAlign: 'center', py: 1 }}>
+                                <Button onClick={() => { changePage('back', page) }}>Prev</Button>
+                                {<Button>{`${page + 1} | ${Math.ceil(testMeta.length / 5)}`}</Button>}
+                                <Button onClick={() => { changePage('forward', page) }}>Next</Button>
+                            </Box>
+                        }
+                    </TableContainer>
                 </Grid>
             </Grid>
 
