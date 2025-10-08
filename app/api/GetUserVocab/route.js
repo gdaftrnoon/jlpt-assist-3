@@ -23,6 +23,10 @@ export async function GET() {
     const session = await auth()
     const userid = session?.user?.userId
 
+    if (!userid) {
+        return
+    }
+
     const identifier = userid;
     const { success, pending, limit, reset, remaining } = await ratelimit.limit(identifier);
 
@@ -31,7 +35,7 @@ export async function GET() {
         console.log("limit", limit)
         console.log("reset", reset)
         console.log("remaining", remaining)
-        return NextResponse.json({ message: 'Rate limited - Redirecting to homepage'}, { status: 429 })
+        return NextResponse.json({ message: 'Rate limited - Redirecting to homepage' }, { status: 429 })
     }
 
     const { data, error } = await supabase

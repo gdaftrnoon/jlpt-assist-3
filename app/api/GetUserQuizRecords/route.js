@@ -12,6 +12,10 @@ export async function POST(request) {
     const sessionObj = await auth()
     const userid = sessionObj?.user?.userId
 
+    if (!userid) {
+        return
+    }
+
     if (requestMsg.RequestType === 'meta') {
 
         const { data, error } = await supabase

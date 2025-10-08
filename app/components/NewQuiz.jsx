@@ -141,7 +141,7 @@ const NewQuizMaster = () => {
         const [quizOver, setQuizOver] = useState(false)
 
         // page slider
-        const [value, setValue] = React.useState([1])
+        const [value, setValue] = useState([1])
         const [sliderCollapse, setSliderCollapse] = useState(true)
 
         // snackbar for when we add filler cards
@@ -445,11 +445,10 @@ const NewQuizMaster = () => {
         }
 
         // saving quiz results + new vocab data to db
-        const updateDb = async () => {
+        const updateDb = async (quizType) => {
 
             if (saveToVT || saveToDB) {
                 setSaveLoading(true)
-
 
                 try {
 
@@ -487,6 +486,7 @@ const NewQuizMaster = () => {
 
                         const correctCount = orgProgData['correct'].length
                         const incorrectCount = orgProgData['incorrect'].length
+                        
 
                         const quizSession = {
                             quizID: quizID,
@@ -495,7 +495,7 @@ const NewQuizMaster = () => {
                             random: randomQuiz,
                             correct: correctCount,
                             incorrect: incorrectCount,
-                            startFrom: value[0]
+                            startFrom: quizType === 'all' ? value[0] : null 
                         }
 
                         const apiResponse = await fetch('/api/SubmitQuizSession',
@@ -692,6 +692,15 @@ const NewQuizMaster = () => {
                 setValue(null)
             }
         }, [quizType])
+
+        // if your results didn't go against what was in the vocab table, make sure save to vt is false so "changes saved" doesn't appear
+        useEffect(() => {
+            if (quizOn) {
+                if (progData.toBeChecked.length === 0 || progData.toBeUnchecked.length === 0) {
+                    toggleSaveToVT(false)
+                }
+            }
+        })
 
 
         ///////////////////////////////////////// DIALOGS ///////////////////////////////////////////////
@@ -1176,7 +1185,7 @@ const NewQuizMaster = () => {
                                     disabled={saveLoading || saveComplete}
                                     onClick={() => {
                                         if (session) {
-                                            updateDb()
+                                            updateDb(quizType)
                                         }
                                         else {
                                             endQuiz()
@@ -1213,7 +1222,7 @@ const NewQuizMaster = () => {
                                     <InfoOutline fontSize={matches ? 'medium' : 'small'} color='error' />
                                 </ToggleButton>
 
-                                <ToggleButton onClick={() => {!quizOn && openNLevelSelect(true)}} sx={{ borderColor: '#d32f2f' }}>
+                                <ToggleButton onClick={() => { !quizOn && openNLevelSelect(true) }} sx={{ borderColor: '#d32f2f' }}>
                                     {
                                         (nLevel) === 'n1' ? <LooksOne fontSize={matches ? 'medium' : 'small'} color={(!quizOn) ? 'error' : ''} /> :
                                             (nLevel) === 'n2' ? <LooksTwo fontSize={matches ? 'medium' : 'small'} color={(!quizOn) ? 'error' : ''} /> :
@@ -1472,7 +1481,7 @@ const NewQuizMaster = () => {
 
     return (
 
-            <MobileLayout />
+        <MobileLayout />
 
     )
 
