@@ -3,7 +3,7 @@ import { Typography, Container, Button, TableContainer, TableHead, TableRow, Tab
 import { useEffect, useState } from "react";
 import { BarChart } from '@mui/x-charts/BarChart';
 import { useSession } from "next-auth/react";
-import { ArrowLeft, ArrowRight, CancelOutlined, Check, Clear, DoneOutline, InfoOutline, Quiz, Visibility, VisibilityOff } from "@mui/icons-material";
+import { ArrowLeft, ArrowRight, CancelOutlined, Check, Clear, DeleteForeverOutlined, DoneOutline, InfoOutline, Quiz, Visibility, VisibilityOff } from "@mui/icons-material";
 import React from 'react'
 
 
@@ -45,6 +45,8 @@ const ReviewComponent = () => {
     const [testResultDialog, setTestResultDialog] = useState(false)
     const [trPage, setTrPage] = useState(0)
     const [trSetting, setTrSetting] = useState('correct')
+    const [revCardColl, setRevCardColl] = useState(false)
+    const [highlighted, setHighlighted] = useState()
 
 
     ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
@@ -145,6 +147,8 @@ const ReviewComponent = () => {
     // fetching test data and vocab data from pages
     const fetchTestData = async (reqtype, qid, nLevel) => {
 
+        setRevCardColl(false)
+
         const response = await fetch('api/GetUserQuizRecords',
             { method: 'POST', body: JSON.stringify({ RequestType: reqtype, QuizID: qid }) }
         )
@@ -167,6 +171,8 @@ const ReviewComponent = () => {
             setTrSetting('correct')
             setReviewCardNumber(0)
             setReviewCard(testCardsWithResult)
+            setRevCardColl(true)
+            setHighlighted(qid)
         }
         // if error pulling test data
         else if (responseMsg.status != '200' && reqtype === 'data') {
@@ -179,7 +185,7 @@ const ReviewComponent = () => {
         if (direction === 'back' && page > 0) {
             setPage(page - 1)
         }
-        if (direction === 'forward' && page < Math.floor(testMeta.length / 4)) {
+        if (direction === 'forward' && page < Math.ceil(testMeta.length / 4) - 1) {
             setPage(page + 1)
         }
     }
@@ -195,6 +201,39 @@ const ReviewComponent = () => {
         }
         if (direction === 'forward' && reviewCardNumber < reviewCard.length - 1) {
             setReviewCardNumber(reviewCardNumber + 1)
+        }
+    }
+
+    const deleteRecord = async (qid) => {
+        if (userid) {
+            const request = await fetch('api/DeleteRecord',
+                {
+                    method: 'POST',
+                    body: JSON.stringify({ quiz_id: qid })
+                }
+            )
+            const response = await request.json()
+            if (response.status === 200) {
+                try {
+                    await fetchUserQuizRecords('meta', null)
+                    setReviewCard([])
+                    setReviewCardNumber(0)
+                    toggleShowCard(true)
+                    setTrPage(0)
+                    setTrSetting('correct')
+                    toggleTestDetailDialog(false)
+                    setPage(0)
+                }
+                catch (error) {
+                    console.log('error')
+                }
+                finally {
+                    console.log('record deleted.')
+                }
+            }
+            else {
+                console.log('record was not deleted')
+            }
         }
     }
 
@@ -286,7 +325,7 @@ const ReviewComponent = () => {
                                     {(testMeta.length > 0 && progData.length > 0) ?
                                         testMetaSliced.map((test, index) => (
 
-                                            <TableRow key={test.quiz_id}>
+                                            <TableRow key={test.quiz_id} selected={test.quiz_id === highlighted}>
                                                 <TableCell sx={{ width: '1%', px: 1, mx: 0 }} >
                                                     <IconButton>
                                                         <InfoOutline color="info" fontSize="small" onClick={() => { dialogHelper(index); toggleTestDetailDialog(true) }} />
@@ -296,11 +335,19 @@ const ReviewComponent = () => {
                                                 <TableCell sx={{ px: 0, mx: 0, textAlign: 'center' }}>{test.n_level.toUpperCase()}</TableCell>
                                                 <TableCell sx={{ px: 0, mx: 0, textAlign: 'center' }}> {Math.round(((test.correct) / (test.correct + test.incorrect)) * 100) / 100}</TableCell >
                                                 <TableCell sx={{ px: 0, mx: 0, textAlign: 'center' }}>
-                                                    <Button onClick={() => fetchTestData(
-                                                        'data',
-                                                        test.quiz_id,
-                                                        test.n_level
-                                                    )}
+                                                    <Button onClick={() => {
+                                                        // only run it if the quiz is different to whats being shown
+                                                        if (test.quiz_id != highlighted) {
+                                                            fetchTestData(
+                                                                'data',
+                                                                test.quiz_id,
+                                                                test.n_level
+                                                            )
+                                                        }
+                                                        else {
+                                                            console.log('it is the same quiz chief')
+                                                        }
+                                                    }}
                                                         size="small"
                                                     >
                                                         View
@@ -333,121 +380,124 @@ const ReviewComponent = () => {
             </Grid>
 
             {/* test card */}
-            {
-                (reviewCard.length > 0) &&
-                <Card sx={{ mt: 3, mb: 6 }}>
+            <Collapse in={revCardColl} timeout={{ enter: 600, exit: 600 }}>
+                {
+                    (reviewCard.length > 0) &&
+                    <Card sx={{ mt: 3, mb: 25 }}>
 
-                    <CardContent>
-                        {/* number of cards, correct and incorrect counts */}
-                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1.5, pt: 1.5 }}>
+                        <CardContent>
+                            {/* number of cards, correct and incorrect counts */}
+                            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1.5, pt: 1.5 }}>
 
-                            <Button onClick={() => setTestResultDialog(true)} size={matches ? 'large' : 'small'} startIcon={<Quiz />} variant="outlined" color="info">
-                                <Typography variant="body1">{reviewCardNumber + 1} / {reviewCard.length}</Typography>
-                            </Button>
+                                <Button onClick={() => setTestResultDialog(true)} size={matches ? 'large' : 'small'} startIcon={<Quiz />} variant="outlined" color="info">
+                                    <Typography variant="body1">{reviewCardNumber + 1} / {reviewCard.length}</Typography>
+                                </Button>
 
-                            <Button size={matches ? 'large' : 'small'} startIcon={<DoneOutline />} disableRipple disableFocusRipple variant={reviewCard[reviewCardNumber].result === true ? 'contained' : 'outlined'} color="success">
-                                <Typography variant="body1">{reviewCard.filter(x => x.result === true).length}</Typography>
-                            </Button>
+                                <Button size={matches ? 'large' : 'small'} startIcon={<DoneOutline />} disableRipple disableFocusRipple variant={reviewCard[reviewCardNumber].result === true ? 'contained' : 'outlined'} color="success">
+                                    <Typography variant="body1">{reviewCard.filter(x => x.result === true).length}</Typography>
+                                </Button>
 
-                            <Button size={matches ? 'large' : 'small'} startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant={reviewCard[reviewCardNumber].result === false ? 'contained' : 'outlined'} color="error">
-                                <Typography variant="body1">{reviewCard.filter(x => x.result === false).length}</Typography>
-                            </Button>
-                        </Box>
-
-                        {/* prev show and next */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1.5 }}>
-
-                            <Button
-                                size={matches ? 'large' : 'small'}
-                                variant="outlined"
-                                color="primary"
-                                startIcon={<ArrowLeft />}
-                                onClick={() => reviewChangePage('back', reviewCardNumber)}
-                            >
-                                Prev
-                            </Button>
-
-                            <Button
-                                startIcon={(showCard) ? <VisibilityOff /> : <Visibility />}
-                                size={matches ? 'large' : 'small'}
-                                onClick={() => {
-                                    if (showCard) {
-                                        toggleShowCard(false)
-                                    }
-                                    else {
-                                        toggleShowCard(true)
-                                    }
-                                }}
-                                variant="contained" color="primary">
-                                {(showCard) ? "Hide" : "Show"}
-                            </Button>
-
-                            <Button
-                                size={matches ? 'large' : 'small'}
-                                variant="outlined"
-                                color="primary"
-                                endIcon={<ArrowRight />}
-                                onClick={() => reviewChangePage('forward', reviewCardNumber)}
-
-                            >
-                                Next
-                            </Button>
-                        </Box>
-
-                        {/* start of card, slug */}
-                        <Box>
-                            <Typography sx={{ textAlign: 'center', fontWeight: '700', fontSize: { xs: '2.5rem', md: '3rem' } }}>
-                                {reviewCard[reviewCardNumber].slug}
-                            </Typography>
-                        </Box>
-
-                        <Collapse in={showCard}>
-                            <Box sx={{ py: 1 }}>
-
-                                {[...new Set(reviewCard[reviewCardNumber].japanese.map(y => y.word))].map((z, zindex) => (
-                                    <Typography key={zindex} sx={{ fontWeight: '700', fontSize: { xs: '1.8rem', md: '2rem' } }}>{z}</Typography>
-                                ))}
-
-                                <Typography gutterBottom sx={{ color: 'orange', mt: 1, fontWeight: '700', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>Reading</Typography>
-
-
-                                {[...new Set(reviewCard[reviewCardNumber].japanese.map((x => x.reading)))].map(b => (
-                                    <Typography key={b} sx={{ fontWeight: '700', fontSize: { xs: '1.2rem', md: '1.2rem' } }}>{b}</Typography>
-                                ))}
-
-
-                                <Typography gutterBottom sx={{ color: 'orange', mt: 1, fontWeight: '700', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>Meaning</Typography>
-
-                                <Box sx={{ mb: 1 }}>
-
-                                    {reviewCard[reviewCardNumber].senses.map((x, senseIndex) => (
-                                        x.parts_of_speech != 'Wikipedia definition' && x.parts_of_speech != 'Place' && x.parts_of_speech != 'Full name' ?
-                                            <Box key={senseIndex}>
-
-                                                {x.parts_of_speech.map((f, posIndex) => (
-                                                    <Typography key={posIndex} sx={{ color: 'grey', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
-                                                        {f}
-                                                    </Typography>
-                                                ))}
-
-                                                {x.tags.map((g, tagIndex) => (
-                                                    <Typography key={tagIndex} sx={{ color: 'grey', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
-                                                        {g}
-                                                    </Typography>
-                                                ))}
-
-                                                <Typography sx={{ mb: 1, fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
-                                                    {x.english_definitions.join(', ')}
-                                                </Typography>
-                                            </Box>
-                                            : null
-                                    ))}
-                                </Box>
+                                <Button size={matches ? 'large' : 'small'} startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant={reviewCard[reviewCardNumber].result === false ? 'contained' : 'outlined'} color="error">
+                                    <Typography variant="body1">{reviewCard.filter(x => x.result === false).length}</Typography>
+                                </Button>
                             </Box>
-                        </Collapse>
-                    </CardContent>
-                </Card>
-            }
+
+                            {/* prev show and next */}
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1.5 }}>
+
+                                <Button
+                                    size={matches ? 'large' : 'small'}
+                                    variant="outlined"
+                                    color="primary"
+                                    startIcon={<ArrowLeft />}
+                                    onClick={() => reviewChangePage('back', reviewCardNumber)}
+                                >
+                                    Prev
+                                </Button>
+
+                                <Button
+                                    startIcon={(showCard) ? <VisibilityOff /> : <Visibility />}
+                                    size={matches ? 'large' : 'small'}
+                                    onClick={() => {
+                                        if (showCard) {
+                                            toggleShowCard(false)
+                                        }
+                                        else {
+                                            toggleShowCard(true)
+                                        }
+                                    }}
+                                    variant="contained" color="primary">
+                                    {(showCard) ? "Hide" : "Show"}
+                                </Button>
+
+                                <Button
+                                    size={matches ? 'large' : 'small'}
+                                    variant="outlined"
+                                    color="primary"
+                                    endIcon={<ArrowRight />}
+                                    onClick={() => reviewChangePage('forward', reviewCardNumber)}
+
+                                >
+                                    Next
+                                </Button>
+                            </Box>
+
+                            {/* start of card, slug */}
+                            <Box>
+                                <Typography sx={{ textAlign: 'center', fontWeight: '700', fontSize: { xs: '2.5rem', md: '3rem' } }}>
+                                    {reviewCard[reviewCardNumber].slug}
+                                </Typography>
+                            </Box>
+
+                            <Collapse in={showCard}>
+                                <Box sx={{ py: 1 }}>
+
+                                    {[...new Set(reviewCard[reviewCardNumber].japanese.map(y => y.word))].map((z, zindex) => (
+                                        <Typography key={zindex} sx={{ fontWeight: '700', fontSize: { xs: '1.8rem', md: '2rem' } }}>{z}</Typography>
+                                    ))}
+
+                                    <Typography gutterBottom sx={{ color: 'orange', mt: 1, fontWeight: '700', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>Reading</Typography>
+
+
+                                    {[...new Set(reviewCard[reviewCardNumber].japanese.map((x => x.reading)))].map(b => (
+                                        <Typography key={b} sx={{ fontWeight: '700', fontSize: { xs: '1.2rem', md: '1.2rem' } }}>{b}</Typography>
+                                    ))}
+
+
+                                    <Typography gutterBottom sx={{ color: 'orange', mt: 1, fontWeight: '700', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>Meaning</Typography>
+
+                                    <Box sx={{ mb: 1 }}>
+
+                                        {reviewCard[reviewCardNumber].senses.map((x, senseIndex) => (
+                                            x.parts_of_speech != 'Wikipedia definition' && x.parts_of_speech != 'Place' && x.parts_of_speech != 'Full name' ?
+                                                <Box key={senseIndex}>
+
+                                                    {x.parts_of_speech.map((f, posIndex) => (
+                                                        <Typography key={posIndex} sx={{ color: 'grey', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
+                                                            {f}
+                                                        </Typography>
+                                                    ))}
+
+                                                    {x.tags.map((g, tagIndex) => (
+                                                        <Typography key={tagIndex} sx={{ color: 'grey', fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
+                                                            {g}
+                                                        </Typography>
+                                                    ))}
+
+                                                    <Typography sx={{ mb: 1, fontSize: { xs: '1.2rem', md: '1.5rem' } }}>
+                                                        {x.english_definitions.join(', ')}
+                                                    </Typography>
+                                                </Box>
+                                                : null
+                                        ))}
+                                    </Box>
+                                </Box>
+                            </Collapse>
+                        </CardContent>
+                    </Card>
+
+                }
+            </Collapse>
 
             <Dialog open={testDetailDialog} onClose={() => toggleTestDetailDialog(false)}>
                 <DialogTitle textAlign="center">Test Details</DialogTitle>
@@ -457,41 +507,46 @@ const ReviewComponent = () => {
                             {(testDetail) ?
                                 <>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: '600' }}>Test Type</TableCell>
-                                        <TableCell sx={{}}>{capitalizeFirstLetter(testDetail.quiz_type)}</TableCell>
+                                        <TableCell sx={{ fontWeight: '600', fontSize: { xs: '1rem', md: '1.2rem' } }}>Test Type</TableCell>
+                                        <TableCell sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>{capitalizeFirstLetter(testDetail.quiz_type)}</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: '600' }}>Random</TableCell>
-                                        <TableCell sx={{}}>{testDetail.random === true ? 'True' : 'False'}</TableCell>
+                                        <TableCell sx={{ fontWeight: '600', fontSize: { xs: '1rem', md: '1.2rem' } }}>Random</TableCell>
+                                        <TableCell sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>{testDetail.random === true ? 'True' : 'False'}</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: '600' }}>Correct</TableCell>
-                                        <TableCell sx={{}}>{testDetail.correct}</TableCell>
+                                        <TableCell sx={{ fontWeight: '600', fontSize: { xs: '1rem', md: '1.2rem' } }}>Correct</TableCell>
+                                        <TableCell sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>{testDetail.correct}</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: '600' }}>Incorrect</TableCell>
-                                        <TableCell sx={{}}>{testDetail.incorrect}</TableCell>
+                                        <TableCell sx={{ fontWeight: '600', fontSize: { xs: '1rem', md: '1.2rem' } }}>Incorrect</TableCell>
+                                        <TableCell sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>{testDetail.incorrect}</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell sx={{ fontWeight: '600' }}>Start Page</TableCell>
-                                        <TableCell sx={{}}>{testDetail.start_from}</TableCell>
+                                        <TableCell sx={{ fontWeight: '600', fontSize: { xs: '1rem', md: '1.2rem' } }}>Start Page</TableCell>
+                                        <TableCell sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }}>{testDetail.start_from}</TableCell>
                                     </TableRow>
                                 </>
                                 :
                                 <TableRow>
                                     <TableCell colSpan={9}>
-                                        <Typography sx={{ textAlign: 'center' }}>No data available</Typography>
+                                        <Typography sx={{ textAlign: 'center', fontSize: { xs: '1rem', md: '1.2rem' } }}>No data available</Typography>
                                     </TableCell>
                                 </TableRow>
                             }
                         </TableBody>
                     </Table>
+                    <Box sx={{ pt: 2, textAlign: 'center' }}>
+                        <Button onClick={() => deleteRecord(testDetail.quiz_id)} sx={{ fontSize: { xs: '1rem', md: '1.2rem' } }} color="error" size={matches ? 'medium' : 'small'} variant="contained" startIcon={<DeleteForeverOutlined />}>
+                            Delete record?
+                        </Button>
+                    </Box>
                 </DialogContent>
             </Dialog>
 
             <Dialog onClose={() => setTestResultDialog(false)} open={testResultDialog}>
-                <DialogTitle variant={matches ? 'h5' : 'h6'} sx={{ textAlign: 'center' }}>{trSetting === 'correct' ? 'Correct Cards' : 'Incorrect Cards'}</DialogTitle>
-                <DialogContent sx={{ display: 'flex', flexDirection: 'column', minHeight: { xs: '73vh', md: '37vh' }, minWidth: { xs: '70vw', md: '15vw' } }}>
+                <DialogTitle variant={matches ? 'h5' : 'h6'} sx={{ textAlign: 'center', fontWeight:'600' }}>{trSetting === 'correct' ? 'Correct Cards' : 'Incorrect Cards'}</DialogTitle>
+                <DialogContent sx={{ display: 'flex', flexDirection: 'column', minHeight: {}, minWidth: { xs: '80vw', md: '15vw' } }}>
 
                     <Box textAlign="center" pb={1}>
                         <ToggleButtonGroup
@@ -516,9 +571,15 @@ const ReviewComponent = () => {
 
                     <Box sx={{ flexGrow: 1, mt: 1 }}>
                         <Table size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell sx={{ textAlign: 'center', fontSize: { sx: '1rem', md: '1.4rem' } }}>Word</TableCell>
+                                    <TableCell sx={{ textAlign: 'center', fontSize: { sx: '1rem', md: '1.4rem' } }}>Reading</TableCell>
+                                </TableRow>
+                            </TableHead>
                             <TableBody>
                                 {reviewCard.filter(x => x.result === (trSetting === 'correct' ? true : false)).length > 0 ?
-                                    reviewCard.filter(x => x.result === (trSetting === 'correct' ? true : false)).slice(trPage * 7, (trPage * 7) + 7).map((y, index) => (
+                                    reviewCard.filter(x => x.result === (trSetting === 'correct' ? true : false)).slice(trPage * 5, (trPage * 5) + 5).map((y, index) => ( // PAGINATION SETTING
                                         <TableRow key={y.slug}>
                                             <TableCell sx={{ textAlign: 'center' }}>
                                                 <Typography
@@ -532,6 +593,22 @@ const ReviewComponent = () => {
                                                 >
                                                     {y.slug}
                                                 </Typography>
+                                            </TableCell>
+
+                                            <TableCell sx={{ textAlign: 'center' }}>
+                                                {y.japanese.map((x => x.reading))[0] != y.slug &&
+                                                    <Typography
+                                                        onClick={() => {
+                                                            setReviewCardNumber(reviewCard.map(x => x.slug).indexOf(y.slug))
+                                                            setTestResultDialog(false)
+                                                        }}
+                                                        component={Button}
+                                                        size="small"
+                                                        variant={matches ? 'h6' : 'subtitle1'}
+                                                    >
+                                                        {y.japanese.map((x => x.reading))[0]}
+                                                    </Typography>
+                                                }
                                             </TableCell>
                                         </TableRow>
                                     )) :
@@ -548,12 +625,13 @@ const ReviewComponent = () => {
                     </Box>
 
                     {reviewCard.filter(x => x.result === (trSetting === 'correct' ? true : false)).length > 0 &&
-                        <Box sx={{ display: 'flex', flexDirection: 'row', pt: 0, alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'row', pt: 2, alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
                             <IconButton onClick={() => { if (trPage > 0) { setTrPage(prev => prev - 1) } }}>
                                 <ArrowLeft fontSize={matches ? 'medium' : 'small'} />
                             </IconButton>
-                            <Typography variant={matches ? 'h6' : 'subtitle1'}>Page {trPage + 1} / {Math.ceil(reviewCard.filter(x => x.result === (trSetting === 'correct' ? true : false)).length / 7)}</Typography>
-                            <IconButton onClick={() => { trPage < Math.ceil(reviewCard.filter(x => x.result === (trSetting === 'correct' ? true : false)).length / 7) - 1 && setTrPage(prev => prev + 1) }}>
+
+                            <Typography variant={matches ? 'h6' : 'subtitle1'}>Page {trPage + 1} / {Math.ceil(reviewCard.filter(x => x.result === (trSetting === 'correct' ? true : false)).length / 6)}</Typography> {/* // PAGINATION SETTING */}
+                            <IconButton onClick={() => { trPage < Math.ceil(reviewCard.filter(x => x.result === (trSetting === 'correct' ? true : false)).length / 6) - 1 && setTrPage(prev => prev + 1) }}>
                                 <ArrowRight fontSize={matches ? 'medium' : 'small'} />
                             </IconButton>
                         </Box>
