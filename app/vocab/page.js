@@ -1,7 +1,7 @@
 import { SessionProvider } from "next-auth/react";
 import Navbar from "../components/Navbar";
 import NewVocabTable from "../components/NewVocabtable";
-import UserProvider from "../context/UserSession";
+import UserProvider from "../context/UserContext";
 
 export default function NewVocabTableFunction() {
 

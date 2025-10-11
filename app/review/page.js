@@ -1,6 +1,6 @@
 import Navbar from "../components/Navbar"
 import ReviewComponent from "../components/Review"
-import UserProvider from "../context/UserSession"
+import UserProvider from "../context/UserContext"
 import { SessionProvider } from "next-auth/react"
 
 const reviewPage = () => {

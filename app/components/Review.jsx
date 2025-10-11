@@ -5,9 +5,13 @@ import { BarChart } from '@mui/x-charts/BarChart';
 import { useSession } from "next-auth/react";
 import { ArrowLeft, ArrowRight, CancelOutlined, Check, Clear, DeleteForeverOutlined, DoneOutline, InfoOutline, Quiz, Visibility, VisibilityOff } from "@mui/icons-material";
 import React from 'react'
+import { useContext } from "react";
+import { UserContext } from "../context/UserContext";
 
 
 const ReviewComponent = () => {
+
+    const { data } = useContext(UserContext)
 
     // getting user session if it exists
     const { data: session, status } = useSession()
@@ -259,6 +263,10 @@ const ReviewComponent = () => {
             )
         }
     }, [page])
+
+    useEffect(() => {
+        console.log('review page data from context', data)
+    },[data])
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
