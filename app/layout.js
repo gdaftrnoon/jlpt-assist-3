@@ -16,7 +16,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={quicksand.className}>
       <body>
         <MuiThemeProvider>
-            {children}
+          {children}
         </MuiThemeProvider>
       </body>
     </html>

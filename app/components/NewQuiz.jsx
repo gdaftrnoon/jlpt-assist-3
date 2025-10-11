@@ -18,14 +18,10 @@ import Slider from '@mui/material/Slider';
 import Snackbar from '@mui/material/Snackbar';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useTheme } from '@mui/material/styles';
-import { useContext } from 'react';
-import { UserContext } from '../context/UserContext';
 
 const NewQuizMaster = () => {
 
     const MobileLayout = () => {
-
-        const { data } = useContext(UserContext)
 
         const thema = useTheme();
         const matches = useMediaQuery(thema.breakpoints.up('md'));
@@ -704,10 +700,6 @@ const NewQuizMaster = () => {
                 }
             }
         })
-
-        useEffect(() => {
-            console.log('data',data)
-        }, [data])
 
 
         ///////////////////////////////////////// DIALOGS ///////////////////////////////////////////////
