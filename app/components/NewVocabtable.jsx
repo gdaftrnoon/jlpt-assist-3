@@ -1,6 +1,6 @@
 'use client'
 import { Box, Button, Card, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Table, TableBody, TableCell, TableRow, ToggleButton, ToggleButtonGroup, Typography, CircularProgress, TextField, Container, List, ListItemButton, ListItemText, ListItem, Alert, CardContent, DialogContentText, Skeleton, TableContainer, TableHead, CssBaseline } from '@mui/material'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import Pagination from '@mui/material/Pagination';
@@ -19,7 +19,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { ThemeProvider, useTheme } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 
-const NewVocabTable = () => {
+const NewVocabTable = ({ data }) => {
 
 
     const MobileLayout = () => {
@@ -126,6 +126,8 @@ const NewVocabTable = () => {
             trueCount: 0,
             falseCount: 0
         })
+
+        const [data, setData] = useState()
 
         ///////////////////////////////////////// FUNCTIONS ///////////////////////////////////////////////
 
@@ -439,6 +441,8 @@ const NewVocabTable = () => {
             }
         }
 
+        const isMounted = useRef(false)
+
 
         ///////////////////////////////////////// EFFECTS ///////////////////////////////////////////////
 
@@ -529,6 +533,19 @@ const NewVocabTable = () => {
             }
             else {
                 toggleIntroDialog(true)
+            }
+        }, [])
+
+        useEffect(() => {
+            if (!isMounted.current) {
+                fetch('api/FetchJlpt')
+                    .then(resp => resp.json())
+                    .then(vocab => {
+                        setData(vocab)
+                        console.log('here is your vocab', vocab)})
+                    .finally(
+                        isMounted.current = true
+                    )
             }
         }, [])
 

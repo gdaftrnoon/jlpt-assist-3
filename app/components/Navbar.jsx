@@ -1,26 +1,21 @@
 'use client'
 
-import React, { useState, useContext, useEffect } from 'react'
-import { AppBar, IconButton, Toolbar, Typography, Button, Box, Popper, Paper, MenuList, MenuItem, ClickAwayListener, Zoom, Container, Avatar, CircularProgress, Switch } from '@mui/material'
+import React, { useState, useEffect } from 'react'
+import { AppBar, IconButton, Toolbar, Typography, Button, Box, MenuItem, Container, Avatar } from '@mui/material'
 import Link from 'next/link'
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import SunnySnowingIcon from '@mui/icons-material/SunnySnowing';
-import { UserContext } from '../context/UserSession';
-import Slide from '@mui/material/Slide';
-import SchoolIcon from '@mui/icons-material/School';
 import MenuIcon from '@mui/icons-material/Menu';
 import Menu from '@mui/material/Menu';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { redirect } from 'next/navigation';
 
 const Navbar = () => {
 
     const [mode, setMode] = useState('light')
 
-    const { user, status } = useContext(UserContext)
-
-    const username = user?.username
+    const { data: session, status } = useSession()
+    const userid = session?.user?.userId
+    const username = session?.username
 
     async function signOutHelper() {
         await signOut({ redirectTo: '/' })

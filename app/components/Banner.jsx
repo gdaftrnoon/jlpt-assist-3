@@ -7,7 +7,6 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import Collapse from '@mui/material/Collapse';
 import Checkbox from "@mui/material/Checkbox";
 import { redirect } from 'next/navigation';
-import { createTheme, useColorScheme } from '@mui/material/styles';
 import { useRef } from "react";
 import { useSession } from 'next-auth/react';
 
@@ -171,7 +170,7 @@ const Banner = () => {
         }, [])
 
         // for the more info button
-        const moreInfo = useRef(null);
+        const moreInfo = useRef(null)
 
         return (
 
@@ -210,6 +209,7 @@ const Banner = () => {
                             <Typography sx={{ textAlign: 'center' }}>
                                 Master Japanese vocabulary through targeted practice and spaced repetition.
                             </Typography>
+
                         </Box>
 
                         <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 6 }}>
