@@ -15,7 +15,7 @@ const Navbar = () => {
 
     const { data: session, status } = useSession()
     const userid = session?.user?.userId
-    const username = session?.username
+    const username = session?.user?.username
 
     async function signOutHelper() {
         await signOut({ redirectTo: '/' })

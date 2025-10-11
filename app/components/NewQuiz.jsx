@@ -695,7 +695,7 @@ const NewQuizMaster = () => {
         // if your results didn't go against what was in the vocab table, make sure save to vt is false so "changes saved" doesn't appear
         useEffect(() => {
             if (quizOn) {
-                if (progData.toBeChecked.length === 0 || progData.toBeUnchecked.length === 0) {
+                if (progData.toBeChecked.length === 0 && progData.toBeUnchecked.length === 0) {
                     toggleSaveToVT(false)
                 }
             }
