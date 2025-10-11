@@ -8,5 +8,9 @@ export default async function Page() {
 
   console.log(data);
 
-  return <h1>poop</h1>;
+  return (
+    data.map(x => (
+        <h1 key={x.slug}>{x.slug}</h1>
+    ))
+  )
 }
