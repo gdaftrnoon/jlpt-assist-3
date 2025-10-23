@@ -219,8 +219,8 @@ export default function VocabTable() {
                         Please choose an N-level
                     </DialogTitle>
                     <List sx={{ pt: 0 }}>
-                        {Object.keys(vocab).map(x => (
-                            <ListItem key={x}>
+                        {Object.keys(vocab).map((x, index) => (
+                            <ListItem key={index}>
                                 <ListItemButton onClick={() => {
                                     if (level != x) {
                                         setLevel(x)
