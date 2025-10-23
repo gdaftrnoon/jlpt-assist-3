@@ -1,5 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
 import { auth } from "../../auth"
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+const redis = Redis.fromEnv()
+
+const ratelimit = new Ratelimit({
+    redis: redis,
+    limiter: Ratelimit.slidingWindow(30, "20 s"),
+    timeout: 10000,
+    analytics: true
+});
 
 export async function POST(request) {
 
@@ -8,6 +19,18 @@ export async function POST(request) {
 
     if (!uid) {
         return Response.json({ message: 'Unauthorised', status: 401 })
+    }
+
+    // RATE LIMITING
+    const identifier = uid;
+    const { success, pending, limit, reset, remaining } = await ratelimit.limit(identifier);
+
+    // if rate limit has been hit
+    if (!success) {
+        console.log("limit", limit)
+        console.log("reset", reset)
+        console.log("remaining", remaining)
+        return NextResponse.json({ message: 'Rate limited' }, { status: 429 })
     }
 
     const supabaseUrl = process.env.SUPABASE_URL

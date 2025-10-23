@@ -1,7 +1,7 @@
 'use client'
 
 import { ArticleOutlined, CheckBoxOutlineBlankRounded, DeleteForever, DeleteForeverOutlined, DoneAll, Expand, InfoOutline, KeyboardArrowDown, KeyboardArrowDownOutlined, KeyboardArrowUpOutlined, Looks3, Looks4, Looks5, LooksOne, LooksTwo, ManageSearchOutlined, UnfoldLess, X } from "@mui/icons-material";
-import { Alert, Box, Button, Card, CardContent, Checkbox, CircularProgress, Collapse, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, List, ListItem, ListItemButton, ListItemText, Pagination, Table, TableBody, TableCell, TableContainer, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography, useMediaQuery, useTheme } from "@mui/material"
+import { Alert, Box, Button, Card, CardContent, Checkbox, CircularProgress, Collapse, Container, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, List, ListItem, ListItemButton, ListItemText, Pagination, Skeleton, Table, TableBody, TableCell, TableContainer, TableRow, TextField, ToggleButton, ToggleButtonGroup, Typography, useMediaQuery, useTheme } from "@mui/material"
 import { useSession } from "next-auth/react";
 import React, { useEffect, useRef, useState } from "react"
 
@@ -101,6 +101,24 @@ export default function VocabTable() {
         }
     }, [page, userKnownWordIds, level, vocab])
 
+    // on mount, set default level and page ls items if they do not exist
+    useEffect(() => {
+        if (!localStorage.getItem('page')) {
+            localStorage.setItem('page', '1')
+        }
+        else {
+            const savedPage = JSON.parse(localStorage.getItem('page'))
+            setPage(savedPage)
+        }
+        if (!localStorage.getItem('level')) {
+            localStorage.setItem('level', 'n1')
+        }
+        else {
+            const savedLevel = localStorage.getItem('level')
+            setLevel(savedLevel)
+        }
+    }, [])
+
 
     // save changes to db
     const saveChanges = async (initialPackage, adjustedPackage) => {
@@ -134,7 +152,6 @@ export default function VocabTable() {
     }
 
     // function for word/page number search
-
     const tableQuery = (searchQuery) => {
 
         // if it is a number...
@@ -173,6 +190,7 @@ export default function VocabTable() {
         }
     }
 
+    // function to remove all data for a certain level
     const removeAll = () => {
 
         if (session) {
@@ -209,6 +227,8 @@ export default function VocabTable() {
                                         openLevelDia(false)
                                         setPage(1)
                                         setOpen([])
+                                        localStorage.setItem('level', x)
+                                        localStorage.setItem('page', 1)
                                     }
                                     else {
                                         openLevelDia(false)
@@ -329,10 +349,9 @@ export default function VocabTable() {
                 </DialogActions>
             </Dialog>
 
-
             {/* toolbar */}
             <Box sx={{ pt: 5, textAlign: 'center' }}>
-                <ToggleButtonGroup size={matches ? 'large' : 'medium'}>
+                <ToggleButtonGroup disabled={!vocab && !adjustedPackage} size={matches ? 'large' : 'medium'}>
 
                     <ToggleButton onClick={() => toggleIntroDialog(true)} sx={{ borderColor: '#d32f2f' }}>
                         <InfoOutline color='error' />
@@ -471,7 +490,7 @@ export default function VocabTable() {
                     page={page}
                     count={(vocab) && Math.ceil(vocab[level].length / 10)}
                     disabled={!vocab}
-                    onChange={(event, value) => { setPage(value); setOpen([]) }}
+                    onChange={(event, value) => { setPage(value); setOpen([]); localStorage.setItem('page', value) }}
                 >
                 </Pagination>
             </Box>
@@ -604,20 +623,10 @@ export default function VocabTable() {
                             <Table>
                                 <TableBody>
 
-                                    {Array(10).map((x, index) => (
+                                    {[...Array(10).keys()].map((x, index) => (
 
                                         <TableRow key={index}>
-                                            <TableCell key={`A-${x}-${index}`} sx={{ width: '1%', paddingY: 0, paddingRight: 0, paddingLeft: 1 }}>
-                                                <IconButton>
-                                                    <KeyboardArrowDownOutlined />
-                                                </IconButton>
-                                            </TableCell>
-
-                                            <TableCell key={`B-${x}-${index}`} sx={{ width: '1%', padding: 0 }}>
-                                                <Checkbox disabled />
-                                            </TableCell>
-
-                                            <TableCell key={`C-${x}-${index}`} sx={{ width: '98%', textAlign: 'center', pr: 9, fontSize: '1.5rem', fontWeight: 'bold' }}>
+                                            <TableCell key={`C-${x}-${index}`} sx={{ width: '100%', textAlign: 'center', fontSize: '1.8rem', fontWeight: 'bold' }}>
                                                 <Skeleton animation="wave" variant="text" />
                                             </TableCell>
                                         </TableRow>

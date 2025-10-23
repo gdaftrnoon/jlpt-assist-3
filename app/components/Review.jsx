@@ -258,7 +258,7 @@ const ReviewComponent = () => {
             )
         }
     }, [page])
-    
+
 
     ////////////////////////////////////////////////////////////////////////////////////////
 
@@ -393,11 +393,29 @@ const ReviewComponent = () => {
                                     <Typography variant="body1">{reviewCardNumber + 1} / {reviewCard.length}</Typography>
                                 </Button>
 
-                                <Button size={matches ? 'large' : 'small'} startIcon={<DoneOutline />} disableRipple disableFocusRipple variant={reviewCard[reviewCardNumber].result === true ? 'contained' : 'outlined'} color="success">
+                                <Button
+                                    size={matches ? 'large' : 'small'}
+                                    startIcon={<DoneOutline />}
+                                    variant={reviewCard[reviewCardNumber].result === true ? 'contained' : 'outlined'}
+                                    color="success"
+                                    onClick={() => {
+                                        setTrSetting('correct')
+                                        setTestResultDialog(true)
+                                    }}
+                                >
                                     <Typography variant="body1">{reviewCard.filter(x => x.result === true).length}</Typography>
                                 </Button>
 
-                                <Button size={matches ? 'large' : 'small'} startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant={reviewCard[reviewCardNumber].result === false ? 'contained' : 'outlined'} color="error">
+                                <Button
+                                    size={matches ? 'large' : 'small'}
+                                    startIcon={<CancelOutlined />}
+                                    variant={reviewCard[reviewCardNumber].result === false ? 'contained' : 'outlined'}
+                                    color="error"
+                                    onClick={() => {
+                                        setTrSetting('incorrect')
+                                        setTestResultDialog(true)
+                                    }}
+                                >
                                     <Typography variant="body1">{reviewCard.filter(x => x.result === false).length}</Typography>
                                 </Button>
                             </Box>
@@ -449,7 +467,7 @@ const ReviewComponent = () => {
                                 </Typography>
                             </Box>
 
-                            <Collapse in={showCard}>
+                            <Collapse timeout={{ enter: 500, exit: 500 }}  in={showCard}>
                                 <Box sx={{ py: 1 }}>
 
                                     {[...new Set(reviewCard[reviewCardNumber].japanese.map(y => y.word))].map((z, zindex) => (
@@ -545,7 +563,7 @@ const ReviewComponent = () => {
             </Dialog>
 
             <Dialog onClose={() => setTestResultDialog(false)} open={testResultDialog}>
-                <DialogTitle variant={matches ? 'h5' : 'h6'} sx={{ textAlign: 'center', fontWeight:'600' }}>{trSetting === 'correct' ? 'Correct Cards' : 'Incorrect Cards'}</DialogTitle>
+                <DialogTitle variant={matches ? 'h5' : 'h6'} sx={{ textAlign: 'center', fontWeight: '600' }}>{trSetting === 'correct' ? 'Correct Cards' : 'Incorrect Cards'}</DialogTitle>
                 <DialogContent sx={{ display: 'flex', flexDirection: 'column', minHeight: {}, minWidth: { xs: '80vw', md: '15vw' } }}>
 
                     <Box textAlign="center" pb={1}>
