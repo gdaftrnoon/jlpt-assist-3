@@ -217,7 +217,7 @@ const NewVocabTable = ({ data }) => {
             // get all pages from n level
             const allPages = []
             for (let index = 1; index <= fileCount[nLevel]; index++) {
-                const response = await fetch(`vocab/${nLevel}/${nLevel}_page${index}_v1.json`, { cache: 'force-cache' })
+                const response = await fetch(`vocab/${nLevel}/${nLevel}_page${index}_v1.json`)
                 const responseJson = await response.json()
                 allPages.push(responseJson)
                 setProgress(Math.floor((index / fileCount[nLevel]) * 100))
@@ -441,6 +441,8 @@ const NewVocabTable = ({ data }) => {
             }
         }
 
+        const isMounted = useRef(false)
+
 
         ///////////////////////////////////////// EFFECTS ///////////////////////////////////////////////
 
@@ -531,6 +533,19 @@ const NewVocabTable = ({ data }) => {
             }
             else {
                 toggleIntroDialog(true)
+            }
+        }, [])
+
+        useEffect(() => {
+            if (!isMounted.current) {
+                fetch('api/FetchJlpt')
+                    .then(resp => resp.json())
+                    .then(vocab => {
+                        setData(vocab)
+                        console.log('here is your vocab', vocab)})
+                    .finally(
+                        isMounted.current = true
+                    )
             }
         }, [])
 

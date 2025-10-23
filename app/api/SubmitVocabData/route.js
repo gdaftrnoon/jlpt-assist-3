@@ -24,7 +24,6 @@ export async function POST(request) {
 
     const uid = session?.user?.userId
 
-
     // RATE LIMITING
     const identifier = uid;
     const { success, pending, limit, reset, remaining } = await ratelimit.limit(identifier);
