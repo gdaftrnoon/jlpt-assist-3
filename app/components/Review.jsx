@@ -113,6 +113,9 @@ const ReviewComponent = () => {
                     barchartData.push(nData)
                 })
                 console.log('barchartdata', barchartData)
+                const newBarchartData = [
+                    { level: 'n1', completion: barchartData }
+                ]
                 setProgData(barchartData)
             }
         }
@@ -467,7 +470,7 @@ const ReviewComponent = () => {
                                 </Typography>
                             </Box>
 
-                            <Collapse timeout={{ enter: 500, exit: 500 }}  in={showCard}>
+                            <Collapse timeout={{ enter: 500, exit: 500 }} in={showCard}>
                                 <Box sx={{ py: 1 }}>
 
                                     {[...new Set(reviewCard[reviewCardNumber].japanese.map(y => y.word))].map((z, zindex) => (

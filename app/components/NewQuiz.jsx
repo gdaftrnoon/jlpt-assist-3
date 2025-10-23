@@ -1085,11 +1085,6 @@ const NewQuizMaster = () => {
                                                         <Button disableRipple disableFocusRipple disableTouchRipple size={matches ? 'medium' : 'small'} variant='text' startIcon={<Done color='success' />}>
                                                             Results saved
                                                         </Button>
-                                                        <Typography sx={{ textAlign: 'center' }} variant='subtitle1'>
-                                                            <Link disabled sx={{ ":hover": { cursor: 'pointer' } }} onClick={() => redirect('/')}>
-                                                                Review feature coming soon
-                                                            </Link>
-                                                        </Typography>
                                                     </React.Fragment>
                                                 }
                                             </CardContent>
