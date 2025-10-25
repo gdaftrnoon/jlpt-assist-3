@@ -856,7 +856,7 @@ const NewQuizMaster = () => {
                                         value={customCardCount}
                                         onChange={(e) => setCustomCardCount(e.target.value)}
                                         helperText={
-                                            isNaN(Number(customCardCount)) ? "Please enter a valid number." :
+                                            (Number(customCardCount)) ? "Please enter a valid number." :
                                                 (customCardCount === '') ? "Please enter a valid number." :
                                                     customCardCount.length > 0 && customCardCount.trim() === '' ? "Please enter a valid number." :
                                                         (Number(customCardCount) < Number(quizMin)) && `A quiz must hold at least ${quizMin} cards.`
@@ -1430,7 +1430,6 @@ const NewQuizMaster = () => {
                 </Card>
 
                 {/* quiz info card */}
-
                 {(!quizOn) &&
                     <Card sx={{ width: { xs: '100%', md: '50%' } }}>
                         <Box>
