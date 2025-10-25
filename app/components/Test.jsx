@@ -1,4 +1,4 @@
-import { Container, ToggleButton, ToggleButtonGroup, Box, useTheme, useMediaQuery, Typography, Button, Alert, Collapse, Paper, TableContainer, Table, TableRow, TableCell, TableHead, TableBody, Dialog, DialogTitle, List, ListItem, ListItemButton, ListItemText, DialogContent, Card, CardContent, Slider, Divider, FormControlLabel, Switch, TextField, DialogActions, Input, Grid } from "@mui/material";
+import { Container, ToggleButton, ToggleButtonGroup, Box, useTheme, useMediaQuery, Typography, Button, Alert, Collapse, Paper, TableContainer, Table, TableRow, TableCell, TableHead, TableBody, Dialog, DialogTitle, List, ListItem, ListItemButton, ListItemText, DialogContent, Card, CardContent, Slider, Divider, FormControlLabel, Switch, TextField, DialogActions, Input, Grid, DialogContentText, FormGroup, Checkbox } from "@mui/material";
 import LooksOne from "@mui/icons-material/LooksOne";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -26,14 +26,20 @@ export default function Test() {
     const [type, setType] = useState('all')
     const [random, setRadnom] = useState(false)
     const [cardCount, setCardCount] = useState(20)
+    const [parcel, setParcel] = useState({ setKnown: [], setUnknown: [] })
 
     const [levelDia, openLevelDia] = useState(false)
     const [settingsDia, openSettingsDia] = useState(false)
+    const [stopDia, openStopDia] = useState(false)
+    const [resultsDia, openResultsDia] = useState(false)
 
     const [testCards, setTestCards] = useState()
     const [cardNumber, setCardNumber] = useState(0)
     const [showCard, toggleShowCard] = useState(false)
     const [testOn, setTestOn] = useState(false)
+    const [testComplete, setTestComplete] = useState(false)
+    const [saveToVT, setSaveToVT] = useState(true)
+    const [saveToDB, setSaveToDB] = useState(true)
 
     // fetch all jlpt vocab data once on mount
     useEffect(() => {
@@ -75,6 +81,33 @@ export default function Test() {
         }
     }, [cardCount])
 
+    // detects when all cards have either a true/false result, and fills in the parcel
+    useEffect(() => {
+        // fill in parcel
+        if (testCards) {
+            const correctCards = testCards.filter(x => x.result === true)
+            const incorrectCards = testCards.filter(x => x.result === false)
+            const toBeCorrect = correctCards.filter(x => !userKnownWordIds.includes(x.id))
+            const toBeinCorrect = incorrectCards.filter(x => userKnownWordIds.includes(x.id))
+            setParcel({ setKnown: toBeCorrect, setUnknown: toBeinCorrect })
+            if (toBeCorrect.length === 0 && toBeinCorrect.length === 0) {
+                setSaveToVT(false)
+            }
+            console.log({ setKnown: toBeCorrect, setUnknown: toBeinCorrect })
+        }
+
+        // detect when test is over
+        if (testCards && testCards.map(x => x.result).filter(y => y === null).length === 0) {
+            if (!testComplete) {
+                setTestComplete(true)
+                openResultsDia(true)
+                console.log('the test is over')
+            }
+        }
+
+    }, [testCards])
+
+    // randomise vocab array
     function shuffle(array) {
         let currentIndex = array.length;
 
@@ -100,8 +133,17 @@ export default function Test() {
         if (type === 'all') {
             const slicedCards = testCards.slice(0, cardCount)
             setTestCards(slicedCards)
+            console.log('sliced cards', slicedCards)
             setTestOn(true)
         }
+    }
+
+    const endTest = () => {
+        openStopDia(false)
+        setTestOn(false)
+        toggleShowCard(false)
+        setCardNumber(0)
+        setTestComplete(false)
     }
 
     return (
@@ -120,8 +162,6 @@ export default function Test() {
                                     if (level != x) {
                                         setLevel(x)
                                         openLevelDia(false)
-                                        setPage(1)
-                                        setOpen([])
                                         localStorage.setItem('level', x)
                                         localStorage.setItem('page', 1)
                                     }
@@ -146,6 +186,7 @@ export default function Test() {
                         <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', py: 0 }}>
 
                             <ToggleButtonGroup
+                                disabled={testOn}
                                 color='error'
                                 exclusive
                                 onChange={
@@ -162,6 +203,7 @@ export default function Test() {
                             </ToggleButtonGroup>
 
                             <ToggleButtonGroup
+                                disabled={testOn}
                                 onChange={(event, newType) => newType != null ? setType(newType) : null}
                                 color='error'
                                 exclusive
@@ -177,6 +219,7 @@ export default function Test() {
 
                             <Box sx={{ pl: 2, mt: 2, mb: 1 }}>
                                 <FormControlLabel
+                                    disabled={testOn}
                                     control={<Switch checked={random} size={matches ? 'medium' : 'small'} color='error' />}
                                     label="Randomise card order"
                                     onChange={() => setRadnom(prev => !prev)}
@@ -185,6 +228,7 @@ export default function Test() {
 
                             <Box sx={{ minWidth: '100%', mt: 2, display: 'flex', gap: 1 }}>
                                 <TextField
+                                    disabled={testOn}
                                     sx={{ minWidth: '100%' }}
                                     size={matches ? 'medium' : 'small'}
                                     variant="outlined"
@@ -197,7 +241,7 @@ export default function Test() {
                         </CardContent>
                     </Card>
                 </DialogContent>
-                <DialogActions sx={{ pt: 0 }}>
+                <DialogActions sx={{ pt: 0.5 }}>
                     <Button
                         onClick={() => {
                             if (cardCount === '') {
@@ -215,6 +259,63 @@ export default function Test() {
                 </DialogActions>
             </Dialog>
 
+            {/* stop test dialog */}
+            <Dialog open={stopDia} onClose={() => openStopDia(false)}>
+                <DialogTitle variant='subtitle1'>
+                    Would like to end the quiz?
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Your progress will be not saved.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => openStopDia(false)}>Go Back</Button>
+                    <Button onClick={() => endTest()}>End Quiz</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* post quiz dialog */}
+            <Dialog open={resultsDia} sx={{}}>
+                <DialogContent sx={{ pb: 0 }}>
+                    <Paper sx={{ py: 1.5, px: 2 }}>
+                        <Typography sx={{ textAlign: 'center', mb: 2, fontWeight: '600' }}>
+                            Test Complete
+                        </Typography>
+
+                        <Alert icon={false} severity="success" sx={{ mb: 2 }}>
+                            <Typography>
+                                Correct word(s) marked as unknown in table: <strong>{parcel['setKnown'].length}</strong>
+                            </Typography>
+                        </Alert>
+
+                        <Alert icon={false} severity="error" sx={{ mb: 2 }}>
+                            <Typography>
+                                Incorrect word(s) marked as known in table: <strong>{parcel['setUnknown'].length}</strong>
+                            </Typography>
+                        </Alert>
+
+                        <FormGroup sx={{ mb: 1 }}>
+                            <FormControlLabel
+                                control={<Checkbox
+                                    disabled={parcel['setUnknown'].length === 0 && parcel['setKnown'].length === 0}
+                                    checked={saveToVT} />
+                                }
+                                label="Save changes to table." />
+                            <FormControlLabel control={<Checkbox checked={saveToDB} onChange={() => setSaveToDB(prev => !prev)} />} label="Save test result to database." />
+                        </FormGroup>
+
+                    </Paper>
+                </DialogContent>
+
+                <DialogActions>
+                    <Button onClick={() => openResultsDia(false)} size={matches ? 'large' : 'small'}>Close</Button>
+                    <Button size={matches ? 'large' : 'small'}>Confirm</Button>
+                </DialogActions>
+            </Dialog>
+
+
+
             <Paper sx={{ mt: 5, borderRadius: '16px', py: 1.5, px: 2, mb: 10 }}>
                 <Box sx={{ textAlign: 'center' }}>
 
@@ -222,13 +323,13 @@ export default function Test() {
                     <Box sx={{ pt: 1 }}>
                         <ToggleButtonGroup size={matches ? 'medium' : 'medium'}>
 
-                            <ToggleButton onClick={() => openLevelDia(true)} sx={{ borderColor: '#d32f2f' }}>
+                            <ToggleButton onClick={() => { !testOn && openLevelDia(true) }} sx={{ borderColor: '#d32f2f' }}>
                                 {
-                                    (level === 'n1') ? <LooksOne color='error' /> :
-                                        (level === 'n2') ? <LooksTwo color='error' /> :
-                                            (level === 'n3') ? <Looks3 color='error' /> :
-                                                (level === 'n4') ? <Looks4 color='error' /> :
-                                                    (level === 'n5') ? <Looks5 color='error' /> :
+                                    (level === 'n1') ? <LooksOne color={testOn ? '' : 'error'} /> :
+                                        (level === 'n2') ? <LooksTwo color={testOn ? '' : 'error'} /> :
+                                            (level === 'n3') ? <Looks3 color={testOn ? '' : 'error'} /> :
+                                                (level === 'n4') ? <Looks4 color={testOn ? '' : 'error'} /> :
+                                                    (level === 'n5') ? <Looks5 color={testOn ? '' : 'error'} /> :
                                                         null
                                 }
                             </ToggleButton>
@@ -237,37 +338,55 @@ export default function Test() {
                                 <SettingsIcon fontSize={matches ? 'medium' : 'small'} color='error' />
                             </ToggleButton>
 
-                            <ToggleButton onClick={() => startTest(level, type, random, cardCount)} variant='contained' size='small' sx={{ borderColor: '#d32f2f', px: { md: 1.3, xs: 1.3 } }}>
-                                <PlayArrowIcon fontSize={matches ? 'medium' : 'small'} color='error' />
+                            <ToggleButton
+                                onClick={() => {
+                                    if (testOn) {
+                                        openStopDia(true)
+                                    }
+                                    else {
+                                        startTest(level, type, random, cardCount)
+                                    }
+                                }}
+                                variant='contained'
+                                size='small'
+                                sx={{ borderColor: '#d32f2f', px: { md: 1.3, xs: 1.3 } }}
+                            >
+                                {(testOn) ?
+                                    <StopIcon fontSize={matches ? 'medium' : 'small'} color='error' /> :
+                                    <PlayArrowIcon fontSize={matches ? 'medium' : 'small'} color='error' />
+                                }
                             </ToggleButton>
 
-                            <ToggleButton variant='contained' size='small' sx={{ borderColor: '#d32f2f', px: { md: 1.3, xs: 1.3 } }}>
-                                <StopIcon fontSize={matches ? 'medium' : 'small'} color='error' />
-                            </ToggleButton>
-
-                            <ToggleButton variant='contained' size='small' sx={{ borderColor: '#d32f2f', px: { md: 1.3, xs: 1.3 } }}>
+                            <ToggleButton onClick={() => openResultsDia(true)} variant='contained' size='small' sx={{ borderColor: '#d32f2f', px: { md: 1.3, xs: 1.3 } }}>
                                 <SportsScoreIcon fontSize={matches ? 'medium' : 'small'} color='error' />
                             </ToggleButton>
                         </ToggleButtonGroup>
                     </Box>
 
-                    <Collapse timeout={{ enter: 400, exit: 400 }} in={testOn}>
-                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1.5, pt: 1.5 }}>
-                            <Button size={matches ? 'large' : 'small'} startIcon={<Quiz />} variant="outlined" color="info">
-                                <Typography variant="body1">...</Typography>
-                            </Button>
+                    <Collapse timeout={{ enter: 400, exit: 0 }} in={testOn}>
+                        {(testOn && testCards) &&
+                            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1.5, pt: 1.5 }}>
+                                <Button size={matches ? 'large' : 'small'} startIcon={<Quiz />} variant="outlined" color="info">
+                                    <Typography variant="body1">{`${cardNumber + 1} / ${testCards.length}`}</Typography>
+                                </Button>
 
-                            <Button size={matches ? 'large' : 'small'} startIcon={<DoneOutline />} disableRipple disableFocusRipple variant="outlined" color="success">
-                                <Typography variant="body1">...</Typography>
-                            </Button>
+                                <Button size={matches ? 'large' : 'small'} startIcon={<DoneOutline />} disableRipple disableFocusRipple variant={testCards[cardNumber].result === true ? 'contained' : 'outlined'} color="success">
+                                    <Typography variant="body1">{testCards.map(x => x.result).filter(y => y === true).length}</Typography>
+                                </Button>
 
-                            <Button size={matches ? 'large' : 'small'} startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant="outlined" color="error">
-                                <Typography variant="body1">...</Typography>
-                            </Button>
-                        </Box>
+                                <Button size={matches ? 'large' : 'small'} startIcon={<CancelOutlined />} disableRipple disableFocusRipple variant={testCards[cardNumber].result === false ? 'contained' : 'outlined'} color="error">
+                                    <Typography variant="body1">{testCards.filter(x => x.result === false).length}</Typography>
+                                </Button>
+                            </Box>}
 
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1.5 }}>
                             <Button
+                                onClick={() => {
+                                    if (cardNumber >= 1) {
+                                        setCardNumber(prev => prev - 1)
+                                        toggleShowCard(false)
+                                    }
+                                }}
                                 size={matches ? 'large' : 'small'}
                                 variant="outlined"
                                 color="primary"
@@ -277,16 +396,23 @@ export default function Test() {
                             </Button>
 
                             <Button
+                                disabled={showCard}
                                 size={matches ? 'large' : 'small'}
                                 variant="contained"
                                 color="primary"
                                 startIcon={<VisibilityOff />}
-                                onClick={() => toggleShowCard(prev => !prev)}
+                                onClick={() => { (showCard === false) && toggleShowCard(prev => !prev) }}
                             >
                                 Show
                             </Button>
 
                             <Button
+                                onClick={() => {
+                                    if (cardNumber < testCards.length - 1) {
+                                        setCardNumber(prev => prev + 1)
+                                        toggleShowCard(false)
+                                    }
+                                }}
                                 size={matches ? 'large' : 'small'}
                                 variant="outlined"
                                 color="primary"
@@ -298,20 +424,42 @@ export default function Test() {
 
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
                             <Button
+                                onClick={() => {
+                                    setTestCards(prev =>
+                                        prev.map((card, index) => {
+                                            return index === cardNumber ? { ...card, result: true } : card
+                                        })
+                                    )
+                                    if (cardNumber < testCards.length - 1) {
+                                        setCardNumber(prev => prev + 1)
+                                        toggleShowCard(false)
+                                    }
+                                }}
                                 size={matches ? 'large' : 'small'}
                                 variant="contained"
                                 color="success"
                                 startIcon={<Check />}
-                                disabled={false}
+                                disabled={!showCard}
                             >
                                 Correct
                             </Button>
                             <Button
+                                onClick={() => {
+                                    setTestCards(prev =>
+                                        prev.map((card, index) => {
+                                            return index === cardNumber ? { ...card, result: false } : card
+                                        })
+                                    )
+                                    if (cardNumber < testCards.length - 1) {
+                                        setCardNumber(prev => prev + 1)
+                                        toggleShowCard(false)
+                                    }
+                                }}
                                 size={matches ? 'large' : 'small'}
                                 variant="contained"
                                 color="error"
                                 startIcon={<Clear />}
-                                disabled={false}
+                                disabled={!showCard}
                             >
                                 Incorrect
                             </Button>
