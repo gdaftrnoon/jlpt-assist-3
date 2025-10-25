@@ -1,4 +1,4 @@
-import { Container, ToggleButton, ToggleButtonGroup, Box, useTheme, useMediaQuery, Typography, Button, Alert, Collapse, Paper, TableContainer, Table, TableRow, TableCell, TableHead, TableBody, Dialog, DialogTitle, List, ListItem, ListItemButton, ListItemText, DialogContent, Card, CardContent, Slider, Divider, FormControlLabel, Switch, TextField, DialogActions, Input, Grid, DialogContentText, FormGroup, Checkbox } from "@mui/material";
+import { Container, ToggleButton, ToggleButtonGroup, Box, useTheme, useMediaQuery, Typography, Button, Alert, Collapse, Paper, TableContainer, Table, TableRow, TableCell, TableHead, TableBody, Dialog, DialogTitle, List, ListItem, ListItemButton, ListItemText, DialogContent, Card, CardContent, Slider, Divider, FormControlLabel, Switch, TextField, DialogActions, Input, Grid, DialogContentText, FormGroup, Checkbox, CircularProgress } from "@mui/material";
 import LooksOne from "@mui/icons-material/LooksOne";
 import SettingsIcon from "@mui/icons-material/Settings";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -7,6 +7,7 @@ import SportsScoreIcon from "@mui/icons-material/SportsScore";
 import { ArrowLeftOutlined, ArrowRightOutlined, CancelOutlined, Check, Clear, DoneOutline, Looks3, Looks4, Looks5, LooksTwo, Quiz, Start, VisibilityOff } from "@mui/icons-material";
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Test() {
 
@@ -40,6 +41,10 @@ export default function Test() {
     const [testComplete, setTestComplete] = useState(false)
     const [saveToVT, setSaveToVT] = useState(true)
     const [saveToDB, setSaveToDB] = useState(true)
+    const [vtSubmissionStatus, setVTSubmissionStatus] = useState()
+    const [dbSubmissionStatus, setDBSubmissionStatus] = useState()
+    const [submissionCollapse, setSubmissionCollapse] = useState(false)
+    const [loadingSubmission, setLoadingSubmission] = useState(false)
 
     // fetch all jlpt vocab data once on mount
     useEffect(() => {
@@ -88,17 +93,19 @@ export default function Test() {
             const correctCards = testCards.filter(x => x.result === true)
             const incorrectCards = testCards.filter(x => x.result === false)
             const toBeCorrect = correctCards.filter(x => !userKnownWordIds.includes(x.id))
+            console.log('tbc', toBeCorrect.length)
             const toBeinCorrect = incorrectCards.filter(x => userKnownWordIds.includes(x.id))
+            console.log('tbi', toBeinCorrect.length)
             setParcel({ setKnown: toBeCorrect, setUnknown: toBeinCorrect })
-            if (toBeCorrect.length === 0 && toBeinCorrect.length === 0) {
-                setSaveToVT(false)
-            }
             console.log({ setKnown: toBeCorrect, setUnknown: toBeinCorrect })
         }
 
         // detect when test is over
         if (testCards && testCards.map(x => x.result).filter(y => y === null).length === 0) {
             if (!testComplete) {
+                if (parcel.setKnown.length === 0 && parcel.setUnknown.length === 0) {
+                    setSaveToVT(false)
+                }
                 setTestComplete(true)
                 openResultsDia(true)
                 console.log('the test is over')
@@ -125,6 +132,9 @@ export default function Test() {
     }
 
     const startTest = (level, type, random, cardCount) => {
+        setSaveToDB(true)
+        setSaveToVT(true)
+        setSubmissionCollapse(false)
         const testCards = vocab[level]
         if (random) {
             shuffle(testCards)
@@ -140,10 +150,89 @@ export default function Test() {
 
     const endTest = () => {
         openStopDia(false)
+        openResultsDia(false)
         setTestOn(false)
         toggleShowCard(false)
         setCardNumber(0)
         setTestComplete(false)
+    }
+
+    const sendData = async (saveToVT, saveToDB) => {
+        setLoadingSubmission(true)
+        if (saveToVT) {
+            const initialPackage = {}
+            parcel.setKnown.forEach(x => initialPackage[x.id] = false)
+            parcel.setUnknown.forEach(x => initialPackage[x.id] = true)
+            const adjustedPackage = {}
+            parcel.setKnown.forEach(x => adjustedPackage[x.id] = true)
+            parcel.setUnknown.forEach(x => adjustedPackage[x.id] = false)
+            console.log('initial', initialPackage)
+            console.log('adjusted', adjustedPackage)
+
+            if (session) {
+
+                const response = await fetch('api/SubmitVocabChange',
+                    {
+                        method: 'POST',
+                        body: JSON.stringify({ initial: initialPackage, adjusted: adjustedPackage })
+                    })
+
+                const responseMsg = await response.json()
+                console.log(responseMsg)
+                if (responseMsg.status === 200) {
+                    setVTSubmissionStatus(true)
+                    const toDelete = []
+                    const toAppend = []
+                    Object.keys(initialPackage).map(x => {
+                        if (initialPackage[x] === true && adjustedPackage[x] === false) {
+                            toDelete.push(Number(x))
+                        }
+                        else if (initialPackage[x] === false && adjustedPackage[x] === true) {
+                            toAppend.push(Number(x))
+                        }
+                    })
+                    const newUserKnownWordIDs = userKnownWordIds.filter(x => !toDelete.includes(x)).concat(toAppend)
+                    console.log('newuserknownwordids', newUserKnownWordIDs)
+                    setUserKnownWordIds(newUserKnownWordIDs)
+                }
+                else {
+                    setVTSubmissionStatus(false)
+                }
+
+            }
+        }
+
+        if (saveToDB) {
+
+            const results = testCards.map(x => (
+                { wordID: x.id, result: x.result }
+            ))
+
+            const quizSession = {
+                nLevel: level,
+                quizType: type,
+                random: random,
+                correct: testCards.filter(x => x.result === true).length,
+                incorrect: testCards.filter(x => x.result === false).length,
+                quizResults: results
+            }
+
+            const apiResponse = await fetch('/api/SubmitQuizSession',
+                {
+                    method: 'POST',
+                    body: JSON.stringify(quizSession)
+                })
+
+            const apiResult = await apiResponse.json()
+            console.log('db api result', apiResult)
+            if (apiResult.status === 200) {
+                setDBSubmissionStatus(true)
+            }
+            else {
+                setDBSubmissionStatus(false)
+            }
+        }
+        setLoadingSubmission(false)
     }
 
     return (
@@ -211,8 +300,8 @@ export default function Test() {
                                 size={matches ? 'medium' : 'small'}
                                 sx={{ mt: 2 }}>
                                 <ToggleButton value='all'>All Cards</ToggleButton>
-                                <ToggleButton value='known'>Known</ToggleButton>
-                                <ToggleButton value='unknown'>Unknown</ToggleButton>
+                                <ToggleButton disabled={!session} value='known'>Known</ToggleButton>
+                                <ToggleButton disabled={!session} value='unknown'>Unknown</ToggleButton>
                             </ToggleButtonGroup>
 
                             <Divider sx={{ mt: 2, width: '80%' }} />
@@ -283,34 +372,107 @@ export default function Test() {
                             Test Complete
                         </Typography>
 
-                        <Alert icon={false} severity="success" sx={{ mb: 2 }}>
-                            <Typography>
-                                Correct word(s) marked as unknown in table: <strong>{parcel['setKnown'].length}</strong>
-                            </Typography>
-                        </Alert>
+                        {(session) ?
+                            <>
+                                <Alert icon={false} severity="success" sx={{ mb: 2 }}>
+                                    <Typography>
+                                        Correct word(s) marked as unknown in table: <strong>{parcel['setKnown'].length}</strong>
+                                    </Typography>
+                                </Alert>
 
-                        <Alert icon={false} severity="error" sx={{ mb: 2 }}>
-                            <Typography>
-                                Incorrect word(s) marked as known in table: <strong>{parcel['setUnknown'].length}</strong>
-                            </Typography>
-                        </Alert>
+                                <Alert icon={false} severity="error" sx={{ mb: 2 }}>
+                                    <Typography>
+                                        Incorrect word(s) marked as known in table: <strong>{parcel['setUnknown'].length}</strong>
+                                    </Typography>
+                                </Alert>
 
-                        <FormGroup sx={{ mb: 1 }}>
-                            <FormControlLabel
-                                control={<Checkbox
-                                    disabled={parcel['setUnknown'].length === 0 && parcel['setKnown'].length === 0}
-                                    checked={saveToVT} />
-                                }
-                                label="Save changes to table." />
-                            <FormControlLabel control={<Checkbox checked={saveToDB} onChange={() => setSaveToDB(prev => !prev)} />} label="Save test result to database." />
-                        </FormGroup>
+                                <FormGroup sx={{ mb: 1 }}>
+                                    <FormControlLabel
+                                        control={<Checkbox
+                                            onChange={() => setSaveToVT(prev => !prev)}
+                                            disabled={(parcel['setUnknown'].length === 0 && parcel['setKnown'].length === 0) || (submissionCollapse)}
+                                            checked={saveToVT} />
+                                        }
+                                        label="Save changes to table." />
+                                    <FormControlLabel control={<Checkbox disabled={(submissionCollapse)} checked={saveToDB} onChange={() => setSaveToDB(prev => !prev)} />} label="Save test result to database." />
+                                </FormGroup>
+
+                                <Collapse timeout={{ enter: 400, exit: 400 }} in={submissionCollapse}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', my: 1, flexDirection: 'column' }}>
+                                        {(loadingSubmission) ?
+                                            <CircularProgress color="error" size="25px" /> :
+                                            <>
+                                                <Typography>
+                                                    {(saveToVT && vtSubmissionStatus) ?
+                                                        `Changes saved.` :
+                                                        (saveToVT && !vtSubmissionStatus) ?
+                                                            `Error saving changes` :
+                                                            null
+                                                    }
+                                                </Typography>
+                                                <Typography>
+                                                    {(saveToDB && dbSubmissionStatus) ?
+                                                        `Results saved.` :
+                                                        (saveToDB && !dbSubmissionStatus) ?
+                                                            `Error saving results` :
+                                                            null
+                                                    }
+                                                </Typography>
+                                            </>
+                                        }
+                                    </Box>
+                                </Collapse>
+                            </> :
+                            <Alert severity="error" icon={false}>
+                                <Typography sx={{ textAlign: 'center' }}>
+                                    You must be logged in to save test results.
+                                </Typography>
+                            </Alert>
+                        }
 
                     </Paper>
                 </DialogContent>
 
                 <DialogActions>
-                    <Button onClick={() => openResultsDia(false)} size={matches ? 'large' : 'small'}>Close</Button>
-                    <Button size={matches ? 'large' : 'small'}>Confirm</Button>
+                    <Button
+                        onClick={() => {
+                            if (!session) {
+                                openResultsDia(false)
+                            }
+                            else {
+                                if (submissionCollapse) {
+                                    endTest()
+                                }
+                                else {
+                                    openResultsDia(false)
+                                }
+                            }
+                        }}
+                        size={matches ? 'large' : 'small'}
+                    >
+                        {(session) ? 'Close' : 'Close Dialog'}
+                    </Button>
+                    <Button
+                        disabled={submissionCollapse}
+                        onClick={() => {
+                            if (!session) {
+                                endTest()
+                            }
+
+                            else {
+                                if (saveToVT || saveToDB) {
+                                    setSubmissionCollapse(true)
+                                }
+                                else {
+                                    endTest()
+                                }
+                                sendData(saveToVT, saveToDB)
+                            }
+                        }}
+                        size={matches ? 'large' : 'small'}
+                    >
+                        {(session) ? 'Confirm' : 'End Test'}
+                    </Button>
                 </DialogActions>
             </Dialog>
 
@@ -357,8 +519,16 @@ export default function Test() {
                                 }
                             </ToggleButton>
 
-                            <ToggleButton onClick={() => openResultsDia(true)} variant='contained' size='small' sx={{ borderColor: '#d32f2f', px: { md: 1.3, xs: 1.3 } }}>
-                                <SportsScoreIcon fontSize={matches ? 'medium' : 'small'} color='error' />
+                            <ToggleButton onClick={() => {
+                                if (testComplete) {
+                                    openResultsDia(true)
+                                }
+                            }}
+                                variant='contained'
+                                size='small'
+                                sx={{ borderColor: '#d32f2f', px: { md: 1.3, xs: 1.3 } }}
+                            >
+                                <SportsScoreIcon fontSize={matches ? 'medium' : 'small'} color={testComplete ? 'error' : ''} />
                             </ToggleButton>
                         </ToggleButtonGroup>
                     </Box>

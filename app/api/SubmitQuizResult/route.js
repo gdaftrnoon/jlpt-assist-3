@@ -16,7 +16,7 @@ export async function POST(request) {
     const quizResults = body.quizResults
 
     const bulkInsert = quizResults.map(x => (
-        { quiz_id: x.quizID, user_id: userID, word_id: x.wordID, is_correct: x.result }
+        { quiz_id: quizID, user_id: userID, word_id: x.wordID, is_correct: x.result }
     ))
 
     const { error } = await supabase
